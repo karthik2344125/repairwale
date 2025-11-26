@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.gitignore
+.vscode
+repairwale copy
+LATEST_FILE
+npm-debug.log*

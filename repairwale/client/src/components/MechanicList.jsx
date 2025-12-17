@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { memo } from 'react'
 import Button from './Button'
 import { IconMapPin } from '../icons'
 
-export default function MechanicList({ mechanics = [] }){
+function MechanicList({ mechanics = [], onCall, onRequest }){
   return (
     <div>
       <h3 style={{ marginTop: 0 }}>Mechanics Nearby</h3>
@@ -14,11 +14,15 @@ export default function MechanicList({ mechanics = [] }){
                 <div className="iconWrap"><IconMapPin size={20} /></div>
                 <div>
                   <div className="mechanicName">{m.name}</div>
-                  <div className="muted"><small>{m.rating} ★</small></div>
+                  <div className="muted"><small>{m.rating} ★{typeof m.distanceKm === 'number' ? ` • ${m.distanceKm} km away` : ''}</small></div>
                 </div>
               </div>
               <div className="mechanicActions">
-                <Button variant="primary" size="sm">Call</Button>
+                <Button variant="ghost" size="sm" onClick={() => onRequest && onRequest(m)}>Request</Button>
+                <Button variant="primary" size="sm" onClick={() => {
+                  const phone = m.phone || `9${String(m.id).replace(/\D/g,'').slice(-9).padStart(9,'5')}`
+                  if(onCall){ onCall(m, phone) } else { window.open(`tel:${phone}`) }
+                }}>Call</Button>
               </div>
             </div>
           </div>
@@ -27,3 +31,5 @@ export default function MechanicList({ mechanics = [] }){
     </div>
   )
 }
+
+export default memo(MechanicList)

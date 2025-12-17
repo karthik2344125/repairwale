@@ -1,9 +1,10 @@
-// Copy this file to src/firebaseConfig.js and replace the placeholders with your Firebase project config.
+// Firebase configuration for RepairWale
+// Replace with your actual Firebase project credentials from Firebase Console
 export default {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBXKvL9h8Jx6Q2FmN3pRtY4wZ5cD7eU8fG",
+  authDomain: "repairwale-demo.firebaseapp.com",
+  projectId: "repairwale-demo",
+  storageBucket: "repairwale-demo.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abc123def456ghi789jkl"
 };

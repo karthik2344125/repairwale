@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build client",
+			"type": "shell",
+			"command": "cd \"C:\\Users\\Lenovo\\Desktop\\CAPSTONE\\repairwale\\client\"; npm run build"
+		}
+	]
+}

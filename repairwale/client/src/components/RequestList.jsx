@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { memo } from 'react'
 
-export default function RequestList({ requests = [], onSelect }){
+function RequestList({ requests = [], onSelect }){
   return (
     <div style={{ marginTop: 12 }}>
       <h3 style={{ marginTop: 0 }}>Requests</h3>
@@ -20,3 +20,5 @@ export default function RequestList({ requests = [], onSelect }){
     </div>
   )
 }
+
+export default memo(RequestList)

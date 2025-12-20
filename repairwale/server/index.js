@@ -121,10 +121,15 @@ app.post('/api/request', (req, res) => {
 // Simple health
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-// Socket.io for chat and simple presence
-io.on('connection', (socket) => {
-  console.log('socket connected', socket.id);
+// In-memory storage for chat and tracking
+const chatHistory = {}; // { orderId: [messages] }
+const mechanicLocations = {}; // { orderId: { lat, lng, timestamp } }
 
+// Socket.io for real-time chat, GPS tracking, and presence
+io.on('connection', (socket) => {
+  console.log('✅ Socket connected:', socket.id);
+
+  // Legacy chat support
   socket.on('join', (room) => {
     socket.join(room);
     console.log(`${socket.id} joined ${room}`);
@@ -135,14 +140,97 @@ io.on('connection', (socket) => {
   });
 
   socket.on('message', (payload) => {
-    // payload: { room, from, text }
     if (payload && payload.room) {
       io.to(payload.room).emit('message', { from: payload.from, text: payload.text, ts: Date.now() });
     }
   });
 
+  // Real-time chat for orders
+  socket.on('join-chat', ({ orderId, userRole, userName }) => {
+    const room = `chat:${orderId}`;
+    socket.join(room);
+    console.log(`💬 ${userName} (${userRole}) joined chat for order ${orderId}`);
+    
+    // Send chat history
+    if (chatHistory[orderId]) {
+      socket.emit('chat-history', chatHistory[orderId]);
+    }
+  });
+
+  socket.on('send-message', (message) => {
+    const room = `chat:${message.orderId}`;
+    
+    // Store message
+    if (!chatHistory[message.orderId]) {
+      chatHistory[message.orderId] = [];
+    }
+    chatHistory[message.orderId].push(message);
+    
+    // Broadcast to all in room
+    io.to(room).emit('chat-message', message);
+    console.log(`💬 Message sent in order ${message.orderId}:`, message.text.substring(0, 30));
+  });
+
+  socket.on('typing', ({ orderId, userName }) => {
+    const room = `chat:${orderId}`;
+    socket.to(room).emit('user-typing', { userName });
+  });
+
+  socket.on('leave-chat', ({ orderId }) => {
+    const room = `chat:${orderId}`;
+    socket.leave(room);
+  });
+
+  // Live GPS tracking
+  socket.on('track-mechanic', ({ orderId, mechanicId }) => {
+    const room = `gps:${orderId}`;
+    socket.join(room);
+    console.log(`📍 Started GPS tracking for order ${orderId}`);
+    
+    // Simulate mechanic location updates (in production, this would come from mechanic's app)
+    const interval = setInterval(() => {
+      const baseLocation = mechanicLocations[orderId] || { 
+        lat: 28.6139 + (Math.random() - 0.5) * 0.1, 
+        lng: 77.2090 + (Math.random() - 0.5) * 0.1 
+      };
+      
+      // Simulate movement towards customer
+      const location = {
+        lat: baseLocation.lat + (Math.random() - 0.5) * 0.001,
+        lng: baseLocation.lng + (Math.random() - 0.5) * 0.001
+      };
+      
+      mechanicLocations[orderId] = location;
+      
+      // Calculate mock distance and ETA
+      const distance = (Math.random() * 5 + 0.5).toFixed(1); // 0.5-5.5 km
+      const eta = `${Math.round(distance * 1.5)} min`;
+      
+      io.to(room).emit('mechanic-location-update', {
+        location,
+        distance: parseFloat(distance),
+        eta,
+        timestamp: Date.now()
+      });
+    }, 5000); // Update every 5 seconds
+    
+    socket.on('stop-tracking', () => {
+      clearInterval(interval);
+    });
+  });
+
+  socket.on('update-mechanic-location', ({ orderId, location }) => {
+    // Mechanic app sends real location
+    mechanicLocations[orderId] = location;
+    const room = `gps:${orderId}`;
+    io.to(room).emit('mechanic-location-update', {
+      location,
+      timestamp: Date.now()
+    });
+  });
+
   socket.on('disconnect', () => {
-    console.log('socket disconnect', socket.id);
+    console.log('❌ Socket disconnected:', socket.id);
   });
 });
 

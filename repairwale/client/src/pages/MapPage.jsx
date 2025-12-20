@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import MapView from '../components/MapViewNew'
 import { showSuccess } from '../services/toast'
 import MechanicList from '../components/MechanicList'
 import RequestList from '../components/RequestList'
+import RealTimeChat from '../components/RealTimeChat'
+import SimpleMapTracker from '../components/SimpleMapTracker'
 import { db, hasFirebase } from '../firebase'
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
 import Button from '../components/Button'
@@ -20,6 +21,8 @@ export default function MapPage(){
   const [sortBy, setSortBy] = useState('distance') // distance | rating
   const [liveRefresh, setLiveRefresh] = useState(true)
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [selectedMechanic, setSelectedMechanic] = useState(null)
+  const [showChat, setShowChat] = useState(false)
 
   useEffect(() => {
     fetch('/api/mechanics').then(r => r.json()).then(setMechanics).catch(console.warn)
@@ -168,57 +171,30 @@ export default function MapPage(){
           <div className="card">
             <div className="card-header">
               <div>
-                <h3 className="card-title">Live Location Map</h3>
-                <p className="card-subtitle">Click markers to request service instantly</p>
+                <h3 className="card-title">�️ Nearby Mechanics Map</h3>
+                <p className="card-subtitle">Real-time live tracking with Socket.io</p>
               </div>
               <div className="flex gap-8">
-                <Button variant={filter==='all'?'primary':'ghost'} size="sm" onClick={()=>setFilter('all')}>All</Button>
-                <Button variant={filter==='top'?'primary':'ghost'} size="sm" onClick={()=>setFilter('top')}>Top Rated</Button>
-              </div>
-            </div>
-
-            <div className="flex-between mb-16">
-              <div className="flex gap-8">
-                <label className="muted flex gap-8" style={{alignItems:'center'}}>
-                  <input type="checkbox" checked={useDemo} onChange={(e)=>setUseDemo(e.target.checked)} /> Demo Mode
+                <label className="muted flex gap-8" style={{alignItems:'center',fontSize:13}}>
+                  Radius:
+                  <select value={radiusKm} onChange={(e)=>setRadiusKm(Number(e.target.value))} style={{width:'auto',padding:'4px 8px',fontSize:12,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:6}}>
+                    <option value={5}>5 km</option>
+                    <option value={10}>10 km</option>
+                    <option value={20}>20 km</option>
+                  </select>
                 </label>
-                <Button variant={liveRefresh ? 'primary' : 'ghost'} size="sm" onClick={()=> setLiveRefresh(v=>!v)}>
-                  {liveRefresh ? '🔴 Live' : '⚪ Paused'}
-                </Button>
-              </div>
-              <div className="flex gap-8" style={{alignItems:'center'}}>
-                <label className="muted" style={{fontSize:13}}>Radius:</label>
-                <select className="form-select" value={radiusKm} onChange={(e)=>setRadiusKm(Number(e.target.value))} style={{width:'auto',padding:'6px 12px',fontSize:13}}>
-                  <option value={5}>5 km</option>
-                  <option value={10}>10 km</option>
-                  <option value={20}>20 km</option>
-                  <option value={50}>50 km</option>
-                </select>
               </div>
             </div>
 
-            <MapView 
-              mechanics={filteredMechanics} 
-              initialCenter={userLoc || undefined} 
-              userLoc={userLoc || undefined} 
-              radiusKm={radiusKm} 
-              onRequest={(p,c)=>{ 
-                try {
-                  const raw = localStorage.getItem('rw_requests')
-                  const arr = raw ? JSON.parse(raw) : []
-                  arr.unshift({ id: `REQ-${Date.now()}`, title: p, loc: c, status: 'pending', createdAt: Date.now() })
-                  localStorage.setItem('rw_requests', JSON.stringify(arr))
-                  showSuccess('Request placed for selected location')
-                } catch {}
-              }} 
+            <SimpleMapTracker 
+              mechanics={filteredMechanics}
+              userLoc={userLoc}
+              radiusKm={radiusKm}
+              onSelectMechanic={(mechanic) => {
+                setSelectedMechanic(mechanic)
+                setShowChat(true)
+              }}
             />
-
-            <div style={{marginTop:16,padding:12,background:'rgba(30,58,138,0.05)',borderRadius:10,fontSize:12,color:'var(--muted)',display:'flex',flexWrap:'wrap',gap:16}}>
-              <span>🔵 Your location</span>
-              <span>⭕ Search radius</span>
-              <span>📍 Available mechanics</span>
-              {lastUpdate && <span>⏱️ Updated {lastUpdate.toLocaleTimeString()}</span>}
-            </div>
           </div>
         </div>
 
@@ -252,6 +228,11 @@ export default function MapPage(){
                   showSuccess(`Calling ${m.name} at ${phone}`)
                   window.open(`tel:${phone}`)
                 }}
+                onChat={(m)=>{
+                  setSelectedMechanic(m)
+                  setShowChat(true)
+                  showSuccess(`Opening chat with ${m.name}`)
+                }}
               />
             </div>
           </div>
@@ -272,6 +253,15 @@ export default function MapPage(){
         <Button variant="ghost" onClick={()=> navigate('/customer-dashboard')}>← Back to Dashboard</Button>
         <Button variant="primary" onClick={()=> navigate('/service')}>Browse Services →</Button>
       </div>
+
+      {/* Real-Time Chat (shows when mechanic selected) */}
+      {showChat && selectedMechanic && (
+        <RealTimeChat 
+          orderId={`instant-${selectedMechanic.id}`}
+          userRole="customer"
+          mechanicName={selectedMechanic.name}
+        />
+      )}
     </div>
   )
 }

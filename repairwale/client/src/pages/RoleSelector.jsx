@@ -9,13 +9,10 @@ export default function RoleSelector() {
   const [isSignup, setIsSignup] = useState(false)
   const [loginForm, setLoginForm] = useState({ email: '', password: '', name: '' })
 
-  // If already authed, do not allow going back to main page
+  // Optional: Check if user is already authenticated
   React.useEffect(() => {
-    const authed = sessionStorage.getItem('userAuth')
-    const role = sessionStorage.getItem('userRole')
-    if(authed && role){
-      navigate(`/${role}-dashboard`, { replace: true })
-    }
+    // Allow users to logout and return to role selector by clearing session
+    // No automatic redirect - user controls navigation
   }, [navigate])
 
   const handleLogin = () => {

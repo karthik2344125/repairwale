@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import RealTimeChat from '../components/RealTimeChat'
+import LiveGPSTracker from '../components/LiveGPSTracker'
 
 function formatTime(date) {
   if (!date) return '--:--'
@@ -423,6 +425,7 @@ export default function ServiceTracking() {
           ← Back to Orders
         </button>
         <button
+          onClick={loadOrder}
           style={{
             padding: '12px',
             borderRadius: 8,
@@ -438,6 +441,21 @@ export default function ServiceTracking() {
           🔄 Refresh Tracking
         </button>
       </div>
+
+      {/* Live GPS Tracker */}
+      <div style={{ marginBottom: 20 }}>
+        <LiveGPSTracker 
+          orderId={orderId} 
+          mechanicId={order.mechanicId || 'm1'}
+        />
+      </div>
+
+      {/* Real-Time Chat */}
+      <RealTimeChat 
+        orderId={orderId}
+        userRole="customer"
+        mechanicName={order.mechanicName || 'Assigned Mechanic'}
+      />
     </div>
   )
 }

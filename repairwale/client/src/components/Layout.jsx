@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import Toast from './Toast'
 import { addToastListener } from '../services/toast'
 
@@ -7,6 +7,13 @@ export default function Layout({ children }){
   const [cartCount, setCartCount] = useState(0)
   const [userRole, setUserRole] = useState(null)
   const [toasts, setToasts] = useState([])
+  const navigate = useNavigate()
+  
+  const handleLogout = () => {
+    sessionStorage.clear()
+    setUserRole(null)
+    navigate('/', { replace: true })
+  }
   
   const computeCount = useCallback((arr) => {
     if(!Array.isArray(arr)) return 0
@@ -82,6 +89,7 @@ export default function Layout({ children }){
               <>
                 <NavLink to="/" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>Home</NavLink>
                 <NavLink to="/service" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>Services</NavLink>
+                <NavLink to="/map" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>Find Mechanic</NavLink>
               </>
             )}
             
@@ -115,6 +123,10 @@ export default function Layout({ children }){
                 <NavLink to="/garage-dashboard" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>🏢 Garage Hub</NavLink>
                 <NavLink to="/user" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>⚙️ Settings</NavLink>
               </>
+            )}
+            
+            {userRole && (
+              <button onClick={handleLogout} className="navlink" style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-secondary)'}}>🚪 Logout</button>
             )}
           </nav>
 

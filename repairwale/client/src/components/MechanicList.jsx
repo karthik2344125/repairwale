@@ -2,7 +2,7 @@ import React, { memo } from 'react'
 import Button from './Button'
 import { IconMapPin } from '../icons'
 
-function MechanicList({ mechanics = [], onCall, onRequest }){
+function MechanicList({ mechanics = [], onCall, onRequest, onChat }){
   return (
     <div>
       <h3 style={{ marginTop: 0 }}>Mechanics Nearby</h3>
@@ -19,6 +19,11 @@ function MechanicList({ mechanics = [], onCall, onRequest }){
               </div>
               <div className="mechanicActions">
                 <Button variant="ghost" size="sm" onClick={() => onRequest && onRequest(m)}>Request</Button>
+                {onChat && (
+                  <Button variant="ghost" size="sm" onClick={() => onChat(m)} style={{background:'rgba(59,130,246,0.1)',color:'#3b82f6'}}>
+                    💬
+                  </Button>
+                )}
                 <Button variant="primary" size="sm" onClick={() => {
                   const phone = m.phone || `9${String(m.id).replace(/\D/g,'').slice(-9).padStart(9,'5')}`
                   if(onCall){ onCall(m, phone) } else { window.open(`tel:${phone}`) }

@@ -5,6 +5,32 @@
 			"label": "Build client",
 			"type": "shell",
 			"command": "cd \"C:\\Users\\Lenovo\\Desktop\\CAPSTONE\\repairwale\\client\"; npm run build"
+		},
+		{
+			"label": "Rebuild client dist",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"cd c:\\Users\\Lenovo\\Desktop\\CAPSTONE\\repairwale\\client; npm run build"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild client dist",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"cd c:\\Users\\Lenovo\\Desktop\\CAPSTONE\\repairwale\\client; npm run build"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }

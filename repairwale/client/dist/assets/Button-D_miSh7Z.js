@@ -1,0 +1,1 @@
+import{R as u,j as e}from"./index-BgBzfigI.js";const f=u.memo(function({children:s,variant:n="primary",size:t="md",full:o=!1,className:m="",...a}){const l=t==="sm"?"btn-sm":t==="lg"?"btn-lg":"",r=o?"btn-full":"";return e.jsx("button",{className:`btn btn-${n} ${l} ${r} ${m}`.trim(),...a,children:s})});export{f as B};

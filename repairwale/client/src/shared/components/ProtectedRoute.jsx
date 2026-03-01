@@ -2,6 +2,12 @@ import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+function getHomeRouteByRole(role) {
+  if (role === 'mechanic') return '/mechanic/dashboard'
+  if (role === 'customer') return '/customer'
+  return '/role-selection'
+}
+
 export function ProtectedRoute({ children, requireRole = null, allowWithoutRole = false }) {
   const { isAuthenticated, role, loading } = useAuth()
   // Fallback to localStorage if context role hasn't updated yet
@@ -32,9 +38,9 @@ export function ProtectedRoute({ children, requireRole = null, allowWithoutRole 
     )
   }
 
-  // Not authenticated - redirect to login
+  // Not authenticated - redirect to role selection first
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/role-selection" replace />
   }
 
   // Authenticated but no role - redirect to role selection (except when allowWithoutRole is true)
@@ -44,20 +50,25 @@ export function ProtectedRoute({ children, requireRole = null, allowWithoutRole 
 
   // Check if specific role is required
   if (requireRole && effectiveRole !== requireRole) {
-    return <Navigate to="/service" replace />
+    return <Navigate to={getHomeRouteByRole(effectiveRole)} replace />
   }
 
   return children
 }
 
-export function PublicRoute({ children }) {
+export function PublicRoute({ children, requireRoleSelection = false }) {
   const { isAuthenticated, role } = useAuth()
   // Fallback to localStorage if context role hasn't updated yet
   const effectiveRole = role || localStorage.getItem('rw_role_locked')
 
+  // If route requires role to be selected first (e.g., login), enforce it
+  if (!isAuthenticated && requireRoleSelection && !effectiveRole) {
+    return <Navigate to="/role-selection" replace />
+  }
+
   // Already logged in AND role selected - go to service home
   if (isAuthenticated && effectiveRole) {
-    return <Navigate to="/service" replace />
+    return <Navigate to={getHomeRouteByRole(effectiveRole)} replace />
   }
 
   // Logged in but no role - allow to access login/role-selection (shouldn't happen but safety check)

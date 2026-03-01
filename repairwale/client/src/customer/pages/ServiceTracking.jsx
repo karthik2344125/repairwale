@@ -98,193 +98,827 @@ export default function ServiceTracking() {
     }
   ]
 
-  return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '12px 8px' }}>
-      <h2 style={{ marginTop: 0, fontWeight: 900, letterSpacing: '-0.5px' }}>Service Tracking</h2>
+  const premiumStyles = `
+    /* ===== TRACKING PREMIUM THEME ===== */
+    
+    /* Container */
+    .tracking-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0;
+      background: linear-gradient(180deg, #0b1220 0%, #0f1728 50%, #0d1422 100%);
+      min-height: 100vh;
+      position: relative;
+    }
 
-      {/* Order Header */}
-      <div style={{
-        padding: 16,
-        borderRadius: 12,
-        background: 'rgba(96,165,250,0.08)',
-        border: '1px solid rgba(96,165,250,0.2)',
-        marginBottom: 20
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Order #
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#60a5fa' }}>
-              {order.id.slice(-8).toUpperCase()}
-            </div>
+    /* ===== HERO SECTION ===== */
+    .tracking-hero {
+      background: linear-gradient(140deg, #101f3a 0%, #0d1728 46%, #0a1321 100%);
+      border-bottom: 1px solid rgba(96, 165, 250, 0.14);
+      box-shadow: 0 12px 28px rgba(8, 14, 24, 0.45), 0 0 60px rgba(59, 130, 246, 0.08);
+      padding: 44px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tracking-hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      right: -20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.24) 0%, rgba(96, 165, 250, 0) 72%);
+      filter: blur(18px);
+      animation: tracking-float 20s ease-in-out infinite;
+    }
+
+    .tracking-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -15%;
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.28) 0%, rgba(139, 92, 246, 0) 68%);
+      filter: blur(24px);
+      animation: tracking-float 22s ease-in-out infinite reverse;
+    }
+
+    .tracking-back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(96, 165, 250, 0.14);
+      background: rgba(96, 165, 250, 0.08);
+      color: #60a5fa;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .tracking-back-btn:hover {
+      background: rgba(96, 165, 250, 0.1);
+      border-color: rgba(96, 165, 250, 0.6);
+      transform: translateX(-2px);
+    }
+
+    .tracking-hero-content {
+      position: relative;
+      z-index: 2;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .tracking-title {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.8px;
+      color: #e6edf7;
+      margin: 0;
+      background: linear-gradient(135deg, #e6edf7 0%, #a5d6ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tracking-subtitle {
+      font-size: 14px;
+      color: rgba(166, 173, 186, 0.8);
+      margin: 8px 0 0 0;
+      font-weight: 500;
+    }
+
+    .tracking-header-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .tracking-header-item {
+      background: rgba(16, 32, 58, 0.4);
+      backdrop-filter: blur(12px);
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(96, 165, 250, 0.16);
+      transition: all 0.3s ease;
+    }
+
+    .tracking-header-item:hover {
+      border-color: rgba(96, 165, 250, 0.16);
+      background: rgba(16, 32, 58, 0.6);
+    }
+
+    .tracking-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(166, 173, 186, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .tracking-value {
+      font-size: 16px;
+      font-weight: 800;
+      color: #60a5fa;
+      letter-spacing: -0.3px;
+    }
+
+    .tracking-value-date {
+      font-size: 15px;
+      font-weight: 700;
+      color: #a5d6ff;
+    }
+
+    .tracking-value-amount {
+      font-size: 18px;
+      font-weight: 900;
+      color: #7dd3fc;
+      letter-spacing: -0.3px;
+    }
+
+    .tracking-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    /* ===== PROGRESS SECTION ===== */
+    .tracking-progress-section {
+      padding: 32px 24px;
+      position: relative;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #e6edf7;
+      margin: 0 0 16px 0;
+      letter-spacing: -0.4px;
+    }
+
+    .tracking-timeline {
+      display: grid;
+      gap: 24px;
+      margin-bottom: 32px;
+      background: rgba(16, 32, 58, 0.25);
+      backdrop-filter: blur(8px);
+      padding: 24px;
+      border-radius: 14px;
+      border: 1px solid rgba(96, 165, 250, 0.12);
+    }
+
+    .tracking-stage {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      position: relative;
+      animation: tracking-slide-up 0.6s var(--delay, 0s) ease-out both;
+    }
+
+    @keyframes tracking-slide-up {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tracking-stage:nth-child(1) { --delay: 0.1s; }
+    .tracking-stage:nth-child(2) { --delay: 0.2s; }
+    .tracking-stage:nth-child(3) { --delay: 0.3s; }
+
+    .tracking-completed .tracking-stage-circle {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #10b981;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    }
+
+    .tracking-current .tracking-stage-circle {
+      background: rgba(96, 165, 250, 0.1);
+      border-color: #60a5fa;
+      color: #60a5fa;
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
+      animation: tracking-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes tracking-pulse {
+      0%, 100% { box-shadow: 0 0 12px rgba(96, 165, 250, 0.18); }
+      50% { box-shadow: 0 0 16px rgba(96, 165, 250, 0.1); }
+    }
+
+    .tracking-next .tracking-stage-circle {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.16);
+      color: rgba(166, 173, 186, 0.6);
+    }
+
+    .tracking-stage-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      border: 2px solid;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s ease;
+    }
+
+    .tracking-stage-content {
+      flex: 1;
+      padding-top: 2px;
+    }
+
+    .tracking-stage-label {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      transition: color 0.3s ease;
+    }
+
+    .tracking-completed .tracking-stage-label {
+      color: #10b981;
+    }
+
+    .tracking-current .tracking-stage-label {
+      color: #60a5fa;
+    }
+
+    .tracking-next .tracking-stage-label {
+      color: rgba(166, 173, 186, 0.6);
+    }
+
+    .tracking-stage-desc {
+      font-size: 12px;
+      color: rgba(166, 173, 186, 0.7);
+      margin-top: 4px;
+    }
+
+    .tracking-connector {
+      position: absolute;
+      left: 21px;
+      top: 44px;
+      width: 2px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.1);
+      z-index: 1;
+    }
+
+    .tracking-connector-done {
+      background: linear-gradient(180deg, #10b981 0%, rgba(16, 185, 129, 0.3) 100%);
+    }
+
+    /* Metrics Cards */
+    .tracking-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+    }
+
+    .tracking-metric-card {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.04) 100%);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(96, 165, 250, 0.14);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .tracking-metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
+      transition: left 0.6s ease;
+    }
+
+    .tracking-metric-card:hover {
+      border-color: rgba(96, 165, 250, 0.16);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
+      box-shadow: 0 4px 16px rgba(96, 165, 250, 0.1);
+    }
+
+    .tracking-metric-card:hover::before {
+      left: 100%;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(166, 173, 186, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: #60a5fa;
+      letter-spacing: -0.3px;
+    }
+
+    /* ===== SERVICES SECTION ===== */
+    .tracking-services-section {
+      padding: 28px 24px;
+      background: rgba(16, 32, 58, 0.2);
+      border-top: 1px solid rgba(96, 165, 250, 0.08);
+      border-bottom: 1px solid rgba(96, 165, 250, 0.08);
+    }
+
+    .tracking-services-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .tracking-service-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: rgba(16, 32, 58, 0.3);
+      border-radius: 8px;
+      border: 1px solid rgba(96, 165, 250, 0.1);
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .tracking-service-item:hover {
+      border-color: rgba(96, 165, 250, 0.12);
+      background: rgba(16, 32, 58, 0.45);
+    }
+
+    .service-name {
+      color: #a5d6ff;
+      font-weight: 600;
+    }
+
+    .service-price {
+      color: #7dd3fc;
+      font-weight: 700;
+    }
+
+    /* ===== MECHANIC SECTION ===== */
+    .tracking-mechanic-section {
+      padding: 28px 24px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
+      border-top: 1px solid rgba(16, 185, 129, 0.12);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.08);
+    }
+
+    .tracking-mechanic-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .mechanic-info-item {
+      background: rgba(16, 185, 129, 0.08);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(16, 185, 129, 0.16);
+    }
+
+    .mechanic-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(16, 185, 129, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+
+    .mechanic-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: #10b981;
+    }
+
+    .mechanic-value-rating {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fbbf24;
+    }
+
+    .mechanic-contact-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mechanic-btn {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.08);
+      color: #10b981;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mechanic-btn:hover {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.5);
+      transform: translateY(-2px);
+    }
+
+    /* ===== UPDATES SECTION ===== */
+    .tracking-updates-section {
+      padding: 28px 24px;
+    }
+
+    .tracking-updates-list {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .tracking-update-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 10px;
+      background: rgba(96, 165, 250, 0.04);
+      border: 1px solid rgba(96, 165, 250, 0.12);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      animation: tracking-update-enter 0.5s ease-out backwards;
+    }
+
+    @keyframes tracking-update-enter {
+      from {
+        opacity: 0;
+        transform: translateX(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .tracking-update-card:nth-child(1) { animation-delay: 0.1s; }
+    .tracking-update-card:nth-child(2) { animation-delay: 0.2s; }
+    .tracking-update-card:nth-child(3) { animation-delay: 0.3s; }
+
+    .tracking-update-selected {
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
+      border-color: rgba(96, 165, 250, 0.16);
+      box-shadow: 0 4px 16px rgba(96, 165, 250, 0.1);
+    }
+
+    .update-icon {
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .update-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .update-message {
+      font-size: 13px;
+      font-weight: 700;
+      color: #a5d6ff;
+    }
+
+    .update-time {
+      font-size: 11px;
+      color: rgba(166, 173, 186, 0.6);
+      margin-top: 2px;
+    }
+
+    .tracking-live-indicator {
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(96, 165, 250, 0.08);
+      border: 1px dashed rgba(96, 165, 250, 0.24);
+      color: #60a5fa;
+      font-size: 12px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* ===== ACTION BUTTONS ===== */
+    .tracking-action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 24px;
+    }
+
+    .tracking-btn-primary {
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(96, 165, 250, 0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tracking-btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.2);
+      transition: left 0.5s ease;
+    }
+
+    .tracking-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(96, 165, 250, 0.14);
+    }
+
+    .tracking-btn-primary:hover::before {
+      left: 100%;
+    }
+
+    .tracking-btn-secondary {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(96, 165, 250, 0.18);
+      background: rgba(96, 165, 250, 0.08);
+      color: #60a5fa;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tracking-btn-secondary:hover {
+      background: rgba(96, 165, 250, 0.1);
+      border-color: rgba(96, 165, 250, 0.5);
+      transform: translateY(-2px);
+    }
+
+    /* ===== GPS & CHAT CONTAINERS ===== */
+    .tracking-gps-container,
+    .tracking-chat-container {
+      padding: 24px;
+      background: rgba(16, 32, 58, 0.2);
+      margin: 0;
+    }
+
+    .tracking-gps-container {
+      border-top: 1px solid rgba(96, 165, 250, 0.08);
+      border-bottom: 1px solid rgba(96, 165, 250, 0.08);
+    }
+
+    .tracking-chat-container {
+      border-top: 1px solid rgba(96, 165, 250, 0.08);
+      padding-bottom: 40px;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes tracking-float {
+      0%, 100% { transform: translate(0, 0); }
+      33% { transform: translate(20px, -10px); }
+      66% { transform: translate(-10px, 20px); }
+    }
+
+    /* ===== RESPONSIVE DESIGN ===== */
+    @media (max-width: 768px) {
+      .tracking-hero {
+        padding: 32px 16px;
+      }
+
+      .tracking-title {
+        font-size: 24px;
+      }
+
+      .tracking-header-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .tracking-back-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        margin-bottom: 20px;
+      }
+
+      .tracking-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .tracking-action-buttons {
+        padding: 16px;
+      }
+
+      .mechanic-contact-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .tracking-timeline {
+        padding: 16px;
+        gap: 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .tracking-container {
+        padding: 0;
+      }
+
+      .tracking-hero {
+        padding: 24px 12px;
+      }
+
+      .tracking-progress-section,
+      .tracking-services-section,
+      .tracking-mechanic-section,
+      .tracking-updates-section,
+      .tracking-action-buttons,
+      .tracking-gps-container,
+      .tracking-chat-container {
+        padding: 16px 12px;
+      }
+
+      .tracking-back-btn {
+        top: 12px;
+        left: 12px;
+        font-size: 11px;
+      }
+
+      .tracking-title {
+        font-size: 20px;
+      }
+
+      .tracking-subtitle {
+        font-size: 12px;
+      }
+
+      .tracking-header-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .section-title {
+        font-size: 16px;
+      }
+
+      .tracking-stage-circle {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+      }
+
+      .tracking-connector {
+        left: 17px;
+        height: 50px;
+        top: 36px;
+      }
+
+      .tracking-action-buttons {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .metric-value {
+        font-size: 16px;
+      }
+
+      .update-message {
+        font-size: 12px;
+      }
+    }
+  `
+
+  return (
+    <div className="tracking-container">
+      {/* Premium Hero Section */}
+      <div className="tracking-hero">
+        <button 
+          onClick={() => navigate('/orders')}
+          className="tracking-back-btn"
+        >
+          ← Back
+        </button>
+        
+        <div className="tracking-hero-content">
+          <h1 className="tracking-title">Tracking Your Service</h1>
+          <p className="tracking-subtitle">Real-time updates for order #{order.id?.slice(-8).toUpperCase()}</p>
+        </div>
+
+        <div className="tracking-header-grid">
+          <div className="tracking-header-item">
+            <div className="tracking-label">Order #</div>
+            <div className="tracking-value">{order.id?.slice(-8).toUpperCase()}</div>
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Status
-            </div>
-            <div style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: currentStage?.color,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
+          <div className="tracking-header-item">
+            <div className="tracking-label">Status</div>
+            <div className="tracking-status" style={{ color: currentStage?.color }}>
               <span>{currentStage?.icon}</span>
               {currentStage?.label}
             </div>
           </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Date
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>
-              {formatDate(order.date)}
-            </div>
+          <div className="tracking-header-item">
+            <div className="tracking-label">Date</div>
+            <div className="tracking-value-date">{formatDate(order.date)}</div>
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Total Amount
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#60a5fa' }}>
-              ₹{order.total?.toLocaleString('en-IN') || '0'}
-            </div>
+          <div className="tracking-header-item">
+            <div className="tracking-label">Total</div>
+            <div className="tracking-value-amount">₹{order.total?.toLocaleString('en-IN') || '0'}</div>
           </div>
         </div>
       </div>
 
       {/* Progress Timeline */}
-      <div style={{
-        padding: 20,
-        borderRadius: 12,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        marginBottom: 20
-      }}>
-        <h3 style={{ margin: '0 0 20px 0', fontSize: 16, fontWeight: 800 }}>Service Progress</h3>
+      <div className="tracking-progress-section">
+        <h2 className="section-title">Service Progress</h2>
 
         {/* Stages Timeline */}
-        <div style={{ display: 'grid', gap: 20, marginBottom: 24 }}>
+        <div className="tracking-timeline">
           {stages.map((stage, idx) => {
             const isCompleted = idx < currentStageIndex
             const isCurrent = idx === currentStageIndex
             const isNext = idx > currentStageIndex
 
             return (
-              <div key={stage.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                {/* Timeline Circle */}
-                <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  background: isCompleted ? '#10b98120' : isCurrent ? '#60a5fa20' : '#ffffff08',
-                  border: `2px solid ${isCompleted ? '#10b981' : isCurrent ? '#60a5fa' : '#ffffff20'}`,
-                  minWidth: 40,
-                  position: 'relative'
-                }}>
+              <div key={stage.id} className={`tracking-stage ${isCompleted ? 'tracking-completed' : isCurrent ? 'tracking-current' : 'tracking-next'}`}>
+                <div className="tracking-stage-circle">
                   {isCompleted ? '✓' : stage.icon}
                 </div>
-
-                {/* Stage Details */}
-                <div style={{ flex: 1, paddingTop: 4 }}>
-                  <div style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: isCompleted ? '#10b981' : isCurrent ? '#60a5fa' : 'var(--text-secondary)'
-                  }}>
-                    {stage.label}
-                  </div>
-                  <div style={{
-                    fontSize: 12,
-                    color: 'var(--text-secondary)',
-                    marginTop: 4
-                  }}>
+                <div className="tracking-stage-content">
+                  <div className="tracking-stage-label">{stage.label}</div>
+                  <div className="tracking-stage-desc">
                     {stage.id === 'pending' && 'Waiting for mechanic assignment'}
                     {stage.id === 'in_progress' && 'Mechanic is on the way or working on your service'}
                     {stage.id === 'completed' && 'Service finished and ready for pickup'}
                   </div>
                 </div>
-
-                {/* Connector Line */}
-                {idx < stages.length - 1 && (
-                  <div style={{
-                    position: 'absolute',
-                    left: 60,
-                    top: 40,
-                    width: 2,
-                    height: 60,
-                    background: isCompleted ? '#10b981' : '#ffffff10'
-                  }} />
-                )}
+                {idx < stages.length - 1 && <div className={`tracking-connector ${isCompleted ? 'tracking-connector-done' : ''}`} />}
               </div>
             )
           })}
         </div>
 
         {/* Key Metrics */}
-        <div style={{
-          padding: 16,
-          borderRadius: 10,
-          background: 'rgba(255,255,255,0.03)',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          gap: 12
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Est. Time
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>
-              {tracking?.estimatedTime || '45 mins'}
-            </div>
+        <div className="tracking-metrics">
+          <div className="tracking-metric-card">
+            <div className="metric-label">Est. Time</div>
+            <div className="metric-value">{tracking?.estimatedTime || '45 mins'}</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Distance
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>
-              {tracking?.distance || '8.5 km'}
-            </div>
+          <div className="tracking-metric-card">
+            <div className="metric-label">Distance</div>
+            <div className="metric-value">{tracking?.distance || '8.5 km'}</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              ETA
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#60a5fa' }}>
-              {tracking?.eta || '15:15'}
-            </div>
+          <div className="tracking-metric-card">
+            <div className="metric-label">ETA</div>
+            <div className="metric-value">{tracking?.eta || '15:15'}</div>
           </div>
         </div>
       </div>
 
       {/* Services Summary */}
-      <div style={{
-        padding: 16,
-        borderRadius: 12,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        marginBottom: 20
-      }}>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 800 }}>Services</h3>
-        <div style={{ display: 'grid', gap: 8 }}>
+      <div className="tracking-services-section">
+        <h2 className="section-title">Services</h2>
+        <div className="tracking-services-list">
           {order.items?.map((item, idx) => (
-            <div key={idx} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: 13,
-              paddingBottom: 8,
-              borderBottom: idx < order.items.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none'
-            }}>
-              <span>{item.title} × {item.qty}</span>
-              <strong>₹{(item.price * item.qty).toLocaleString('en-IN')}</strong>
+            <div key={idx} className="tracking-service-item">
+              <span className="service-name">{item.title} × {item.qty}</span>
+              <strong className="service-price">₹{(item.price * item.qty).toLocaleString('en-IN')}</strong>
             </div>
           ))}
         </div>
@@ -292,158 +926,66 @@ export default function ServiceTracking() {
 
       {/* Mechanic Info */}
       {order.status !== 'pending' && (
-        <div style={{
-          padding: 16,
-          borderRadius: 12,
-          background: 'rgba(16,185,129,0.08)',
-          border: '1px solid rgba(16,185,129,0.2)',
-          marginBottom: 20
-        }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 800 }}>Assigned Mechanic</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                Name
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>
-                Priya Sharma
-              </div>
+        <div className="tracking-mechanic-section">
+          <h2 className="section-title">Assigned Mechanic</h2>
+          <div className="tracking-mechanic-grid">
+            <div className="mechanic-info-item">
+              <div className="mechanic-label">Name</div>
+              <div className="mechanic-value">Priya Sharma</div>
             </div>
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                Rating
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fbbf24' }}>
-                ⭐ 4.8 (245 reviews)
-              </div>
+            <div className="mechanic-info-item">
+              <div className="mechanic-label">Rating</div>
+              <div className="mechanic-value-rating">⭐ 4.8 (245 reviews)</div>
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                Contact
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: 'transparent',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 13
-                }}>
-                  📞 Call
-                </button>
-                <button style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: 'transparent',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 13
-                }}>
-                  💬 Chat
-                </button>
-              </div>
+            <div className="mechanic-contact-buttons">
+              <button className="mechanic-btn mechanic-btn-call">📞 Call</button>
+              <button className="mechanic-btn mechanic-btn-chat">💬 Chat</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Status Updates */}
-      <div style={{
-        padding: 16,
-        borderRadius: 12,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        marginBottom: 20
-      }}>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 800 }}>Status Updates</h3>
-        <div style={{ display: 'grid', gap: 12 }}>
+      <div className="tracking-updates-section">
+        <h2 className="section-title">Status Updates</h2>
+        <div className="tracking-updates-list">
           {statusUpdates.map((update, idx) => (
             <div
               key={idx}
               onClick={() => setSelectedUpdate(selectedUpdate === idx ? null : idx)}
-              style={{
-                padding: 12,
-                borderRadius: 8,
-                background: selectedUpdate === idx ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${selectedUpdate === idx ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
+              className={`tracking-update-card ${selectedUpdate === idx ? 'tracking-update-selected' : ''}`}
             >
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span style={{ fontSize: 20 }}>{update.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>
-                    {update.message}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                    {update.time}
-                  </div>
-                </div>
+              <div className="update-icon">{update.icon}</div>
+              <div className="update-content">
+                <div className="update-message">{update.message}</div>
+                <div className="update-time">{update.time}</div>
               </div>
             </div>
           ))}
         </div>
-        <div style={{
-          marginTop: 12,
-          padding: 12,
-          borderRadius: 8,
-          background: 'rgba(96,165,250,0.1)',
-          border: '1px dashed rgba(96,165,250,0.3)',
-          color: '#60a5fa',
-          fontSize: 12,
-          textAlign: 'center',
-          fontWeight: 600
-        }}>
+        <div className="tracking-live-indicator">
           🔄 Live updates - Refreshes every 5 seconds
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+      <div className="tracking-action-buttons">
         <button
           onClick={() => navigate('/orders')}
-          style={{
-            padding: '12px',
-            borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.12)',
-            background: 'transparent',
-            color: '#fff',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: 14,
-            transition: 'all 0.2s'
-          }}
+          className="tracking-btn-secondary"
         >
           ← Back to Orders
         </button>
         <button
           onClick={loadOrder}
-          style={{
-            padding: '12px',
-            borderRadius: 8,
-            border: 'none',
-            background: '#60a5fa',
-            color: '#fff',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: 14,
-            transition: 'all 0.2s'
-          }}
+          className="tracking-btn-primary"
         >
           🔄 Refresh Tracking
         </button>
       </div>
 
       {/* Live GPS Tracker */}
-      <div style={{ marginBottom: 20 }}>
+      <div className="tracking-gps-container">
         <LiveGPSTracker 
           orderId={orderId} 
           mechanicId={order.mechanicId || 'm1'}
@@ -451,11 +993,15 @@ export default function ServiceTracking() {
       </div>
 
       {/* Real-Time Chat */}
-      <RealTimeChat 
-        orderId={orderId}
-        userRole="customer"
-        mechanicName={order.mechanicName || 'Assigned Mechanic'}
-      />
+      <div className="tracking-chat-container">
+        <RealTimeChat 
+          orderId={orderId}
+          userRole="customer"
+          mechanicName={order.mechanicName || 'Assigned Mechanic'}
+        />
+      </div>
+
+      <style>{premiumStyles}</style>
     </div>
   )
 }

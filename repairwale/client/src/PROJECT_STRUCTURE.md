@@ -1,176 +1,155 @@
-# RepairWale - Role-Based Project Structure
-
-## 📁 New Folder Organization
-
-The project is now organized by roles for better maintainability and scalability.
+# 🏗️ RepairWale Project Structure
+## Complete & Organized File Structure (Feb 2026)
 
 ```
-src/
-├── shared/                     # Shared across all roles
-│   ├── components/             # Reusable UI components
-│   │   ├── Button.jsx
-│   │   ├── Toast.jsx  
-│   │   ├── Layout.jsx
-│   │   ├── ProtectedRoute.jsx
-│   │   ├── AISupport.jsx
-│   │   ├── Chat.jsx
-│   │   ├── RealTimeChat.jsx
-│   │   └── Reviews.jsx
-│   ├── pages/                  # Pages used by multiple roles
-│   │   ├── Login.jsx
-│   │   ├── RoleSelectionPage.jsx
-│   │   ├── Service.jsx         # Service browse/dashboard
-│   │   ├── MapPage.jsx         # Map view (different per role)
-│   │   ├── UserPage.jsx        # Profile management
-│   │   └── TermsAndConditions.jsx
-│   ├── context/                # React Context providers
-│   │   └── AuthContext.jsx
-│   └── services/               # Business logic & API calls
-│       ├── api.js
-│       ├── apiConfig.js
-│       ├── cart.js
-│       ├── favorites.js
-│       ├── profile.js
-│       ├── roleData.js
-│       ├── theme.js
-│       └── toast.js
+repairwale/client/src/
+├── 📁 customer/                    # Customer-specific features
+│   ├── 📁 components/
+│   │   └── LiveGPSTracker.jsx     # Real-time GPS tracking component
+│   └── 📁 pages/
+│       ├── Checkout.jsx            # Payment & checkout flow
+│       ├── CustomerHome.jsx        # Customer dashboard/landing
+│       ├── CustomerProfile.jsx     # Customer profile management ✨ PREMIUM
+│       ├── Favorites.jsx           # Saved/favorited services
+│       ├── OnboardingCustomer.jsx  # Customer onboarding wizard
+│       ├── OrderHistory.jsx        # Past orders & tracking
+│       └── ServiceTracking.jsx     # Live service tracking page
 │
-├── customer/                   # Customer-specific features
-│   ├── pages/
-│   │   ├── CustomerHome.jsx    # Customer dashboard
-│   │   ├── Checkout.jsx        # Service checkout
-│   │   ├── Favorites.jsx       # Saved mechanics/services
-│   │   ├── OrderHistory.jsx    # Past orders
-│   │   ├── ServiceTracking.jsx # Live order tracking
-│   │   └── OnboardingCustomer.jsx
-│   └── components/             # Customer-only components
-│       ├── MechanicList.jsx    # List of mechanics
-│       ├── SimpleMapView.jsx   # Map display component
-│       ├── SimpleMapTracker.jsx
-│       └── LiveGPSTracker.jsx  # Real-time GPS tracking
+├── 📁 mechanic/                    # Mechanic-specific features
+│   ├── 📁 components/              # (Empty - ready for future components)
+│   └── 📁 pages/
+│       ├── MechanicHome.jsx        # Mechanic dashboard ✨ PREMIUM
+│       ├── MechanicProfile.jsx     # Mechanic profile & settings ✨ PREMIUM
+│       └── MechanicServices.jsx    # Service pricing management ✨ PREMIUM
 │
-├── mechanic/                   # Mechanic-specific features
-│   ├── pages/                  # (Create mechanic pages here)
-│   └── components/             # Mechanic-only components
-│       ├── RequestList.jsx     # Incoming service requests
-│       ├── RequestDetails.jsx  # Request info display
-│       └── RequestForm.jsx     # Create/edit requests
+├── 📁 shared/                      # Shared across all users
+│   ├── 📁 components/
+│   │   ├── AISupport.jsx          # AI chatbot support
+│   │   ├── Button.jsx             # Reusable button component
+│   │   ├── Chat.jsx               # Real-time messaging
+│   │   ├── Layout.jsx             # App layout wrapper
+│   │   ├── MechanicsMap.jsx       # Map view for mechanics
+│   │   ├── ProtectedRoute.jsx     # Route authentication wrapper
+│   │   ├── RealTimeChat.jsx       # Enhanced chat component
+│   │   └── Reviews.jsx            # Reviews & ratings system
+│   │
+│   ├── 📁 context/
+│   │   └── AuthContext.jsx        # Global authentication state
+│   │
+│   ├── 📁 pages/
+│   │   ├── Login.jsx              # Login/Signup page
+│   │   ├── MechanicsMapPage.jsx   # Main map page for finding mechanics
+│   │   ├── RoleSelectionPage.jsx  # Choose Customer/Mechanic role
+│   │   ├── Service.jsx            # Browse services catalog
+│   │   └── TermsAndConditions.jsx # Legal T&C page
+│   │
+│   └── 📁 services/
+│       ├── api.js                 # API utilities
+│       ├── apiConfig.js           # API configuration
+│       ├── cart.js                # Shopping cart logic
+│       ├── favorites.js           # Favorites management
+│       ├── profile.js             # Profile data handling
+│       ├── roleData.js            # Role-specific data (mechanic/customer)
+│       ├── theme.js               # Theme management
+│       └── toast.js               # Toast notifications
 │
-├── App.jsx                     # Main app entry with routing
-├── App.css                     # Global styles
-├── main.jsx                    # React DOM renderer
-├── firebase.js                 # Firebase configuration
-├── firebaseConfig.js
-└── icons.jsx                   # Icon components
+├── App.css                         # Global styles
+├── App.jsx                         # Main app component & routing
+├── firebase.js                     # Firebase SDK initialization
+├── firebaseConfig.js               # Firebase configuration
+├── icons.jsx                       # Icon components
+├── main.jsx                        # App entry point
+└── PROJECT_STRUCTURE.md            # This file
 ```
 
-## 🎯 Import Path Rules
+---
 
-### From `shared/` files:
-```jsx
-// Same folder
-import Button from './Button'
+## 🎨 Premium Theme Applied
 
-// Other shared folders
-import { useAuth } from '../context/AuthContext'
-import { showSuccess } from '../services/toast'
+The following pages have the **premium dark theme** with:
+- Background: `#0B1220` (Deep midnight navy)
+- Accent: `#4A9EFF` (Bright blue highlights)
+- Gradient effects & smooth animations
+- Enhanced hover states & shadows
 
-// Root level
-import { icons } from '../../icons'
-import { db } from '../../firebase'
-```
+**Premium Pages:**
+- ✨ CustomerProfile
+- ✨ MechanicHome
+- ✨ MechanicProfile
+- ✨ MechanicServices
 
-### From `customer/` files:
-```jsx
-// Customer components
-import MechanicList from '../components/MechanicList'
+---
 
-// Shared components/services
-import Button from '../../shared/components/Button'
-import { useAuth } from '../../shared/context/AuthContext'
-import { showSuccess } from '../../shared/services/toast'
-```
+## 🔄 Routing Structure
 
-### From `mechanic/` files:
-```jsx
-// Mechanic components
-import RequestList from '../components/RequestList'
+### Public Routes (No Auth Required)
+- `/role-selection` - Choose user type
+- `/login` - Authentication page
+- `/terms` - Terms & Conditions
 
-// Shared components/services
-import Button from '../../shared/components/Button'
-import { useAuth } from '../../shared/context/AuthContext'
-```
+### Protected Routes (Auth Required)
 
-### From `App.jsx` (root):
-```jsx
-import { AuthProvider } from './shared/context/AuthContext'
-import Layout from './shared/components/Layout'
-import Login from './shared/pages/Login'
-import Checkout from './customer/pages/Checkout'
-```
+**Customer Routes:**
+- `/customer` - Customer home dashboard
+- `/customer/profile` - Profile management
+- `/service` - Browse services
+- `/map` - Find mechanics on map
+- `/favorites` - Saved services
+- `/checkout` - Payment flow
+- `/orders` - Order history
+- `/tracking/:orderId` - Track active service
 
-## 🔄 How Files are Interconnected
+**Mechanic Routes:**
+- `/mechanic/dashboard` - Mechanic home dashboard
+- `/mechanic/profile` - Profile & availability settings
+- `/mechanic/services` - Manage service pricing
 
-### Authentication Flow
-1. `App.jsx` wraps everything in `<AuthProvider>` from `shared/context/AuthContext`
-2. All pages use `useAuth()` hook to access user & role
-3. `ProtectedRoute` component guards role-specific pages
+**Onboarding:**
+- `/onboarding` - First-time user setup (auth required, no role needed yet)
 
-### Component Reusability
-- **Shared components** (`Button`, `Toast`, `Layout`) → Used by ALL roles
-- **Role-specific components** → Used only within that role or by `shared/pages`
+---
 
-### Data Flow
-```
-User Action → Component → Service (shared/services/) → API → Backend
-                ↓
-              Context (AuthContext) updates
-                ↓
-          Protected Routes re-evaluate
-                ↓
-            Navigate to correct page
-```
+## 📦 Key Dependencies
 
-## 🚀 Adding New Features
+- **React 18.2** - UI framework
+- **React Router 6** - Navigation
+- **Firebase** - Authentication & real-time features
+- **Vite** - Build tool & dev server
+- **Leaflet** - Maps (via MechanicsMap component)
 
-### For Customer Features:
-1. Create page in `customer/pages/`
-2. Create components in `customer/components/`
-3. Import shared services from `../../shared/services/`
-4. Add route in `App.jsx`
+---
 
-### For Mechanic Features:
-1. Create page in `mechanic/pages/`
-2. Create components in `mechanic/components/`
-3. Use `../../shared/` imports for shared functionality
-
-### For Shared Features:
-1. Add component to `shared/components/`
-2. Add service to `shared/services/`
-3. Can be imported by ANY role
-
-## 📦 Building & Running
+## 🚀 Development Commands
 
 ```bash
-# Development
-npm run dev
+# Start dev server (auto-refresh on save)
+npm run dev          # Frontend: http://localhost:5177
 
-# Production build
+# Build for production
 npm run build
 
 # Preview production build
 npm run preview
 ```
 
-## ✅ Benefits of This Structure
+---
 
-✨ **Clear Separation**: Each role has its own folder
-🔗 **Interconnected**: Shared components accessible to all
-📈 **Scalable**: Easy to add new roles or features
-🧪 **Testable**: Isolated components per role
-📝 **Maintainable**: Know exactly where to find code
-🎯 **Type Safety**: Import paths are explicit
+## ✅ Code Quality Status
+
+- ✅ No compilation errors
+- ✅ No duplicate files
+- ✅ All routes properly configured
+- ✅ Clean folder structure
+- ✅ All imports resolved correctly
+- ✅ Premium theme consistently applied
 
 ---
 
-**Last Updated**: February 19, 2026
+## 📝 Notes
+
+1. **Empty Folders:** `mechanic/components/` is empty but kept for future components
+2. **Obsolete Files Removed:** Old MapPage.jsx and EnhancedMap references cleaned up
+3. **Dev Server Running:** Frontend on port 5177, Backend on port 3001
+4. **Hot Reload:** Save any file and refresh browser to see changes instantly
+
+Last Updated: February 28, 2026

@@ -20,10 +20,23 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔧</text></svg>" />
-    <script type="module" crossorigin src="./assets/index-TLEbH3MQ.js"></script>
+    <script type="module" crossorigin src="./assets/index-BgBzfigI.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-DOIKTzFP.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
+    <script>
+      (function () {
+        const liveServerPorts = new Set(['5500', '5501', '5502', '5503'])
+        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        const isLiveServer = isLocalHost && liveServerPorts.has(window.location.port)
+        const isDistPage = /\/dist(\/|$)/.test(window.location.pathname)
+
+        if (isLiveServer && !isDistPage) {
+          const target = new URL('./dist/index.html', window.location.href)
+          window.location.replace(target.href)
+        }
+      })()
+    </script>
   </body>
 </html>

@@ -4,26 +4,29 @@ import { AuthProvider, useAuth } from './shared/context/AuthContext'
 import { initializeAPI } from './shared/services/apiConfig'
 import { ProtectedRoute, PublicRoute } from './shared/components/ProtectedRoute'
 import Layout from './shared/components/Layout'
+import Login from './shared/pages/Login'
+import RoleSelectionPage from './shared/pages/RoleSelectionPage'
+import PaymentTest from './PAYMENT_TEST'
 import './App.css'
 
 // Lazy load shared pages
-const Login = lazy(() => import('./shared/pages/Login'))
-const RoleSelectionPage = lazy(() => import('./shared/pages/RoleSelectionPage'))
-const MapPage = lazy(() => import('./shared/pages/MapPage'))
-const UserPage = lazy(() => import('./shared/pages/UserPage'))
+const MechanicsMapPage = lazy(() => import('./shared/pages/MechanicsMapPage'))
 const Service = lazy(() => import('./shared/pages/Service'))
 const TermsAndConditions = lazy(() => import('./shared/pages/TermsAndConditions'))
 
 // Lazy load customer pages
+const CustomerHome = lazy(() => import('./customer/pages/CustomerHome'))
 const OrderHistory = lazy(() => import('./customer/pages/OrderHistory'))
 const ServiceTracking = lazy(() => import('./customer/pages/ServiceTracking'))
 const Checkout = lazy(() => import('./customer/pages/Checkout'))
 const Favorites = lazy(() => import('./customer/pages/Favorites'))
 const OnboardingCustomer = lazy(() => import('./customer/pages/OnboardingCustomer'))
+const CustomerProfile = lazy(() => import('./customer/pages/CustomerProfile'))
 
 // Lazy load mechanic pages
 const MechanicHome = lazy(() => import('./mechanic/pages/MechanicHome'))
 const MechanicServices = lazy(() => import('./mechanic/pages/MechanicServices'))
+const MechanicProfile = lazy(() => import('./mechanic/pages/MechanicProfile'))
 
 const LoadingFallback = () => (
   <div style={{padding:'60px 20px',textAlign:'center',minHeight:'50vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -88,13 +91,20 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-function RoleRedirect(){
+function RoleBasedRedirect(){
   const { role, isAuthenticated } = useAuth()
   const effectiveRole = role || localStorage.getItem('rw_role_locked')
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />
+  // If not authenticated, send to role selection first
+  if (!isAuthenticated) return <Navigate to="/role-selection" replace />
+  
+  // If authenticated but no role, send to role selection
+  if (!effectiveRole) return <Navigate to="/role-selection" replace />
+  
+  // If authenticated with role, redirect based on role
   if (effectiveRole === 'mechanic') return <Navigate to="/mechanic/dashboard" replace />
-  if (effectiveRole === 'customer') return <Navigate to="/service" replace />
+  if (effectiveRole === 'customer') return <Navigate to="/customer" replace />
+  
   return <Navigate to="/role-selection" replace />
 }
 
@@ -109,14 +119,22 @@ export default function App(){
         <AuthProvider>
           <Suspense fallback={<LoadingFallback/>}>
             <Routes>
-              {/* Redirects - FIRST TO MATCH - ensures login is always the starting point */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="/signin" element={<Navigate to="/login" replace />} />
-              <Route path="/home" element={<RoleRedirect />} />
+              {/* Entry routes */}
+              <Route path="/" element={<RoleSelectionPage/>} />
+              <Route path="/signin" element={<Navigate to="/role-selection" replace />} />
+              <Route path="/home" element={<RoleBasedRedirect />} />
+              
+              {/* PAYMENT TEST - Standalone Demo */}
+              <Route path="/payment-test" element={<PaymentTest/>} />
               
               {/* Authentication Routes - NO LAYOUT */}
-              <Route path="/login" element={<PublicRoute><Login/></PublicRoute>} />
-              <Route path="/role-selection" element={<ProtectedRoute allowWithoutRole={true}><RoleSelectionPage/></ProtectedRoute>} />
+              {/* Step 1: Select role (no auth required) */}
+              <Route path="/role-selection" element={<RoleSelectionPage/>} />
+              
+              {/* Step 2: Login/Signup (requires role selection first) */}
+              <Route path="/login" element={<PublicRoute requireRoleSelection={true}><Login/></PublicRoute>} />
+              
+              {/* Step 3: Onboarding (after auth, before role-based workflow) */}
               <Route path="/onboarding" element={<ProtectedRoute allowWithoutRole={true}><OnboardingCustomer/></ProtectedRoute>} />
 
               {/* All other routes WITH LAYOUT */}
@@ -124,17 +142,21 @@ export default function App(){
                 <Layout>
                   <Routes>
                     {/* Core Features - Protected */}
-                    <Route path="/map" element={<ProtectedRoute><MapPage/></ProtectedRoute>} />
+                    <Route path="/map" element={<ProtectedRoute><MechanicsMapPage/></ProtectedRoute>} />
                     <Route path="/service" element={<ProtectedRoute><Service/></ProtectedRoute>} />
                     <Route path="/checkout" element={<ProtectedRoute><Checkout/></ProtectedRoute>} />
                     <Route path="/favorites" element={<ProtectedRoute><Favorites/></ProtectedRoute>} />
                     <Route path="/tracking/:orderId" element={<ProtectedRoute><ServiceTracking/></ProtectedRoute>} />
-                    <Route path="/user" element={<ProtectedRoute><UserPage/></ProtectedRoute>} />
                     <Route path="/orders" element={<ProtectedRoute><OrderHistory/></ProtectedRoute>} />
+                    
+                    {/* Customer Routes */}
+                    <Route path="/customer" element={<ProtectedRoute><CustomerHome/></ProtectedRoute>} />
+                    <Route path="/customer/profile" element={<ProtectedRoute><CustomerProfile/></ProtectedRoute>} />
                     
                     {/* Mechanic Routes */}
                     <Route path="/mechanic/dashboard" element={<ProtectedRoute><MechanicHome/></ProtectedRoute>} />
                     <Route path="/mechanic/services" element={<ProtectedRoute><MechanicServices/></ProtectedRoute>} />
+                    <Route path="/mechanic/profile" element={<ProtectedRoute><MechanicProfile/></ProtectedRoute>} />
                     
                     {/* Public Pages */}
                     <Route path="/terms" element={<TermsAndConditions/>} />

@@ -70,6 +70,47 @@ export default function OnboardingCustomer(){
           <Button variant="primary" onClick={save}>Save & Continue</Button>
         </div>
       </div>
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        body {
+          background: linear-gradient(180deg, #070b14 0%, #0b1220 100%) !important;
+        }
+
+        .svc-card {
+          background: linear-gradient(135deg, #0b1220 0%, #0f1d34 100%) !important;
+          border: 1px solid #243449 !important;
+          box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1) !important;
+          border-radius: 16px !important;
+          padding: 32px !important;
+        }
+
+        .svc-title {
+          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          font-weight: 800 !important;
+        }
+
+        .rw-input {
+          background: rgba(11, 18, 32, 0.8) !important;
+          border: 1px solid #243449 !important;
+          color: #e6edf7 !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .rw-input:focus {
+          border-color: #38bdf8 !important;
+          box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1) !important;
+          outline: none !important;
+        }
+
+        .rw-label {
+          color: #e6edf7 !important;
+          font-weight: 600 !important;
+        }
+      `}</style>
     </div>
   )
 }

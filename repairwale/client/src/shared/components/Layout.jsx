@@ -1,13 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import Toast from './Toast'
 import AISupport from './AISupport'
-import { addToastListener } from '../services/toast'
 
 export default function Layout({ children }){
   const [cartCount, setCartCount] = useState(0)
-  const [toasts, setToasts] = useState([])
   const navigate = useNavigate()
   const { completeLogout, role: userRole } = useAuth()
   const effectiveRole = userRole || localStorage.getItem('rw_role_locked')
@@ -33,23 +30,14 @@ export default function Layout({ children }){
   useEffect(() => {
     updateCartCount()
     
-    // Custom event listener for cart updates (better than polling)
+    // Custom event listener for cart updates
     const handleCartUpdate = () => updateCartCount()
     window.addEventListener('cartUpdated', handleCartUpdate)
     window.addEventListener('storage', handleCartUpdate)
     
-    // Setup toast listener
-    const removeToastListener = addToastListener(({ id, message, type, duration }) => {
-      setToasts(prev => [...prev, { id, message, type, duration }])
-      setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id))
-      }, duration)
-    })
-    
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate)
       window.removeEventListener('storage', handleCartUpdate)
-      removeToastListener()
     }
   }, [updateCartCount])
 
@@ -82,7 +70,7 @@ export default function Layout({ children }){
                 <NavLink to="/service" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>📋 Services</NavLink>
                 <NavLink to="/map" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>🗺️ Find Mechanics</NavLink>
                 <NavLink to="/orders" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>📦 My Orders</NavLink>
-                <NavLink to="/user" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>👤 My Profile</NavLink>
+                <NavLink to="/customer/profile" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>👤 My Profile</NavLink>
               </>
             )}
             
@@ -90,7 +78,7 @@ export default function Layout({ children }){
               <>
                 <NavLink to="/mechanic/dashboard" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>📊 Dashboard</NavLink>
                 <NavLink to="/mechanic/services" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>🧰 Services</NavLink>
-                <NavLink to="/user" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>👤 Profile</NavLink>
+                <NavLink to="/mechanic/profile" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>👤 Profile</NavLink>
               </>
             )}
             
@@ -115,17 +103,6 @@ export default function Layout({ children }){
           </div>
         </div>
       </footer>
-
-      {/* Toast notifications */}
-      {toasts.map(toast => (
-        <Toast 
-          key={toast.id} 
-          message={toast.message} 
-          type={toast.type} 
-          duration={toast.duration}
-          onClose={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-        />
-      ))}
 
       {/* AI Support Chat - Always Available */}
       <AISupport />

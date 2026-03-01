@@ -29,9 +29,25 @@ const ROLES = [
 
 export default function RoleSelection() {
   const navigate = useNavigate()
-  const { selectRole, logout } = useAuth()
-  const [selectedRole, setSelectedRole] = useState(null)
+  const { isAuthenticated, selectRole } = useAuth()
+  const isDistFileEntry = typeof window !== 'undefined' && window.location.protocol === 'file:'
+  const [selectedRole, setSelectedRole] = useState(isDistFileEntry ? 'customer' : null)
   const [loading, setLoading] = useState(false)
+
+  // Check if user already selected role and is authenticated
+  useEffect(() => {
+    if (isDistFileEntry) return
+
+    const storedRole = localStorage.getItem('rw_role_locked')
+    if (isAuthenticated && storedRole) {
+      // User is authenticated and has role, redirect to appropriate page
+      if (storedRole === 'mechanic') {
+        navigate('/mechanic/dashboard', { replace: true })
+      } else if (storedRole === 'customer') {
+        navigate('/customer', { replace: true })
+      }
+    }
+  }, [isAuthenticated, navigate, isDistFileEntry])
 
   const handleRoleSelect = async (roleId) => {
     if (loading) return // Prevent double-clicks
@@ -40,15 +56,23 @@ export default function RoleSelection() {
     setSelectedRole(roleId)
     setLoading(true)
 
-    // Wait for role selection to complete before navigating
-    await selectRole(roleId)
-    console.log('✅ Role set in context, navigating to /service')
-    navigate('/service', { replace: true })
-  }
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+    // Store role selection in localStorage (pre-authentication)
+    localStorage.setItem('rw_role_locked', roleId)
+    
+    // If user is already authenticated, set role in context
+    if (isAuthenticated) {
+      await selectRole(roleId)
+      // Navigate to appropriate page based on role
+      if (roleId === 'mechanic') {
+        navigate('/mechanic/dashboard', { replace: true })
+      } else {
+        navigate('/customer', { replace: true })
+      }
+    } else {
+      // User not authenticated yet, send to login
+      console.log('✅ Role saved, redirecting to login')
+      navigate('/login', { replace: true })
+    }
   }
 
   return (
@@ -237,24 +261,6 @@ export default function RoleSelection() {
           animation: pulse 1.5s ease-in-out infinite;
         }
 
-        .logout-btn {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          padding: 8px 16px;
-          background: #334155;
-          color: #f1f5f9;
-          border: none;
-          border-radius: 6px;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .logout-btn:hover {
-          background: #475569;
-        }
-
         @media (max-width: 768px) {
           .role-title {
             font-size: 28px;
@@ -271,16 +277,12 @@ export default function RoleSelection() {
         }
       `}</style>
 
-      <button className="logout-btn" onClick={handleLogout}>
-        Logout
-      </button>
-
       <div className="role-container">
         {/* Header */}
         <div className="role-header">
-          <h1 className="role-title">Select Your Role</h1>
+          <h1 className="role-title">Welcome to RepairWale</h1>
           <p className="role-subtitle">
-            Choose how you'd like to use RepairWale. You can change this later if needed.
+            Choose your role to get started. You'll login or create an account in the next step.
           </p>
         </div>
 
@@ -343,6 +345,86 @@ export default function RoleSelection() {
           </p>
         </div>
       </div>
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        [style*="background: '#0f172a'"],
+        [style*="background:#0f172a"] {
+          background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
+        }
+
+        /* Role Cards */
+        [style*="borderRadius: 24"][style*="padding: 32"] {
+          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
+          border: 2px solid #2A4368 !important;
+          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1) !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+
+        [style*="borderRadius: 24"][style*="padding: 32"]::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          height: 4px !important;
+          background: linear-gradient(90deg, transparent, #4A9EFF, transparent) !important;
+          opacity: 0 !important;
+          transition: opacity 0.3s ease !important;
+        }
+
+        [style*="borderRadius: 24"][style*="padding: 32"]:hover::before {
+          opacity: 1 !important;
+        }
+
+        [style*="borderRadius: 24"][style*="padding: 32"]:hover {
+          border-color: #4A9EFF !important;
+          box-shadow: 0 12px 48px rgba(74, 158, 255, 0.1) !important;
+          transform: translateY(-8px) !important;
+        }
+
+        /* Role Buttons */
+        [style*="background: 'linear-gradient(135deg, #4facfe"],
+        [style*="background: 'linear-gradient(135deg, #f093fb"] {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.18) !important;
+        }
+
+        /* Title Heading */
+        [style*="fontSize: '48px'"] {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          filter: drop-shadow(0 4px 16px rgba(74, 158, 255, 0.18)) !important;
+        }
+
+        /* Feature Items */
+        [style*="fontSize: '14px'"][style*="color: '#cbd5e1'"] {
+          color: #E6EDF7 !important;
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
+      `}</style>
     </div>
   )
 }

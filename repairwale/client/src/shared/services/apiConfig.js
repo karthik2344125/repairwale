@@ -7,6 +7,11 @@ let API_BASE = 'http://localhost:3000/api'
 
 // Detect environment automatically
 function detectBackendURL() {
+  const envApiUrl = import.meta.env?.VITE_API_URL
+  if (envApiUrl) {
+    return envApiUrl
+  }
+
   // Check if we're in a web server environment
   const hostname = window.location.hostname
   const protocol = window.location.protocol
@@ -15,11 +20,6 @@ function detectBackendURL() {
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Always connect to port 3000 for backend
     return `${protocol}//localhost:3000/api`
-  }
-  
-  // For production or other environments
-  if (process.env.VITE_API_URL) {
-    return process.env.VITE_API_URL
   }
   
   // Default fallback

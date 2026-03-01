@@ -103,6 +103,37 @@ const catalog = [
   },
 ]
 
+// Fixed ratings for each service (consistent across all views)
+const SERVICE_RATINGS = {
+  'breakdown_fix': { rating: 4.8, reviews: 156 },
+  'flat_tyre': { rating: 4.9, reviews: 203 },
+  'jump_start': { rating: 4.7, reviews: 187 },
+  'fuel_topup': { rating: 4.6, reviews: 89 },
+  'locked_keys': { rating: 4.8, reviews: 112 },
+  'winch_recovery': { rating: 4.7, reviews: 67 },
+  'basic_service': { rating: 4.8, reviews: 245 },
+  'comprehensive_service': { rating: 4.9, reviews: 198 },
+  'pickup_drop': { rating: 4.7, reviews: 156 },
+  'detailing': { rating: 4.8, reviews: 223 },
+  'ac_service': { rating: 4.9, reviews: 189 },
+  'interior_detail': { rating: 4.7, reviews: 134 },
+  'engine_tune': { rating: 4.8, reviews: 167 },
+  'brake_service': { rating: 4.9, reviews: 234 },
+  'battery_replace': { rating: 4.8, reviews: 201 },
+  'clutch_work': { rating: 4.7, reviews: 98 },
+  'ecu_scan': { rating: 4.8, reviews: 145 },
+  'coolant_service': { rating: 4.7, reviews: 112 },
+  'suspension': { rating: 4.8, reviews: 156 },
+  'tyre_align': { rating: 4.9, reviews: 178 },
+  'ceramic_coat': { rating: 4.9, reviews: 89 },
+  'paint_restore': { rating: 4.8, reviews: 76 },
+  'headlight_tint': { rating: 4.7, reviews: 134 },
+  'ppf': { rating: 4.9, reviews: 67 },
+  'window_tint': { rating: 4.8, reviews: 198 },
+  'undercoat': { rating: 4.7, reviews: 102 },
+  'seat_leather': { rating: 4.8, reviews: 84 }
+}
+
 function formatINR(value){
   return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
 }
@@ -334,8 +365,8 @@ export default function Service(){
                         onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                       >
                         <span>⭐</span>
-                        <span>4.{Math.floor(Math.random() * 3) + 6}</span>
-                        <span style={{color:'var(--text-secondary)'}}>({Math.floor(Math.random() * 50) + 10})</span>
+                        <span>{SERVICE_RATINGS[item.id]?.rating || '4.7'}</span>
+                        <span style={{color:'var(--text-secondary)'}}>({SERVICE_RATINGS[item.id]?.reviews || '50'})</span>
                       </button>
                     </div>
 
@@ -521,6 +552,114 @@ export default function Service(){
           </div>
         </div>
       )}
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        :root {
+          --surface: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
+          --text: #E6EDF7 !important;
+        }
+
+        body {
+          background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
+        }
+
+        /* Service Category Cards */
+        .svc-card {
+          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
+          border: 1px solid #2A4368 !important;
+          box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1) !important;
+          transition: all 0.3s ease !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+
+        .svc-card::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          height: 3px !important;
+          background: linear-gradient(90deg, transparent, #4A9EFF, transparent) !important;
+          opacity: 0 !important;
+          transition: opacity 0.3s ease !important;
+        }
+
+        .svc-card:hover::before {
+          opacity: 1 !important;
+        }
+
+        .svc-card:hover {
+          transform: translateY(-4px) !important;
+          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.12) !important;
+          border-color: #4A9EFF !important;
+        }
+
+        /* Service Items */
+        .svc-item {
+          background: rgba(15, 23, 40, 0.5) !important;
+          border: 1px solid #2A4368 !important;
+          border-radius: 12px !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .svc-item:hover {
+          border-color: #4A9EFF !important;
+          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.1) !important;
+          transform: translateX(4px) !important;
+        }
+
+        /* Titles */
+        .svc-title {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+        }
+
+        /* Prices */
+        .svc-price {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          font-weight: 800 !important;
+        }
+
+        /* Badges */
+        .svc-badge {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          color: white !important;
+          padding: 4px 12px !important;
+          border-radius: 12px !important;
+          font-size: 11px !important;
+          font-weight: 700 !important;
+        }
+
+        /* Buttons */
+        button[style*="background: '#60a5fa'"],
+        button[style*="background:#60a5fa"] {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.18) !important;
+        }
+
+        /* Favorite Heart Icon */
+        .fav-icon {
+          transition: all 0.3s ease !important;
+          filter: drop-shadow(0 2px 8px rgba(74, 158, 255, 0.18)) !important;
+        }
+
+        .fav-icon:hover {
+          transform: scale(1.2) !important;
+        }
+
+        /* Modal */
+        [style*="background:'var(--surface)'"] {
+          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
+          border: 1px solid #2A4368 !important;
+        }
+      `}</style>
     </div>
   )
 }

@@ -111,8 +111,18 @@ export default function LoginPage() {
         acceptTerms: false
       })
 
+      // Check if user has pre-selected a role
+      const preSelectedRole = localStorage.getItem('rw_role_locked')
+      
       setTimeout(() => {
-        navigate('/role-selection')
+        if (preSelectedRole === 'mechanic') {
+          navigate('/mechanic/dashboard', { replace: true })
+        } else if (preSelectedRole === 'customer') {
+          navigate('/customer', { replace: true })
+        } else {
+          // No role selected yet, send to role selection
+          navigate('/role-selection', { replace: true })
+        }
       }, 800)
 
     } catch (error) {
@@ -304,6 +314,23 @@ export default function LoginPage() {
             {isSignup ? 'Create your account' : 'Sign in to continue'}
           </p>
         </div>
+
+        {/* Role Badge - Show selected role */}
+        {localStorage.getItem('rw_role_locked') && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)',
+            border: '1px solid rgba(102, 126, 234, 0.4)',
+            color: '#c7d2fe',
+            padding: '10px 16px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: '600',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
+            {localStorage.getItem('rw_role_locked') === 'customer' ? '👤 Customer' : '🔧 Mechanic'} Account
+          </div>
+        )}
 
         {/* Messages */}
         {successMsg && (
@@ -602,8 +629,94 @@ export default function LoginPage() {
           </button>
         </div>
 
+        {/* Back to Role Selection */}
+        <div style={{
+          textAlign: 'center',
+          marginTop: '16px'
+        }}>
+          <button
+            onClick={() => navigate('/role-selection')}
+            disabled={loading}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255, 255, 255, 0.5)',
+              cursor: 'pointer',
+              fontSize: '13px',
+              textDecoration: 'underline'
+            }}
+          >
+            ← Change Role
+          </button>
+        </div>
 
       </div>
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        [style*="background: 'linear-gradient(145deg, #0f0c29"] {
+          background: linear-gradient(145deg, #0B1220 0%, #0F1728 50%, #162844 100%) !important;
+        }
+
+        /* Form Container */
+        [style*="background: 'rgba(15, 23, 40"],
+        [style*="background: 'rgba(255, 255, 255, 0.05)"] {
+          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
+          border: 1px solid #2A4368 !important;
+          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1) !important;
+        }
+
+        /* Input Fields */
+        [style*="background: '#1e293b'"],
+        [style*="background:#1e293b"] {
+          background: rgba(15, 23, 40, 0.8) !important;
+          border: 1px solid #2A4368 !important;
+          color: #E6EDF7 !important;
+        }
+
+        [style*="background: '#1e293b'"]:focus,
+        [style*="background:#1e293b"]:focus {
+          border-color: #4A9EFF !important;
+          box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.1) !important;
+          outline: none !important;
+        }
+
+        /* Primary Button */
+        [style*="background: 'linear-gradient(135deg, #667eea"] {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.18) !important;
+        }
+
+        [style*="background: 'linear-gradient(135deg, #667eea"]:hover {
+          background: linear-gradient(135deg, #60A5FF 0%, #4A9EFF 100%) !important;
+          box-shadow: 0 6px 24px rgba(74, 158, 255, 0.22) !important;
+        }
+
+        /* Heading Gradients */
+        h1, h2 {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+        }
+
+        /* Error Messages */
+        [style*="color: '#ef4444'"],
+        [style*="color:#ef4444"] {
+          color: #FF6B6B !important;
+        }
+
+        /* Success Messages */
+        [style*="color: '#10b981'"],
+        [style*="color:#10b981"] {
+          color: #10B981 !important;
+        }
+
+        /* Labels */
+        label {
+          color: #E6EDF7 !important;
+        }
+      `}</style>
     </div>
   )
 }

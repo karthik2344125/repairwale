@@ -21,6 +21,12 @@ export default function Checkout(){
   const [promoCode, setPromoCode] = useState('')
   const [promoApplied, setPromoApplied] = useState(null)
   const [paymentMethod, setPaymentMethod] = useState('razorpay')
+  const [walletBalance, setWalletBalance] = useState(null)
+  const [paymentMethods, setPaymentMethods] = useState({
+    razorpay: { enabled: true, name: '💳 Razorpay', desc: 'Credit/Debit Card, Net Banking' },
+    upi: { enabled: true, name: '📱 UPI', desc: 'Google Pay, PhonePe, Paytm' },
+    wallet: { enabled: true, name: '👛 Wallet', desc: 'RepairWale Credits' }
+  })
 
   // Sample promo codes - can be expanded
   const validPromoCodes = {
@@ -40,15 +46,42 @@ export default function Checkout(){
       }
     } catch {}
     fetch('/api/razorpay-key').then(r=>r.json()).then(d=>{ if(d.ok) setKey(d.key) })
+    
+    // Fetch available payment methods
+    fetch('/api/payment-methods/available').then(r=>r.json()).then(d=>{
+      if(d.ok && d.methods){
+        const methods = {}
+        Object.keys(d.methods).forEach(key => {
+          methods[key] = { 
+            enabled: d.methods[key].enabled, 
+            name: `${d.methods[key].icon} ${d.methods[key].name}`, 
+            desc: d.methods[key].description,
+            balance: d.methods[key].balance 
+          }
+        })
+        setPaymentMethods(methods)
+        if(d.methods.wallet?.balance !== null) setWalletBalance(d.methods.wallet.balance)
+      }
+    }).catch(e => console.log('Could not fetch payment methods:', e))
   }, [])
 
   function loadRazorpayScript(){
     return new Promise((resolve, reject) => {
-      if (window.Razorpay) return resolve(true)
+      if (window.Razorpay) {
+        console.log('✓ Razorpay already loaded')
+        return resolve(true)
+      }
       const script = document.createElement('script')
       script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-      script.onload = () => resolve(true)
-      script.onerror = () => reject(new Error('Failed to load Razorpay'))
+      script.async = true
+      script.onload = () => {
+        console.log('✓ Razorpay script loaded successfully')
+        resolve(true)
+      }
+      script.onerror = () => {
+        console.error('✗ Failed to load Razorpay script')
+        reject(new Error('Failed to load Razorpay payment gateway'))
+      }
       document.body.appendChild(script)
     })
   }
@@ -94,75 +127,203 @@ export default function Checkout(){
   async function startPayment(){
     if(!payload){ setError('Nothing to checkout'); return }
     if(!canProceedStep1()){ setError('Fill contact & address before paying'); setStep(1); return }
-    if(paymentMethod === 'razorpay'){
-      setError('');
-      setLoading(true)
-      try {
-        await loadRazorpayScript()
-        const { total } = calculateTotal()
-        const orderRes = await fetch('/api/create-order', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ amount: total, promoCode: promoApplied?.code || null }) })
-        const orderData = await orderRes.json()
-        if(!orderData.ok){ throw new Error('Order creation failed') }
-        const order = orderData.order
-        const options = {
-          key: key || 'rzp_test_dummy',
-          amount: order.amount,
-          currency: order.currency || 'INR',
-          name: 'RepairWale',
-          description: 'Service Checkout',
-          order_id: order.id,
-          prefill: {
-            name: billing.fullName,
-            email: billing.email,
-            contact: billing.phone
-          },
-          theme: { color: '#111111' },
-          handler: async (resp) => {
-            try {
-              const verifyRes = await fetch('/api/verify-payment', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ order_id: order.id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature }) })
-              const verifyData = await verifyRes.json()
-              if(verifyData.ok && verifyData.verified){
-                setSuccess(true)
-                showSuccess('✅ Payment successful! Redirecting...')
-                try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
-                setTimeout(()=> navigate('/map'), 1500)
-              } else {
-                const msg = 'Payment could not be verified'
-                setError(msg)
-                showError(msg)
-              }
-            } catch(e){
-              const msg = 'Verification failed'
-              setError(msg)
-              showError(msg)
+    
+    setError('')
+    setLoading(true)
+    const { total, subtotal, discount, tax } = calculateTotal()
+    
+    try {
+      if(paymentMethod === 'razorpay'){
+        await handleRazorpayPayment({ total, subtotal, discount, tax })
+      } else if(paymentMethod === 'upi'){
+        await handleUPIPayment({ total, subtotal, discount, tax })
+      } else if(paymentMethod === 'wallet'){
+        await handleWalletPayment({ total, subtotal, discount, tax })
+      }
+    } catch(e){
+      setError(e.message)
+      showError('❌ ' + e.message)
+      setLoading(false)
+    }
+  }
+
+  async function handleRazorpayPayment({ total, subtotal, discount, tax }){
+    try {
+      console.log('🚀 Starting Razorpay payment...')
+      await loadRazorpayScript()
+      console.log('✓ Razorpay script loaded')
+      
+      // Send only amount - simple & safe
+      const orderPayload = {
+        amount: total
+      }
+      
+      console.log('📝 Creating order:', orderPayload)
+      const orderRes = await fetch('/api/create-order', { 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify(orderPayload) 
+      })
+      console.log('📦 Order response:', orderRes.status)
+      
+      const orderData = await orderRes.json()
+      console.log('🎁 Order data:', orderData)
+      
+      if(!orderData.ok){ throw new Error(orderData.error || 'Order creation failed') }
+      
+      const order = orderData.order
+      console.log('✓ Order created:', order.id)
+      
+      const options = {
+        key: key || 'rzp_test_dummy',
+        amount: order.amount * 100,
+        currency: 'INR',
+        name: 'RepairWale',
+        description: 'Service Payment',
+        order_id: order.razorpayOrderId,
+        prefill: {
+          name: billing.fullName,
+          email: billing.email,
+          contact: billing.phone
+        },
+        theme: { color: '#38bdf8' },
+        handler: async (resp) => {
+          try {
+            console.log('✓ Payment response received:', resp.razorpay_payment_id)
+            const verifyRes = await fetch('/api/verify-payment', { 
+              method:'POST', 
+              headers:{'Content-Type':'application/json'}, 
+              body: JSON.stringify({ 
+                order_id: order.id, 
+                payment_id: resp.razorpay_payment_id, 
+                signature: resp.razorpay_signature
+              }) 
+            })
+            const verifyData = await verifyRes.json()
+            console.log('✓ Verification response:', verifyData)
+            
+            if(verifyData.ok && verifyData.verified){
+              setSuccess(true)
+              showSuccess('✅ Payment successful! Redirecting...')
+              try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
+              setTimeout(()=> navigate('/map'), 1500)
+            } else {
+              throw new Error('Payment verification failed')
             }
+          } catch(e){
+            console.error('❌ Verification error:', e)
+            setError(e.message || 'Verification failed')
+            showError('❌ ' + (e.message || 'Verification failed'))
+            setLoading(false)
           }
         }
-        const rz = new window.Razorpay(options)
-        rz.on('payment.failed', (resp) => {
-          const errMsg = resp.error && resp.error.description ? resp.error.description : 'Payment failed'
-          setError(errMsg)
-          showError('❌ ' + errMsg)
-          setLoading(false)
-        })
-        rz.open()
-      } catch(e){
-        setError(e.message)
-        showError('❌ ' + e.message)
-      } finally {
-        setLoading(false)
       }
-    } else if(paymentMethod === 'upi'){
-      setSuccess(true)
-      showSuccess('✅ UPI payment initiated! Redirecting...')
-      try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
-      setTimeout(()=> navigate('/map'), 1500)
-    } else if(paymentMethod === 'wallet'){
-      setSuccess(true)
-      showSuccess('✅ Wallet payment processed! Redirecting...')
-      try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
-      setTimeout(()=> navigate('/map'), 1500)
+      
+      console.log('🔄 Creating Razorpay instance...')
+      if (!window.Razorpay) {
+        throw new Error('Razorpay not loaded. Please refresh and try again.')
+      }
+      
+      const rz = new window.Razorpay(options)
+      console.log('✓ Razorpay instance created')
+      
+      rz.on('payment.failed', (resp) => {
+        console.error('❌ Payment failed:', resp.error)
+        const errMsg = resp.error && resp.error.description ? resp.error.description : 'Payment failed'
+        setError(errMsg)
+        showError('❌ ' + errMsg)
+        setLoading(false)
+      })
+      
+      console.log('📱 Opening Razorpay modal...')
+      rz.open()
+      console.log('✓ Modal opened')
+    } catch(e) {
+      console.error('❌ Razorpay error:', e)
+      setError(e.message)
+      showError('❌ ' + e.message)
+      setLoading(false)
     }
+  }
+
+  async function handleUPIPayment({ total, subtotal, discount, tax }){
+    if (!billing.phone || billing.phone.length < 10) {
+      throw new Error('Valid phone number required for UPI')
+    }
+
+    const orderPayload = {
+      amount: total,
+      phone: billing.phone
+    }
+
+    const orderRes = await fetch('/api/create-upi-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderPayload)
+    })
+    const orderData = await orderRes.json()
+    if (!orderData.ok) throw new Error(orderData.error || 'UPI order failed')
+
+    showInfo(`📱 UPI Payment Ready for ${billing.phone}`)
+    
+    // Simulate UPI confirmation
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    const transactionId = `UPI${Date.now()}`
+    const verifyRes = await fetch('/api/verify-upi-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: orderData.order.id,
+        transactionId: transactionId,
+        phone: billing.phone
+      })
+    })
+    const verifyData = await verifyRes.json()
+    if (!verifyData.ok) throw new Error('UPI verification failed')
+
+    setSuccess(true)
+    showSuccess('✅ UPI payment successful!')
+    try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
+    setTimeout(() => navigate('/map'), 1500)
+  }
+
+  async function handleWalletPayment({ total, subtotal, discount, tax }){
+    const mockUserId = 'user_' + Math.random().toString(36).substr(2, 9)
+
+    const balanceRes = await fetch(`/api/wallet/balance?userId=${mockUserId}`)
+    const balanceData = await balanceRes.json()
+    if (!balanceData.ok) throw new Error('Could not check wallet balance')
+
+    const balance = balanceData.balance
+    if (balance < total) {
+      throw new Error(`Insufficient balance. Available: ${formatINR(balance)}`)
+    }
+
+    showInfo(`👛 Processing wallet payment...`)
+
+    const paymentPayload = {
+      amount: total,
+      userId: mockUserId
+    }
+
+    const paymentRes = await fetch('/api/process-wallet-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentPayload)
+    })
+    const paymentData = await paymentRes.json()
+    if (!paymentData.ok) {
+      if (paymentData.error === 'insufficient_balance') {
+        throw new Error(`Insufficient balance`)
+      }
+      throw new Error(paymentData.error || 'Wallet payment failed')
+    }
+
+    setSuccess(true)
+    showSuccess(`✅ Wallet payment successful!`)
+    try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
+    setTimeout(() => navigate('/map'), 1500)
   }
 
   if(!payload){
@@ -295,32 +456,40 @@ export default function Checkout(){
               {[
                 { id: 'razorpay', label: '💳 Razorpay', desc: 'Credit/Debit Card, Net Banking' },
                 { id: 'upi', label: '📱 UPI', desc: 'Google Pay, PhonePe, Paytm' },
-                { id: 'wallet', label: '👛 Wallet', desc: 'RepairWale Credits' }
-              ].map(method => (
-                <div 
-                  key={method.id}
-                  onClick={() => setPaymentMethod(method.id)}
-                  style={{
-                    padding:16,
-                    borderRadius:12,
-                    border: paymentMethod === method.id ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.12)',
-                    background: paymentMethod === method.id ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.03)',
-                    cursor:'pointer',
-                    transition:'all 0.2s',
-                    display:'flex',
-                    justifyContent:'space-between',
-                    alignItems:'center'
-                  }}
-                >
-                  <div>
-                    <div style={{fontWeight:700,fontSize:14}}>{method.label}</div>
-                    <div style={{fontSize:12,color:'var(--text-secondary)',marginTop:4}}>{method.desc}</div>
+                { id: 'wallet', label: '👛 Wallet', desc: `RepairWale Credits${walletBalance !== null ? ` (${formatINR(walletBalance)} available)` : ''}` }
+              ].filter(m => paymentMethods[m.id]?.enabled !== false).map(method => {
+                const isWallet = method.id === 'wallet'
+                const walletAvailable = !isWallet || (walletBalance !== null && walletBalance > 0)
+                const disabled = isWallet && walletBalance !== null && walletBalance <= 0
+                
+                return (
+                  <div 
+                    key={method.id}
+                    onClick={() => { if(!disabled) setPaymentMethod(method.id) }}
+                    style={{
+                      padding:16,
+                      borderRadius:12,
+                      border: paymentMethod === method.id ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.12)',
+                      background: paymentMethod === method.id ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.03)',
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                      opacity: disabled ? 0.5 : 1,
+                      transition:'all 0.2s',
+                      display:'flex',
+                      justifyContent:'space-between',
+                      alignItems:'center'
+                    }}
+                  >
+                    <div>
+                      <div style={{fontWeight:700,fontSize:14}}>{method.label}</div>
+                      <div style={{fontSize:12,color:'var(--text-secondary)',marginTop:4}}>{method.desc}</div>
+                      {disabled && <div style={{fontSize:11,color:'#ff6b6b',marginTop:4}}>❌ Insufficient balance</div>}
+                    </div>
+                    <div style={{width:20,height:20,borderRadius:'50%',border:'2px solid',borderColor: paymentMethod === method.id ? '#60a5fa' : 'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      {paymentMethod === method.id && <div style={{width:10,height:10,borderRadius:'50%',background:'#60a5fa'}}/>}
+                    </div>
                   </div>
-                  <div style={{width:20,height:20,borderRadius:'50%',border:'2px solid',borderColor: paymentMethod === method.id ? '#60a5fa' : 'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    {paymentMethod === method.id && <div style={{width:10,height:10,borderRadius:'50%',background:'#60a5fa'}}/>}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Order Total */}
@@ -343,16 +512,98 @@ export default function Checkout(){
             {error && <div style={{marginTop:12,padding:12,borderRadius:8,background:'rgba(255,107,107,0.1)',color:'#ff6b6b',fontSize:13,fontWeight:600}}>⚠ {error}</div>}
             {success && <div style={{marginTop:12,padding:12,borderRadius:8,background:'rgba(16,185,129,0.1)',color:'#10b981',fontSize:13,fontWeight:600}}>✓ Payment verified. Redirecting...</div>}
             
+            {/* Payment Method Info */}
+            <div style={{marginTop:16,padding:12,borderRadius:8,background:'rgba(96,165,250,0.05)',border:'1px solid rgba(96,165,250,0.2)',fontSize:12}}>
+              {paymentMethod === 'razorpay' && (
+                <div style={{color:'var(--text-secondary)'}}>
+                  <strong style={{color:'#60a5fa'}}>💳 Razorpay</strong><br/>
+                  • Supports credit/debit cards and net banking<br/>
+                  • Secure PCI-DSS Level 1 compliant<br/>
+                  {!key && '• Currently in mock mode (test payment)'}
+                </div>
+              )}
+              {paymentMethod === 'upi' && (
+                <div style={{color:'var(--text-secondary)'}}>
+                  <strong style={{color:'#60a5fa'}}>📱 UPI Payment</strong><br/>
+                  • Instant payment via phone number<br/>
+                  • Works with all major UPI apps<br/>
+                  • Transaction ID: {billing.phone ? billing.phone.slice(-4) + 'XXXX' : 'Enter phone to proceed'}
+                </div>
+              )}
+              {paymentMethod === 'wallet' && (
+                <div style={{color:'var(--text-secondary)'}}>
+                  <strong style={{color:'#60a5fa'}}>👛 RepairWale Wallet</strong><br/>
+                  • Available balance: <strong style={{color: walletBalance !== null && walletBalance > 0 ? '#10b981' : '#ff6b6b'}}>{walletBalance !== null ? formatINR(walletBalance) : 'Loading...'}</strong><br/>
+                  • Instant transaction with no fees<br/>
+                  {walletBalance !== null && walletBalance > 0 ? `• Enough balance for this order ✓` : `• Insufficient balance to proceed`}
+                </div>
+              )}
+            </div>
+            
             <div style={{marginTop:18,display:'flex',gap:10}}>
-              <Button variant="primary" size="md" disabled={loading} onClick={startPayment}>
+              <Button variant="primary" size="md" disabled={loading || (paymentMethod === 'wallet' && walletBalance !== null && walletBalance <= 0)} onClick={startPayment}>
                 {loading ? 'Processing...' : `Pay ${formatINR(calculateTotal().total)}`}
               </Button>
               <Button variant="ghost" size="sm" onClick={()=>setStep(2)}>Back</Button>
             </div>
-            {!key && <div style={{marginTop:12,fontSize:11,color:'var(--text-secondary)'}}>Using mock key (set env RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET for live orders)</div>}
+            {!key && <div style={{marginTop:12,fontSize:11,color:'var(--text-secondary)'}}>🧪 Using mock Razorpay key (set RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET for live payments)</div>}
           </div>
         )}
       </div>
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        body {
+          background: linear-gradient(180deg, #070b14 0%, #0b1220 50%, #0f1d34 100%) !important;
+        }
+
+        .page-container {
+          background: #070b14 !important;
+        }
+
+        /* Card Enhancements */
+        .card {
+          background: linear-gradient(135deg, #0b1220 0%, #0f1d34 100%) !important;
+          border: 1px solid #2A4368 !important;
+          box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1) !important;
+        }
+
+        /* Input Fields */
+        [style*="background:'#101010'"],
+        [style*="background:#101010"] {
+          background: rgba(11, 18, 32, 0.8) !important;
+          border: 1px solid #2A4368 !important;
+        }
+
+        [style*="background:'#101010'"]:focus,
+        [style*="background:#101010"]:focus {
+          border-color: #38bdf8 !important;
+          box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1) !important;
+        }
+
+        /* Primary Buttons */
+        [style*="background:'#60a5fa'"],
+        [style*="background:#60a5fa"] {
+          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          box-shadow: 0 4px 16px rgba(56, 189, 248, 0.18) !important;
+        }
+
+        /* Success/Error Messages */
+        [style*="background:'rgba(16,185,129"] {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(52, 211, 153, 0.15)) !important;
+          border: 1px solid #10B981 !important;
+        }
+
+        [style*="background:'rgba(255,107,107"] {
+          background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 135, 135, 0.15)) !important;
+          border: 1px solid #FF6B6B !important;
+        }
+
+        /* Text Colors */
+        input, select, textarea {
+          color: #e6edf7 !important;
+        }
+      `}</style>
     </div>
   )
 }

@@ -182,7 +182,7 @@ export default function CustomerHome() {
       <div style={{
         background: 'linear-gradient(135deg, #1a2847 0%, #0f1729 100%)',
         padding: '80px 24px 60px',
-        borderBottom: '1px solid rgba(96, 165, 250, 0.15)',
+        borderBottom: '1px solid rgba(96, 165, 250, 0.1)',
         position: 'relative',
         overflow: 'hidden'
       }}>
@@ -335,7 +335,7 @@ export default function CustomerHome() {
           {features.map((feature, idx) => (
             <div key={idx} style={{
               background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-              border: '1px solid rgba(96, 165, 250, 0.15)',
+              border: '1px solid rgba(96, 165, 250, 0.1)',
               borderRadius: '16px',
               padding: '32px 24px',
               textAlign: 'center',
@@ -343,12 +343,12 @@ export default function CustomerHome() {
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'translateY(-8px)'
-              e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.4)'
+              e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.14)'
               e.currentTarget.style.boxShadow = '0 12px 40px rgba(59, 130, 246, 0.15)'
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.15)'
+              e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.1)'
               e.currentTarget.style.boxShadow = 'none'
             }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>
@@ -401,7 +401,7 @@ export default function CustomerHome() {
               onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
               style={{
                 background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                border: `2px solid ${selectedCategory === category.id ? category.color : 'rgba(96, 165, 250, 0.15)'}`,
+                border: `2px solid ${selectedCategory === category.id ? category.color : 'rgba(96, 165, 250, 0.1)'}`,
                 borderRadius: '16px',
                 padding: '32px 24px',
                 cursor: 'pointer',
@@ -410,13 +410,13 @@ export default function CustomerHome() {
               }}
               onMouseOver={(e) => {
                 if (selectedCategory !== category.id) {
-                  e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.3)'
+                  e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.18)'
                   e.currentTarget.style.transform = 'translateY(-4px)'
                 }
               }}
               onMouseOut={(e) => {
                 if (selectedCategory !== category.id) {
-                  e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.15)'
+                  e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.1)'
                   e.currentTarget.style.transform = 'translateY(0)'
                 }
               }}
@@ -444,7 +444,7 @@ export default function CustomerHome() {
                 <div style={{
                   marginTop: '20px',
                   paddingTop: '20px',
-                  borderTop: `1px solid rgba(96, 165, 250, 0.15)`
+                  borderTop: `1px solid rgba(96, 165, 250, 0.1)`
                 }}>
                   <div style={{ display: 'grid', gap: '12px' }}>
                     {category.services.map((service, idx) => (
@@ -519,7 +519,7 @@ export default function CustomerHome() {
         maxWidth: '1200px',
         margin: '0 auto',
         padding: '60px 24px',
-        borderTop: '1px solid rgba(96, 165, 250, 0.15)'
+        borderTop: '1px solid rgba(96, 165, 250, 0.1)'
       }}>
         <h2 style={{
           fontSize: '32px',
@@ -581,7 +581,7 @@ export default function CustomerHome() {
         maxWidth: '1200px',
         margin: '0 auto',
         padding: '60px 24px',
-        borderTop: '1px solid rgba(96, 165, 250, 0.15)'
+        borderTop: '1px solid rgba(96, 165, 250, 0.1)'
       }}>
         <h2 style={{
           fontSize: '32px',
@@ -601,7 +601,7 @@ export default function CustomerHome() {
           {testimonials.map((testimonial, idx) => (
             <div key={idx} style={{
               background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-              border: '1px solid rgba(96, 165, 250, 0.15)',
+              border: '1px solid rgba(96, 165, 250, 0.1)',
               borderRadius: '16px',
               padding: '32px',
             }}>
@@ -618,7 +618,7 @@ export default function CustomerHome() {
               }}>
                 "{testimonial.text}"
               </p>
-              <div style={{ borderTop: '1px solid rgba(96, 165, 250, 0.15)', paddingTop: '16px' }}>
+              <div style={{ borderTop: '1px solid rgba(96, 165, 250, 0.1)', paddingTop: '16px' }}>
                 <p style={{ margin: '0 0 4px 0', fontWeight: '700', color: '#e5e7eb' }}>
                   {testimonial.name}
                 </p>
@@ -636,7 +636,7 @@ export default function CustomerHome() {
         background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 242, 0.05) 100%)',
         padding: '60px 24px',
         textAlign: 'center',
-        borderTop: '1px solid rgba(96, 165, 250, 0.15)'
+        borderTop: '1px solid rgba(96, 165, 250, 0.1)'
       }}>
         <h2 style={{
           fontSize: '32px',
@@ -680,6 +680,99 @@ export default function CustomerHome() {
           Find a Mechanic Now
         </button>
       </div>
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        body {
+          background: linear-gradient(180deg, #070b14 0%, #0b1220 50%, #0f1d34 100%) !important;
+        }
+
+        /* Container Overrides */
+        [style*="background: '#0a0e27'"],
+        [style*="background:#0a0e27"] {
+          background: #070b14 !important;
+        }
+
+        /* Hero Section Enhancement */
+        [style*="linear-gradient(135deg, #1a2847"] {
+          background: linear-gradient(135deg, #070b14 0%, #0b1220 100%) !important;
+          border-bottom: 2px solid #243449 !important;
+          box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1) !important;
+        }
+
+        /* Card Enhancements */
+        [style*="background: 'linear-gradient(135deg, #1e293b"] {
+          background: linear-gradient(135deg, #0b1220 0%, #0f1d34 100%) !important;
+          border: 1px solid #243449 !important;
+          box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1) !important;
+          transition: all 0.3s ease !important;
+        }
+
+        [style*="background: 'linear-gradient(135deg, #1e293b"]:hover {
+          transform: translateY(-4px) !important;
+          box-shadow: 0 8px 32px rgba(56, 189, 248, 0.12) !important;
+          border-color: #38bdf8 !important;
+        }
+
+        /* Primary Button Gradients */
+        [style*="background: 'linear-gradient(135deg, #3b82f6"] {
+          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          box-shadow: 0 4px 16px rgba(56, 189, 248, 0.18) !important;
+        }
+
+        [style*="background: 'linear-gradient(135deg, #3b82f6"]:hover {
+          background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%) !important;
+          box-shadow: 0 6px 24px rgba(56, 189, 248, 0.22) !important;
+        }
+
+        /* Service Category Cards */
+        [style*="borderRadius: '16px'"] {
+          position: relative !important;
+          overflow: hidden !important;
+        }
+
+        [style*="borderRadius: '16px'"]::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          height: 3px !important;
+          background: linear-gradient(90deg, transparent, #38bdf8, transparent) !important;
+          opacity: 0 !important;
+          transition: opacity 0.3s ease !important;
+        }
+
+        [style*="borderRadius: '16px'"]:hover::before {
+          opacity: 1 !important;
+        }
+
+        /* Stats and Numbers with Gradient Text */
+        [style*="fontSize: '32px'"],
+        [style*="fontSize: '48px'"] {
+          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.18)) !important;
+        }
+
+        /* Text Colors */
+        [style*="color: '#e5e7eb'"],
+        [style*="color: 'rgba(229,231,235"] {
+          color: #e6edf7 !important;
+        }
+
+        /* Focus States */
+        input:focus,
+        select:focus,
+        textarea:focus,
+        button:focus {
+          outline: none !important;
+          box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1) !important;
+          border-color: #38bdf8 !important;
+        }
+      `}</style>
     </div>
   )
 }

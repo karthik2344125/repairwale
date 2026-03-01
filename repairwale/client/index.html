@@ -23,6 +23,19 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        const liveServerPorts = new Set(['5500', '5501', '5502', '5503'])
+        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        const isLiveServer = isLocalHost && liveServerPorts.has(window.location.port)
+        const isDistPage = /\/dist(\/|$)/.test(window.location.pathname)
+
+        if (isLiveServer && !isDistPage) {
+          const target = new URL('./dist/index.html', window.location.href)
+          window.location.replace(target.href)
+        }
+      })()
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

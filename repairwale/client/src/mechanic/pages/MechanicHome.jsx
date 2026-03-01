@@ -515,6 +515,216 @@ const styles = `
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ===== PREMIUM THEME WITH HIGHLIGHTS ===== */
+.mechanic-home {
+  background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
+}
+
+.welcome-banner {
+  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
+  border: 2px solid #4A9EFF !important;
+  box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1), 0 0 100px rgba(74, 158, 255, 0.05) !important;
+}
+
+.welcome-content h1 {
+  color: #E6EDF7 !important;
+  text-shadow: 0 2px 8px rgba(74, 158, 255, 0.1);
+}
+
+.welcome-content p {
+  color: rgba(230, 237, 247, 0.7) !important;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
+  border: 2px solid #2A4368 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #4A9EFF, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+.stat-card:hover {
+  border-color: #4A9EFF !important;
+  box-shadow: 0 16px 48px rgba(74, 158, 255, 0.1);
+}
+
+.stat-value {
+  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 8px rgba(74, 158, 255, 0.18));
+}
+
+.stat-label {
+  color: rgba(230, 237, 247, 0.7) !important;
+}
+
+.stat-change.positive {
+  color: #10B981 !important;
+}
+
+.stat-change.negative {
+  color: #FF6B6B !important;
+}
+
+.card {
+  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
+  border: 2px solid #2A4368 !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #4A9EFF, #60A5FF);
+  border-radius: 12px;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover::after {
+  opacity: 0.15;
+}
+
+.card:hover {
+  box-shadow: 0 12px 40px rgba(74, 158, 255, 0.12);
+}
+
+.card-title {
+  color: #E6EDF7 !important;
+  text-shadow: 0 2px 8px rgba(74, 158, 255, 0.1);
+}
+
+.request-item {
+  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
+  border: 2px solid #2A4368 !important;
+}
+
+.request-item:hover {
+  border-color: #4A9EFF !important;
+  box-shadow: 0 4px 16px rgba(74, 158, 255, 0.12);
+}
+
+.customer-info h4 {
+  color: #E6EDF7 !important;
+}
+
+.customer-info p {
+  color: rgba(230, 237, 247, 0.7) !important;
+}
+
+.status-badge.pending {
+  background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%) !important;
+  color: #0B1220 !important;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.status-badge.active {
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.completed {
+  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.18);
+}
+
+.request-details {
+  color: rgba(230, 237, 247, 0.7) !important;
+}
+
+.earnings-chart {
+  background: rgba(26, 58, 92, 0.3) !important;
+  border: 1px solid #2A4368;
+}
+
+.chart-bar {
+  background: linear-gradient(to top, #1A3A5C, #4A9EFF) !important;
+}
+
+.chart-bar:hover {
+  background: linear-gradient(to top, #2A4368, #60A5FF) !important;
+}
+
+.chart-labels {
+  color: rgba(230, 237, 247, 0.7) !important;
+}
+
+.review-item {
+  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
+  border: 2px solid #2A4368 !important;
+}
+
+.reviewer-name {
+  color: #E6EDF7 !important;
+}
+
+.rating-stars {
+  color: #FBBF24 !important;
+  filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.3));
+}
+
+.review-text {
+  color: rgba(230, 237, 247, 0.7) !important;
+}
+
+.review-date {
+  color: rgba(230, 237, 247, 0.5) !important;
+}
+
+.empty-state {
+  color: rgba(230, 237, 247, 0.7) !important;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
+  border: 2px solid #4A9EFF !important;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+  border-color: #60A5FF !important;
+  box-shadow: 0 8px 24px rgba(74, 158, 255, 0.12);
+}
+
+.action-btn-label {
+  color: #4A9EFF !important;
+  font-weight: 700;
+}
+
+.action-btn:hover .action-btn-label {
+  color: #FFFFFF !important;
+}
 `
 
 export default function MechanicHome() {
@@ -550,8 +760,8 @@ export default function MechanicHome() {
       todayEarnings: Math.floor(Math.random() * 3000) + 1500,
       monthlyJobs: Math.floor(Math.random() * 50) + 30,
       monthlyEarnings: Math.floor(Math.random() * 50000) + 25000,
-      rating: (4.2 + Math.random() * 0.7).toFixed(1),
-      totalReviews: Math.floor(Math.random() * 100) + 50
+      rating: '4.7',
+      totalReviews: 87
     }
     setStats(mockStats)
   }

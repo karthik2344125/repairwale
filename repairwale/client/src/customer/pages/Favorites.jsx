@@ -81,6 +81,66 @@ export default function Favorites(){
           </div>
         )}
       </div>
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        .page-container {
+          background: linear-gradient(180deg, #070b14 0%, #0b1220 100%) !important;
+          min-height: 100vh !important;
+        }
+
+        .page-header {
+          background: linear-gradient(135deg, #070b14 0%, #0b1220 100%) !important;
+          border-bottom: 2px solid #243449 !important;
+          box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1) !important;
+        }
+
+        .page-title {
+          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+        }
+
+        .card {
+          background: linear-gradient(135deg, #0b1220 0%, #0f1d34 100%) !important;
+          border: 1px solid #243449 !important;
+          box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1) !important;
+        }
+
+        .item {
+          background: rgba(11, 18, 32, 0.5) !important;
+          border: 1px solid #243449 !important;
+          border-radius: 12px !important;
+          padding: 16px !important;
+          margin-bottom: 12px !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .item:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 8px 24px rgba(56, 189, 248, 0.12) !important;
+          border-color: #38bdf8 !important;
+        }
+
+        .item-title {
+          color: #e6edf7 !important;
+        }
+
+        .item-price {
+          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          font-weight: 800 !important;
+        }
+
+        .empty-icon {
+          font-size: 64px !important;
+          opacity: 0.3 !important;
+          filter: drop-shadow(0 4px 16px rgba(56, 189, 248, 0.18)) !important;
+        }
+      `}</style>
     </div>
   )
 }

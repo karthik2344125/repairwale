@@ -186,6 +186,95 @@ export default function TermsAndConditions() {
           <p>By using RepairWale, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.</p>
         </div>
       </div>
+
+      <style>{`
+        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        body {
+          background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
+        }
+
+        .legal-wrapper {
+          background: rgba(11, 18, 32, 0.5) !important;
+        }
+
+        .legal-hero {
+          background: linear-gradient(135deg, #0B1220 0%, #0F1728 100%) !important;
+          border-bottom: 2px solid #2A4368 !important;
+          box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1) !important;
+        }
+
+        .legal-hero h1 {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+        }
+
+        .legal-section {
+          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
+          border: 1px solid #2A4368 !important;
+          box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1) !important;
+          border-radius: 16px !important;
+          padding: 32px !important;
+          margin-bottom: 24px !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .legal-section:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1) !important;
+          border-color: #4A9EFF !important;
+        }
+
+        .legal-section h2 {
+          color: #E6EDF7 !important;
+        }
+
+        .legal-badge {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          color: white !important;
+          padding: 6px 16px !important;
+          border-radius: 20px !important;
+          font-size: 11px !important;
+          font-weight: 800 !important;
+          display: inline-block !important;
+          margin-bottom: 16px !important;
+        }
+
+        .legal-list {
+          color: #E6EDF7 !important;
+        }
+
+        .marker {
+          color: #4A9EFF !important;
+          font-weight: 800 !important;
+        }
+
+        .legal-accept {
+          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
+          border: 2px solid #2A4368 !important;
+          border-radius: 20px !important;
+          padding: 40px !important;
+          text-align: center !important;
+          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1) !important;
+        }
+
+        .legal-accept .tick {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.18) !important;
+        }
+
+        .legal-accept h3 {
+          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+        }
+
+        p {
+          color: #E6EDF7 !important;
+        }
+      `}</style>
     </div>
   )
 }

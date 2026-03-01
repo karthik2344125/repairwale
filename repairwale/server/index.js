@@ -117,6 +117,11 @@ const clientRoot = path.join(__dirname, '..', 'client');
 const clientDist = path.join(clientRoot, 'dist');
 const servingDist = fs.existsSync(clientDist);
 console.log('[STATIC] dist exists?', servingDist, 'path:', servingDist ? clientDist : clientRoot);
+
+// Health endpoints (must be defined before SPA catch-all)
+app.get('/health', (req, res) => res.json({ ok: true, service: 'repairwale-server' }));
+app.get('/api/health', (req, res) => res.json({ ok: true, service: 'repairwale-server' }));
+
 app.use('/', express.static(servingDist ? clientDist : clientRoot, {
   setHeaders: (res) => {
     res.setHeader('Cache-Control','no-store'); // ensure latest build served after changes
@@ -145,6 +150,9 @@ const mechanics = [
 
 // In-memory users database (in production, use a real database)
 const users = [];
+
+// In-memory orders database (in production, use a real database)
+const orders = [];
 
 // ==================== AUTHENTICATION ENDPOINTS ====================
 
@@ -561,9 +569,6 @@ app.get('/api/mechanic/stats', (req, res) => {
 
 // -------- End Mechanic API endpoints --------
 
-// Simple health
-app.get('/health', (req, res) => res.json({ ok: true }));
-
 // In-memory storage for chat and tracking
 const chatHistory = {}; // { orderId: [messages] }
 const mechanicLocations = {}; // { orderId: { lat, lng, timestamp } }
@@ -795,42 +800,57 @@ app.get('/api/razorpay-key', (req, res) => {
 });
 
 app.post('/api/create-order', async (req, res) => {
-  const { amount, promoCode } = req.body || {};
+  const { amount } = req.body || {};
   if (!amount) return res.status(400).json({ ok: false, error: 'amount required' });
 
-  console.log(`[ORDER] Creating order | Amount: ₹${amount}${promoCode ? ' | Promo: ' + promoCode : ''}`);
+  console.log(`[ORDER] Creating order | Amount: ₹${amount}`);
 
-  // amount expected in rupees; Razorpay wants paise
+  // Simple order ID - minimal data
+  const orderId = `order_${uuidv4()}`;
+  const amountInPaise = Math.round(amount * 100);
+
   if (razorpayInstance) {
     try {
-      const order = await razorpayInstance.orders.create({
-        amount: Math.round(amount * 100),
+      const razorpayOrder = await razorpayInstance.orders.create({
+        amount: amountInPaise,
         currency: 'INR',
-        receipt: 'rw_' + Date.now(),
-        notes: { platform: 'repairwale', promoCode: promoCode || 'none' }
+        receipt: orderId
       });
-      console.log(`[ORDER] ✓ Created | Order ID: ${order.id}`);
-      return res.json({ ok: true, order });
+      console.log(`[ORDER] ✓ Created | Order ID: ${orderId} | Razorpay: ${razorpayOrder.id}`);
+      return res.json({ 
+        ok: true, 
+        order: {
+          id: orderId,
+          razorpayOrderId: razorpayOrder.id,
+          amount: amount,
+          currency: 'INR'
+        }
+      });
     } catch (e) {
       console.error('[ORDER] ✗ Failed to create', e.message);
-      return res.status(500).json({ ok: false, error: 'order_failed', details: e.message });
+      return res.status(500).json({ ok: false, error: 'order_failed' });
     }
   }
-  // fallback mock
-  const mock = {
-    id: `order_mock_${uuidv4()}`,
-    amount: Math.round(amount * 100),
-    currency: 'INR',
-    status: 'created',
-    receipt: 'rw_' + Date.now()
-  };
-  console.log(`[ORDER] ⚠ Mock | Order ID: ${mock.id}`);
-  res.json({ ok: true, order: mock, mock: true });
+  
+  // Mock mode
+  const mockOrderId = `order_mock_${uuidv4()}`;
+  console.log(`[ORDER] ⚠ Mock | Order ID: ${orderId}`);
+  res.json({ 
+    ok: true, 
+    order: {
+      id: orderId,
+      razorpayOrderId: mockOrderId,
+      amount: amount,
+      currency: 'INR'
+    }
+  });
 });
 
 app.post('/api/verify-payment', (req, res) => {
   const { order_id, payment_id, signature } = req.body || {};
-  if (!order_id || !payment_id) return res.status(400).json({ ok: false, error: 'order_id and payment_id required' });
+  if (!order_id || !payment_id) {
+    return res.status(400).json({ ok: false, error: 'order_id and payment_id required' });
+  }
   
   console.log(`[VERIFICATION] Verifying | Order: ${order_id} | Payment: ${payment_id}`);
 
@@ -840,16 +860,225 @@ app.post('/api/verify-payment', (req, res) => {
       hmac.update(order_id + '|' + payment_id);
       const expected = hmac.digest('hex');
       const verified = expected === signature;
-      console.log(`[VERIFICATION] ${verified ? '✓ Valid' : '✗ Invalid'} | Signature match: ${verified}`);
-      return res.json({ ok: verified, order_id, payment_id, verified });
+      console.log(`[VERIFICATION] ${verified ? '✓ Valid' : '✗ Invalid'}`);
+      return res.json({ ok: verified, verified: verified });
     } catch (e) {
       console.error('[VERIFICATION] ✗ Failed', e.message);
-      return res.status(500).json({ ok: false, error: 'verify_failed', details: e.message });
+      return res.status(500).json({ ok: false, error: 'verify_failed' });
     }
   }
-  // fallback always ok (mock mode)
+  
+  // Mock mode - always accept
   console.log(`[VERIFICATION] ⚠ Mock | Payment accepted`);
-  res.json({ ok: true, order_id, payment_id, verified: true, mock: true });
+  res.json({ ok: true, verified: true });
+});
+
+// ==================== ORDER RETRIEVAL ENDPOINTS ====================
+
+// Get all orders for a user
+app.get('/api/orders', (req, res) => {
+  const { userId } = req.query;
+  if (!userId) {
+    return res.status(400).json({ ok: false, error: 'userId query parameter required' });
+  }
+  
+  const userOrders = orders.filter(o => o.userId === userId);
+  console.log(`[ORDERS] Fetched ${userOrders.length} orders for user ${userId}`);
+  
+  res.json({ 
+    ok: true, 
+    orders: userOrders.map(o => ({
+      id: o.id,
+      status: o.status,
+      amount: o.amountInRupees,
+      currency: o.currency,
+      promoCode: o.promoCode,
+      itemCount: o.items ? o.items.length : 0,
+      billing: o.billing,
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt
+    })),
+    total: userOrders.length
+  });
+});
+
+// Get a specific order by ID
+app.get('/api/orders/:orderId', (req, res) => {
+  const { orderId } = req.params;
+  const order = orders.find(o => o.id === orderId);
+  
+  if (!order) {
+    console.log(`[ORDER] Not found: ${orderId}`);
+    return res.status(404).json({ ok: false, error: 'Order not found' });
+  }
+  
+  console.log(`[ORDER] Fetched: ${orderId}`);
+  res.json({ 
+    ok: true, 
+    order: {
+      id: order.id,
+      status: order.status,
+      amount: order.amountInRupees,
+      subtotal: order.subtotal,
+      discount: order.discount,
+      tax: order.tax,
+      currency: order.currency,
+      promoCode: order.promoCode,
+      billing: order.billing,
+      items: order.items,
+      paymentDetails: order.paymentDetails,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt
+    }
+  });
+});
+
+// Get all orders (admin view) - useful for dashboard
+app.get('/api/admin/orders', (req, res) => {
+  const { status, limit = 50 } = req.query;
+  
+  let filtered = orders;
+  if (status) {
+    filtered = orders.filter(o => o.status === status);
+  }
+  
+  const limited = filtered.slice(-parseInt(limit)).reverse();
+  console.log(`[ADMIN-ORDERS] Fetched ${limited.length} orders (filtered by status: ${status || 'all'})`);
+  
+  res.json({ 
+    ok: true, 
+    orders: limited.map(o => ({
+      id: o.id,
+      userId: o.userId,
+      status: o.status,
+      amount: o.amountInRupees,
+      customerName: o.billing?.fullName || 'Unknown',
+      customerPhone: o.billing?.phone || 'N/A',
+      itemCount: o.items ? o.items.length : 0,
+      createdAt: o.createdAt
+    })),
+    total: filtered.length
+  });
+});
+
+// ==================== UPI PAYMENT ENDPOINT ====================
+
+app.post('/api/create-upi-order', async (req, res) => {
+  const { amount, phone } = req.body || {};
+  if (!amount || !phone) return res.status(400).json({ ok: false, error: 'amount and phone required' });
+
+  console.log(`[UPI-ORDER] Creating | Amount: ₹${amount} | Phone: ${phone}`);
+
+  const upiOrderId = `upi_${uuidv4()}`;
+  const upiLink = `upi://pay?pa=repairwale@bank&pn=RepairWale&am=${amount}&tr=${upiOrderId}&tn=Payment`;
+  
+  console.log(`[UPI-ORDER] ✓ Created | Order ID: ${upiOrderId}`);
+
+  res.json({ 
+    ok: true, 
+    order: {
+      id: upiOrderId,
+      amount: amount,
+      currency: 'INR',
+      upiLink: upiLink,
+      phone: phone
+    }
+  });
+});
+
+app.post('/api/verify-upi-payment', (req, res) => {
+  const { orderId, transactionId, phone } = req.body || {};
+  if (!orderId || !transactionId) {
+    return res.status(400).json({ ok: false, error: 'orderId and transactionId required' });
+  }
+
+  console.log(`[UPI-VERIFY] Verifying | Order: ${orderId} | Tx: ${transactionId}`);
+  
+  // Mock verification
+  console.log(`[UPI-VERIFY] ✓ Payment verified`);
+  res.json({ 
+    ok: true, 
+    verified: true
+  });
+});
+
+// ==================== WALLET PAYMENT ENDPOINT ====================
+
+const walletBalance = {};
+
+app.get('/api/wallet/balance', (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ ok: false, error: 'userId required' });
+
+  const balance = walletBalance[userId] || 10000;
+  console.log(`[WALLET] Balance | User: ${userId} | Balance: ₹${balance}`);
+
+  res.json({ 
+    ok: true, 
+    balance: balance
+  });
+});
+
+app.post('/api/process-wallet-payment', async (req, res) => {
+  const { amount, userId } = req.body || {};
+  if (!amount || !userId) {
+    return res.status(400).json({ ok: false, error: 'amount and userId required' });
+  }
+
+  console.log(`[WALLET] Processing | User: ${userId} | Amount: ₹${amount}`);
+
+  const balance = walletBalance[userId] || 10000;
+  if (balance < amount) {
+    console.log(`[WALLET] ✗ Insufficient balance`);
+    return res.status(400).json({ 
+      ok: false, 
+      error: 'insufficient_balance'
+    });
+  }
+
+  walletBalance[userId] = balance - amount;
+  console.log(`[WALLET] ✓ Payment processed | New balance: ₹${walletBalance[userId]}`);
+
+  res.json({ 
+    ok: true, 
+    newBalance: walletBalance[userId],
+    previousBalance: balance
+  });
+});
+
+// ==================== PAYMENT METHOD STATUS CHECK ====================
+
+app.get('/api/payment-methods/available', (req, res) => {
+  const { userId } = req.query;
+  
+  // Check which payment methods are available
+  const methods = {
+    razorpay: {
+      enabled: true,
+      name: 'Razorpay',
+      description: 'Credit/Debit Card, Net Banking, UPI',
+      icon: '💳',
+      status: razorpayInstance ? 'live' : 'mock'
+    },
+    upi: {
+      enabled: true,
+      name: 'UPI',
+      description: 'Google Pay, PhonePe, Paytm, WhatsApp Pay',
+      icon: '📱',
+      status: 'available'
+    },
+    wallet: {
+      enabled: true,
+      name: 'RepairWale Wallet',
+      description: 'Instant payment with wallet credits',
+      icon: '👛',
+      status: 'available',
+      balance: userId ? (walletBalance[userId] || 10000) : null
+    }
+  };
+
+  console.log(`[PAYMENT-METHODS] Checked available methods${userId ? ` for user ${userId}` : ''}`);
+  res.json({ ok: true, methods });
 });
 
 // Final API 404 fallback now that all API routes are defined

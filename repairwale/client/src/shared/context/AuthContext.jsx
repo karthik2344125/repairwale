@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { getAPIBase } from '../services/apiConfig'
 
 const AuthContext = createContext()
 
@@ -52,53 +53,46 @@ export function AuthProvider({ children }) {
   }
 
   const selectRole = async (selectedRole) => {
-    return new Promise(async (resolve) => {
-      try {
-        if (!allowedRoles.includes(selectedRole)) {
-          console.warn('Invalid role selection:', selectedRole)
-          localStorage.removeItem('rw_role_locked')
-          setRole(null)
-          setTimeout(() => resolve(), 50)
-          return
-        }
-
-        const token = localStorage.getItem('repairwale_token')
-        
-        if (token) {
-          // Call backend to update role
-          const response = await fetch('http://localhost:3000/api/auth/set-role', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ role: selectedRole })
-          })
-
-          const data = await response.json()
-          
-          if (data.ok) {
-            // Update local storage with the role from backend
-            const storedUser = JSON.parse(localStorage.getItem('repairwale_user') || '{}')
-            storedUser.role = selectedRole
-            localStorage.setItem('repairwale_user', JSON.stringify(storedUser))
-          }
-        }
-
-        // Lock role permanently in localStorage - persists across refreshes
-        localStorage.setItem('rw_role_locked', selectedRole)
-        setRole(selectedRole)
-        
-        // Small delay to ensure React state update completes
-        setTimeout(() => resolve(), 50)
-      } catch (error) {
-        console.error('Error setting role:', error)
-        // Still set role locally even if backend fails
-        localStorage.setItem('rw_role_locked', selectedRole)
-        setRole(selectedRole)
-        setTimeout(() => resolve(), 50)
+    try {
+      if (!allowedRoles.includes(selectedRole)) {
+        console.warn('Invalid role selection:', selectedRole)
+        localStorage.removeItem('rw_role_locked')
+        setRole(null)
+        return
       }
-    })
+
+      const token = localStorage.getItem('repairwale_token')
+
+      if (token) {
+        // Call backend to update role
+        const response = await fetch(`${getAPIBase()}/auth/set-role`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ role: selectedRole })
+        })
+
+        const data = await response.json()
+
+        if (data.ok) {
+          // Update local storage with the role from backend
+          const storedUser = JSON.parse(localStorage.getItem('repairwale_user') || '{}')
+          storedUser.role = selectedRole
+          localStorage.setItem('repairwale_user', JSON.stringify(storedUser))
+        }
+      }
+
+      // Lock role permanently in localStorage - persists across refreshes
+      localStorage.setItem('rw_role_locked', selectedRole)
+      setRole(selectedRole)
+    } catch (error) {
+      console.error('Error setting role:', error)
+      // Still set role locally even if backend fails
+      localStorage.setItem('rw_role_locked', selectedRole)
+      setRole(selectedRole)
+    }
   }
 
   const logout = () => {
@@ -106,6 +100,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('repairwale_user')
     localStorage.removeItem('rw_role_locked')
     localStorage.removeItem('repairwale_token')
+    localStorage.removeItem('rw_demo_mode')
+    localStorage.removeItem('rw_demo_mechanic_requests')
     
     setUser(null)
     setRole(null)
@@ -117,10 +113,23 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('repairwale_user')
     localStorage.removeItem('rw_role_locked')
     localStorage.removeItem('repairwale_token')
+    localStorage.removeItem('rw_demo_mode')
+    localStorage.removeItem('rw_demo_mechanic_requests')
     
     setUser(null)
     setRole(null)
     setIsAuthenticated(false)
+  }
+
+  const updateUser = (nextUser) => {
+    const merged = { ...(user || {}), ...(nextUser || {}) }
+    localStorage.setItem('repairwale_user', JSON.stringify(merged))
+    setUser(merged)
+    if (merged?.role && allowedRoles.includes(merged.role)) {
+      localStorage.setItem('rw_role_locked', merged.role)
+      setRole(merged.role)
+    }
+    return merged
   }
 
   const value = {
@@ -129,6 +138,7 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     loading,
     login,
+    updateUser,
     selectRole,
     logout,
     completeLogout
@@ -148,3 +158,5 @@ export function useAuth() {
   }
   return context
 }
+
+

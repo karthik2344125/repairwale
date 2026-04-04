@@ -44,3 +44,5 @@ export function total(){
   const sum = cart.items.reduce((acc, i)=> acc + (i.price || 0) * (i.qty || 1), 0)
   return { amount: sum, currency: cart.currency }
 }
+
+

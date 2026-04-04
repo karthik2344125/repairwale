@@ -1,23 +1,24 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../shared/context/AuthContext'
 import { getCustomer, saveCustomer } from '../../shared/services/roleData'
+import { IconUser, IconStar, IconShield, IconList, IconTruck, IconMapPin, IconCard, IconCompass, IconSpark } from '../../icons'
 
 const styles = `
 .profile-wrapper {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0b1220 0%, #0f1728 100%);
+  background: linear-gradient(180deg, #0B1F3B 0%, #0B1F3B 100%);
   padding: 0;
 }
 
 /* ===== HERO HEADER ===== */
 .profile-hero {
-  background: linear-gradient(140deg, #101f3a 0%, #0d1728 46%, #0a1321 100%);
+  background: linear-gradient(140deg, #0B1F3B 0%, #0B1F3B 46%, #0B1F3B 100%);
   padding: 60px 20px 100px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 12px 28px rgba(8, 14, 24, 0.45);
-  border-bottom: 1px solid rgba(96, 165, 250, 0.14);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  border-bottom: 1px solid rgba(29,99,255,0.14);
 }
 
 .profile-hero::before {
@@ -27,7 +28,7 @@ const styles = `
   right: 10%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(96, 165, 250, 0.24) 0%, transparent 72%);
+  background: radial-gradient(circle, rgba(29,99,255,0.24) 0%, transparent 72%);
   filter: blur(18px);
   animation: profile-float 20s ease-in-out infinite;
 }
@@ -50,9 +51,9 @@ const styles = `
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #E6EDF7;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #FFFFFF;
   padding: 12px 22px;
   border-radius: 12px;
   font-weight: 700;
@@ -60,15 +61,15 @@ const styles = `
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   font-size: 14px;
-  box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(29,99,255,0.1);
 }
 
 .back-btn:hover {
-  background: linear-gradient(135deg, #162844 0%, #1a2d52 100%);
-  border-color: #4A9EFF;
-  color: #60a5fa;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border-color: #0B1F3B;
+  color: #FFFFFF;
   transform: translateX(-4px);
-  box-shadow: 0 8px 32px rgba(74, 158, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(29,99,255,0.12);
 }
 
 .profile-actions {
@@ -80,9 +81,9 @@ const styles = `
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #60a5fa;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #FFFFFF;
   font-size: 22px;
   cursor: pointer;
   display: flex;
@@ -90,15 +91,15 @@ const styles = `
   justify-content: center;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(29,99,255,0.1);
 }
 
 .action-icon-btn:hover {
-  background: linear-gradient(135deg, #162844 0%, #1a2d52 100%);
-  border-color: #4A9EFF;
-  color: #4A9EFF;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border-color: #0B1F3B;
+  color: #FFFFFF;
   transform: scale(1.12);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18);
 }
 
 .profile-header-main {
@@ -115,29 +116,29 @@ const styles = `
   width: 120px;
   height: 120px;
   border-radius: 24px;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 48px;
   font-weight: 800;
-  color: #0b1220;
-  border: 3px solid rgba(96, 165, 250, 0.5);
-  box-shadow: 0 0 18px rgba(96, 165, 250, 0.14), 0 12px 40px rgba(8, 14, 24, 0.3);
+  color: #FFFFFF;
+  border: 3px solid rgba(29,99,255,0.5);
+  box-shadow: 0 0 18px rgba(29,99,255,0.14), 0 12px 40px rgba(0,0,0,0.3);
 }
 
 .profile-status-badge {
   position: absolute;
   bottom: -8px;
   right: -8px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   color: #ffffff;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
-  border: 3px solid #0b1220;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  border: 3px solid #0B1F3B;
+  box-shadow: 0 0 15px rgba(255,206,50,0.4);
 }
 
 .profile-info {
@@ -147,15 +148,15 @@ const styles = `
 .profile-name {
   font-size: 36px;
   font-weight: 900;
-  color: #E6EDF7;
+  color: #FFFFFF;
   margin: 0 0 8px 0;
   letter-spacing: -1px;
-  text-shadow: 0 2px 8px rgba(96, 165, 250, 0.12);
+  text-shadow: 0 2px 8px rgba(29,99,255,0.12);
 }
 
 .profile-email {
   font-size: 16px;
-  color: #a5d6ff;
+  color: #FFFFFF;
   margin: 0 0 12px 0;
 }
 
@@ -171,19 +172,19 @@ const styles = `
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #60a5fa;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #0B1F3B;
   border-radius: 12px;
   font-size: 13px;
   font-weight: 700;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(29,99,255,0.1);
 }
 
 .profile-member-since {
   font-size: 14px;
-  color: rgba(166, 173, 186, 0.7);
+  color: rgba(255,206,50,0.7);
   font-weight: 500;
 }
 
@@ -204,13 +205,13 @@ const styles = `
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border-radius: 16px;
   padding: 24px;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   transition: all 0.3s ease;
-  border: 1px solid #2A4368;
+  border: 1px solid #0B1F3B;
   position: relative;
   overflow: hidden;
 }
@@ -222,7 +223,7 @@ const styles = `
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(29,99,255,0.1), transparent);
   transition: left 0.5s ease;
 }
 
@@ -232,8 +233,8 @@ const styles = `
 
 .stat-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 0 18px rgba(96, 165, 250, 0.1);
-  border-color: #4A9EFF;
+  box-shadow: 0 0 18px rgba(29,99,255,0.1);
+  border-color: #0B1F3B;
 }
 
 .stat-icon {
@@ -244,7 +245,7 @@ const styles = `
 .stat-value {
   font-size: 32px;
   font-weight: 900;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -253,7 +254,7 @@ const styles = `
 
 .stat-label {
   font-size: 12px;
-  color: #a5d6ff;
+  color: #FFFFFF;
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -271,12 +272,12 @@ const styles = `
   display: flex;
   gap: 8px;
   margin-bottom: 32px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   padding: 12px;
   border-radius: 16px;
-  border: 1px solid #2A4368;
+  border: 1px solid #0B1F3B;
   overflow-x: auto;
-  box-shadow: 0 6px 20px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
 .profile-tab {
@@ -284,8 +285,8 @@ const styles = `
   min-width: fit-content;
   padding: 14px 20px;
   background: transparent;
-  border: 1px solid #2A4368;
-  color: #a5d6ff;
+  border: 1px solid #0B1F3B;
+  color: #FFFFFF;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -298,17 +299,17 @@ const styles = `
 }
 
 .profile-tab.active {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  color: #0b1220;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #0B1F3B;
   border-color: transparent;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18);
 }
 
 .profile-tab:hover:not(.active) {
-  background: rgba(96, 165, 250, 0.1);
-  color: #4A9EFF;
-  border-color: #4A9EFF;
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.1);
+  background: rgba(29,99,255,0.1);
+  color: #FFFFFF;
+  border-color: #0B1F3B;
+  box-shadow: 0 4px 12px rgba(29,99,255,0.1);
 }
 
 /* ===== CARDS ===== */
@@ -319,17 +320,17 @@ const styles = `
 }
 
 .info-card {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
   border-radius: 16px;
   padding: 28px;
-  box-shadow: 0 8px 28px rgba(8, 14, 24, 0.4);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
   transition: all 0.3s ease;
 }
 
 .info-card:hover {
-  border-color: #4A9EFF;
-  box-shadow: 0 0 14px rgba(96, 165, 250, 0.12);
+  border-color: #0B1F3B;
+  box-shadow: 0 0 14px rgba(29,99,255,0.12);
   transform: translateY(-4px);
 }
 
@@ -339,7 +340,7 @@ const styles = `
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(96, 165, 250, 0.14);
+  border-bottom: 1px solid rgba(29,99,255,0.14);
 }
 
 .card-title {
@@ -348,7 +349,7 @@ const styles = `
   gap: 12px;
   font-size: 18px;
   font-weight: 800;
-  color: #E6EDF7;
+  color: #FFFFFF;
 }
 
 .card-title-icon {
@@ -357,22 +358,22 @@ const styles = `
 
 .card-edit-btn {
   padding: 10px 18px;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border: none;
-  color: #0b1220;
+  color: #FFFFFF;
   border-radius: 10px;
   font-size: 13px;
   cursor: pointer;
   font-weight: 700;
   transition: all 0.3s ease;
-  box-shadow: 0 0 15px rgba(96, 165, 250, 0.18);
+  box-shadow: 0 0 15px rgba(29,99,255,0.18);
 }
 
 .card-edit-btn:hover {
-  background: linear-gradient(135deg, #60A5FF 0%, #4A9EFF 100%);
-  color: #0b1220;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #FFFFFF;
   transform: translateY(-2px);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.14);
+  box-shadow: 0 0 12px rgba(29,99,255,0.14);
 }
 
 .info-rows {
@@ -386,7 +387,7 @@ const styles = `
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(96, 165, 250, 0.1);
+  border-bottom: 1px solid rgba(29,99,255,0.1);
 }
 
 .info-row:last-child {
@@ -395,7 +396,7 @@ const styles = `
 
 .info-label {
   font-size: 13px;
-  color: rgba(166, 173, 186, 0.7);
+  color: rgba(255,206,50,0.7);
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -403,13 +404,13 @@ const styles = `
 
 .info-value {
   font-size: 15px;
-  color: #E6EDF7;
+  color: #FFFFFF;
   font-weight: 600;
   text-align: right;
 }
 
 .info-value.highlight {
-  color: #60a5fa;
+  color: #0B1F3B;
   font-weight: 800;
 }
 
@@ -421,18 +422,18 @@ const styles = `
 }
 
 .item-card {
-  background: linear-gradient(135deg, #0d1422 0%, #152239 100%);
-  border: 1px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
   border-radius: 12px;
   padding: 18px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 .item-card:hover {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border-color: #4A9EFF;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.12);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border-color: #0B1F3B;
+  box-shadow: 0 0 12px rgba(29,99,255,0.12);
   transform: translateY(-2px);
 }
 
@@ -446,20 +447,20 @@ const styles = `
 .item-title {
   font-size: 16px;
   font-weight: 800;
-  color: #E6EDF7;
+  color: #FFFFFF;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .item-badge {
-  background: rgba(96, 165, 250, 0.1);
-  color: #60a5fa;
+  background: rgba(29,99,255,0.1);
+  color: #0B1F3B;
   padding: 4px 10px;
   border-radius: 8px;
   font-size: 11px;
   font-weight: 700;
-  border: 1px solid rgba(96, 165, 250, 0.18);
+  border: 1px solid rgba(29,99,255,0.18);
 }
 
 .item-actions {
@@ -469,47 +470,47 @@ const styles = `
 
 .item-action-btn {
   padding: 8px 14px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #60a5fa;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #FFFFFF;
   border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
   font-weight: 700;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .item-action-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border-color: transparent;
-  color: #0b1220;
-  box-shadow: 0 0 15px rgba(96, 165, 250, 0.18);
+  color: #FFFFFF;
+  box-shadow: 0 0 15px rgba(29,99,255,0.18);
 }
 
 .item-action-btn.danger {
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.3);
+  color: #FFFFFF;
+  border-color: rgba(255,206,50,0.3);
 }
 
 .item-action-btn.danger:hover {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border-color: transparent;
   color: #ffffff;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 15px rgba(255,206,50,0.3);
 }
 
 .item-details {
   font-size: 14px;
-  color: #a5d6ff;
+  color: #FFFFFF;
   line-height: 1.6;
 }
 
 .add-item-btn {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  color: #0b1220;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #FFFFFF;
   border: none;
   border-radius: 12px;
   font-size: 15px;
@@ -521,19 +522,19 @@ const styles = `
   justify-content: center;
   gap: 10px;
   margin-top: 16px;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18);
 }
 
 .add-item-btn:hover {
   transform: translateY(-4px);
-  box-shadow: 0 0 18px rgba(96, 165, 250, 0.14);
-  background: linear-gradient(135deg, #60A5FF 0%, #4A9EFF 100%);
+  box-shadow: 0 0 18px rgba(29,99,255,0.14);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
 }
 
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #a5d6ff;
+  color: #FFFFFF;
 }
 
 .empty-icon {
@@ -560,7 +561,7 @@ const styles = `
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(11, 18, 32, 0.92);
+  background: rgba(29,99,255,0.92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -576,13 +577,13 @@ const styles = `
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
   border-radius: 20px;
   padding: 36px;
   max-width: 500px;
   width: 100%;
-  box-shadow: 0 0 24px rgba(96, 165, 250, 0.18), 0 24px 64px rgba(8, 14, 24, 0.6);
+  box-shadow: 0 0 24px rgba(29,99,255,0.18), 0 24px 64px rgba(0,0,0,0.6);
   animation: slideUp 0.3s ease;
 }
 
@@ -604,22 +605,22 @@ const styles = `
   align-items: center;
   margin-bottom: 28px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(96, 165, 250, 0.14);
+  border-bottom: 1px solid rgba(29,99,255,0.14);
 }
 
 .modal-title {
   font-size: 22px;
   font-weight: 900;
-  color: #E6EDF7;
+  color: #FFFFFF;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .modal-close {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #a5d6ff;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #FFFFFF;
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -629,14 +630,14 @@ const styles = `
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
 }
 
 .modal-close:hover {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border-color: transparent;
   color: #ffffff;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 15px rgba(255,206,50,0.3);
 }
 
 .form-group {
@@ -647,7 +648,7 @@ const styles = `
   display: block;
   font-size: 13px;
   font-weight: 800;
-  color: #a5d6ff;
+  color: #FFFFFF;
   margin-bottom: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -656,26 +657,26 @@ const styles = `
 .form-input {
   width: 100%;
   padding: 14px 16px;
-  background: linear-gradient(135deg, #0d1422 0%, #152239 100%);
-  border: 1px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
   border-radius: 12px;
-  color: #E6EDF7;
+  color: #FFFFFF;
   font-size: 15px;
   font-weight: 500;
   transition: all 0.3s ease;
   font-family: inherit;
-  box-shadow: 0 4px 12px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #4A9EFF;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.12);
+  border-color: #0B1F3B;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  box-shadow: 0 0 12px rgba(29,99,255,0.12);
 }
 
 .form-input::placeholder {
-  color: rgba(166, 173, 186, 0.5);
+  color: rgba(255,206,50,0.5);
 }
 
 .form-actions {
@@ -687,73 +688,74 @@ const styles = `
 .btn-cancel {
   flex: 1;
   padding: 14px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  color: #a5d6ff;
-  border: 1px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #FFFFFF;
+  border: 1px solid #0B1F3B;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .btn-cancel:hover {
-  background: linear-gradient(135deg, #162844 0%, #1a2d52 100%);
-  color: #E6EDF7;
-  border-color: #4A9EFF;
-  box-shadow: 0 0 15px rgba(96, 165, 250, 0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #FFFFFF;
+  border-color: #0B1F3B;
+  box-shadow: 0 0 15px rgba(29,99,255,0.1);
 }
 
 .btn-save {
   flex: 1;
   padding: 14px;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  color: #0b1220;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #0B1F3B;
   border: none;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18);
 }
 
 .btn-save:hover {
   transform: translateY(-3px);
-  box-shadow: 0 0 18px rgba(96, 165, 250, 0.14);
-  background: linear-gradient(135deg, #60A5FF 0%, #4A9EFF 100%);
+  box-shadow: 0 0 18px rgba(29,99,255,0.14);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
 }
 
 /* ===== DARK THEME CONSISTENCY WITH HIGHLIGHTS ===== */
 .profile-wrapper {
-  background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
+  background: linear-gradient(180deg, #0B1F3B 0%, #0B1F3B 100%) !important;
 }
 
 .profile-hero {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 100px rgba(74, 158, 255, 0.05) !important;
-  border-bottom: 1px solid rgba(74, 158, 255, 0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 100px rgba(29,99,255,0.05) !important;
+  border-bottom: 1px solid rgba(29,99,255,0.1);
 }
 
 .profile-name,
 .card-title,
 .item-title,
 .modal-title {
-  color: #E6EDF7 !important;
-  text-shadow: 0 2px 8px rgba(74, 158, 255, 0.1);
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 8px rgba(29,99,255,0.1);
 }
 
 .stat-value {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 2px 8px rgba(74, 158, 255, 0.18));
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: #FFFFFF;
+  background-clip: initial;
+  color: #FFFFFF !important;
+  filter: drop-shadow(0 2px 8px rgba(29,99,255,0.18));
 }
 
 .info-value {
-  color: #E6EDF7 !important;
+  color: #FFFFFF !important;
 }
 
 .profile-email,
@@ -763,45 +765,45 @@ const styles = `
 .empty-subtext,
 .item-details,
 .form-label {
-  color: rgba(230, 237, 247, 0.7) !important;
+  color: rgba(255,255,255,0.7) !important;
 }
 
 .profile-badge {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border: 2px solid #4A9EFF !important;
-  color: #4A9EFF !important;
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.1), inset 0 1px 2px rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(29,99,255,0.1), inset 0 1px 2px rgba(255,255,255,0.1);
 }
 
 .back-btn {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border-color: #2A4368 !important;
-  color: #E6EDF7 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .back-btn:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 8px 20px rgba(74, 158, 255, 0.18);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 8px 20px rgba(29,99,255,0.18);
 }
 
 .action-icon-btn {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border-color: #2A4368 !important;
-  color: #E6EDF7 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  color: #FFFFFF !important;
   transition: all 0.3s ease;
 }
 
 .action-icon-btn:hover {
-  border-color: #4A9EFF !important;
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  box-shadow: 0 8px 24px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  box-shadow: 0 8px 24px rgba(29,99,255,0.12);
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   position: relative;
   overflow: hidden;
 }
@@ -813,7 +815,7 @@ const styles = `
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #4A9EFF, transparent);
+  background: linear-gradient(90deg, transparent, #0B1F3B, transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -823,41 +825,41 @@ const styles = `
 }
 
 .stat-card:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 16px 48px rgba(74, 158, 255, 0.1);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 16px 48px rgba(29,99,255,0.1);
 }
 
 .profile-tabs {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border-color: #2A4368 !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
 }
 
 .profile-tab {
-  background: rgba(11, 18, 32, 0.5) !important;
-  border-color: #2A4368 !important;
-  color: rgba(230, 237, 247, 0.7) !important;
+  background: rgba(29,99,255,0.5) !important;
+  border-color: #0B1F3B !important;
+  color: rgba(255,255,255,0.7) !important;
   transition: all 0.3s ease;
 }
 
 .profile-tab:hover:not(.active) {
-  border-color: #4A9EFF !important;
-  color: #E6EDF7 !important;
-  background: rgba(26, 58, 92, 0.5) !important;
+  border-color: #0B1F3B !important;
+  color: #FFFFFF !important;
+  background: rgba(29,99,255,0.5) !important;
 }
 
 .profile-tab.active {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border-color: #4A9EFF !important;
-  color: #4A9EFF !important;
-  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.18), inset 0 1px 2px rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 20px rgba(29,99,255,0.18), inset 0 1px 2px rgba(255,255,255,0.1);
 }
 
 .info-card,
 .item-card {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
   position: relative;
 }
 
@@ -869,7 +871,7 @@ const styles = `
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(135deg, #4A9EFF, #60A5FF);
+  background: linear-gradient(135deg, #0B1F3B, #0B1F3B);
   border-radius: 16px;
   opacity: 0;
   z-index: -1;
@@ -883,146 +885,460 @@ const styles = `
 
 .info-card:hover,
 .item-card:hover {
-  box-shadow: 0 12px 40px rgba(74, 158, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(29,99,255,0.12);
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #4A9EFF !important;
-  box-shadow: 0 24px 64px rgba(74, 158, 255, 0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 24px 64px rgba(29,99,255,0.1);
 }
 
 .form-input {
-  background: rgba(11, 18, 32, 0.8) !important;
-  border: 2px solid #2A4368 !important;
-  color: #E6EDF7 !important;
+  background: rgba(29,99,255,0.8) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
   transition: all 0.3s ease;
 }
 
 .form-input:focus {
-  border-color: #4A9EFF !important;
-  background: rgba(26, 58, 92, 0.5) !important;
-  box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.1);
+  border-color: #0B1F3B !important;
+  background: rgba(29,99,255,0.5) !important;
+  box-shadow: 0 0 0 4px rgba(29,99,255,0.1);
 }
 
 .btn-cancel {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  color: #E6EDF7 !important;
-  border: 2px solid #2A4368 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  color: #FFFFFF !important;
+  border: 2px solid #0B1F3B !important;
 }
 
 .btn-cancel:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 6px 16px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 6px 16px rgba(29,99,255,0.12);
 }
 
 .card-edit-btn,
 .item-action-btn {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border: 2px solid #4A9EFF !important;
-  color: #4A9EFF !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
   transition: all 0.2s;
 }
 
 .card-edit-btn:hover,
 .item-action-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.22);
+  box-shadow: 0 6px 20px rgba(29,99,255,0.22);
   transform: translateY(-2px);
 }
 
 .item-action-btn.danger {
-  background: linear-gradient(135deg, #3D1A1A 0%, #5C2A2A 100%) !important;
-  color: #FF6B6B !important;
-  border-color: #FF6B6B !important;
+  background: transparent !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255,255,255,0.4) !important;
 }
 
 .item-action-btn.danger:hover {
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%) !important;
+  background: #0B1F3B !important;
   color: #FFFFFF !important;
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 6px 20px rgba(255,206,50,0.4);
 }
 
 .modal-close {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
-  color: #E6EDF7 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
 }
 
 .modal-close:hover {
-  border-color: #FF6B6B !important;
-  color: #FF6B6B !important;
-  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.3);
+  border-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 16px rgba(255,206,50,0.3);
 }
 
 .profile-status-badge {
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
-  color: #FFFFFF !important;
-  border: 3px solid #0B1220 !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  color: #0B1F3B !important;
+  border: 3px solid #0B1F3B !important;
+  box-shadow: 0 4px 12px rgba(255,206,50,0.4);
   font-weight: 800;
 }
 
 .add-item-btn,
 .btn-save {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
-  border: 2px solid #4A9EFF !important;
-  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.22);
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 6px 20px rgba(29,99,255,0.22);
   font-weight: 800;
 }
 
 .add-item-btn:hover,
 .btn-save:hover {
-  background: linear-gradient(135deg, #60A5FF 0%, #80B8FF 100%) !important;
-  box-shadow: 0 12px 32px rgba(74, 158, 255, 0.28);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  box-shadow: 0 12px 32px rgba(29,99,255,0.28);
   transform: translateY(-4px);
 }
 
 .item-badge {
-  background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%) !important;
-  color: #0B1220 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  color: #0B1F3B !important;
   border: none !important;
   font-weight: 900;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(255,206,50,0.3);
 }
 
 .info-value.highlight {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: #FFFFFF;
+  background-clip: initial;
+  color: #FFFFFF !important;
   font-weight: 900 !important;
-  filter: drop-shadow(0 2px 4px rgba(74, 158, 255, 0.18));
+  filter: drop-shadow(0 2px 4px rgba(29,99,255,0.18));
 }
 
 .form-input::placeholder,
 .empty-text {
-  color: rgba(230, 237, 247, 0.5) !important;
+  color: #FFFFFF !important;
 }
 
 .modal-overlay {
-  background: rgba(11, 18, 32, 0.85) !important;
+  background: rgba(29,99,255,0.85) !important;
   backdrop-filter: blur(8px);
 }
 
 .profile-avatar-large {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border: 4px solid #4A9EFF !important;
-  box-shadow: 0 12px 40px rgba(74, 158, 255, 0.12);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 4px solid #0B1F3B !important;
+  box-shadow: 0 12px 40px rgba(29,99,255,0.12);
 }
 
 .card-header {
-  border-bottom-color: rgba(74, 158, 255, 0.12) !important;
+  border-bottom-color: rgba(29,99,255,0.12) !important;
 }
 
 .modal-header {
-  border-bottom: 2px solid rgba(74, 158, 255, 0.12) !important;
+  border-bottom: 2px solid rgba(29,99,255,0.12) !important;
 }
 
 .info-row {
-  border-bottom-color: rgba(42, 67, 104, 0.3) !important;
+  border-bottom-color: rgba(29,99,255,0.3) !important;
+}
+
+/* ===== FINAL VISIBILITY FIXES ===== */
+.profile-badge,
+.item-badge,
+.profile-status-badge,
+.profile-tab.active,
+.info-value.highlight,
+.stat-value {
+  color: #eaf2ff !important;
+  -webkit-text-fill-color: #eaf2ff !important;
+}
+
+.profile-badge,
+.item-badge,
+.profile-status-badge {
+  border-color: rgba(132, 168, 225, 0.45) !important;
+}
+
+.stat-icon,
+.card-title-icon,
+.empty-icon,
+.icon-inline {
+  color: #dce9ff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon svg,
+.card-title-icon svg,
+.empty-icon svg,
+.icon-inline svg,
+.action-icon-btn svg {
+  display: block;
+}
+
+.action-icon-btn,
+.back-btn,
+.profile-tab,
+.card-edit-btn,
+.item-action-btn,
+.add-item-btn,
+.btn-cancel,
+.btn-save,
+.modal-close {
+  color: #eaf2ff !important;
+}
+
+.profile-email,
+.profile-member-since,
+.stat-label,
+.info-label,
+.item-details,
+.empty-text,
+.empty-subtext,
+.form-label,
+.form-input,
+.form-input::placeholder {
+  color: rgba(234, 242, 255, 0.86) !important;
+}
+
+.empty-icon {
+  min-height: 64px;
+}
+
+/* ===== GRID CORRECTION + FLAT NAVY SURFACE ===== */
+.profile-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+.cards-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 20px !important;
+  align-items: start;
+}
+
+.profile-stats-grid > .stat-card {
+  min-height: 158px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cards-grid > .info-card {
+  height: 100%;
+}
+
+.cards-grid > .info-card[style*='grid-column: 1 / -1'] {
+  height: auto;
+}
+
+.info-rows {
+  flex: 1;
+}
+
+.stat-card,
+.info-card,
+.item-card,
+.profile-tabs,
+.profile-tab,
+.modal-content,
+.form-input,
+.card-edit-btn,
+.item-action-btn,
+.add-item-btn,
+.btn-cancel,
+.btn-save,
+.back-btn,
+.action-icon-btn,
+.modal-close,
+.profile-badge,
+.item-badge,
+.profile-avatar-large,
+.profile-status-badge {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.stat-card,
+.info-card,
+.item-card,
+.profile-tabs,
+.modal-content {
+  background: rgba(10, 30, 58, 0.56) !important;
+  border-radius: 16px !important;
+}
+
+.form-input {
+  background: rgba(12, 36, 69, 0.58) !important;
+  border-radius: 12px !important;
+}
+
+.profile-tab,
+.card-edit-btn,
+.item-action-btn,
+.add-item-btn,
+.btn-cancel,
+.btn-save,
+.back-btn,
+.action-icon-btn,
+.modal-close,
+.profile-badge,
+.item-badge,
+.profile-status-badge {
+  background: rgba(14, 40, 76, 0.5) !important;
+  border-radius: 12px !important;
+}
+
+.profile-avatar-large {
+  background: rgba(14, 40, 76, 0.48) !important;
+  border-radius: 18px !important;
+}
+
+.stat-card,
+.info-card,
+.item-card,
+.profile-tabs,
+.modal-content,
+.form-input,
+.profile-badge,
+.item-badge,
+.profile-avatar-large,
+.profile-status-badge {
+  border: 1px solid rgba(124, 160, 217, 0.35) !important;
+}
+
+.profile-tab {
+  border: 1px solid transparent !important;
+  border-bottom: 2px solid transparent !important;
+  padding-inline: 10px !important;
+}
+
+.profile-tab.active {
+  background: rgba(45, 95, 163, 0.35) !important;
+  border-bottom-color: #8db4f0 !important;
+}
+
+.profile-member-since,
+.info-label,
+.form-input::placeholder,
+.item-action-btn.danger {
+  color: rgba(187, 209, 241, 0.88) !important;
+}
+
+.item-action-btn.danger {
+  border-color: rgba(124, 160, 217, 0.35) !important;
+}
+
+.item-header {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.item-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.action-text-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stat-card:hover,
+.info-card:hover,
+.item-card:hover,
+.profile-tab:hover,
+.card-edit-btn:hover,
+.item-action-btn:hover,
+.add-item-btn:hover,
+.btn-cancel:hover,
+.btn-save:hover,
+.back-btn:hover,
+.action-icon-btn:hover,
+.modal-close:hover {
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* ===== CLASSIC NAVY FLAT THEME ===== */
+.profile-wrapper,
+.profile-hero,
+.profile-tabs,
+.stat-card,
+.info-card,
+.item-card,
+.modal-content,
+.form-input,
+.profile-badge,
+.item-badge,
+.profile-status-badge,
+.profile-avatar-large,
+.back-btn,
+.action-icon-btn,
+.card-edit-btn,
+.item-action-btn,
+.add-item-btn,
+.btn-cancel,
+.btn-save,
+.modal-close,
+.profile-tab,
+.profile-tab.active {
+  background: #0b1f3b !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.profile-hero::before,
+.stat-card::before,
+.info-card::after,
+.item-card::after {
+  display: none !important;
+  content: none !important;
+}
+
+.profile-wrapper,
+.profile-hero,
+.profile-content,
+.modal-content {
+  border-color: #23466f !important;
+}
+
+.profile-tab,
+.back-btn,
+.action-icon-btn,
+.card-edit-btn,
+.item-action-btn,
+.add-item-btn,
+.btn-cancel,
+.btn-save,
+.modal-close,
+.form-input,
+.profile-badge,
+.item-badge,
+.profile-status-badge {
+  border: 1px solid #2a527f !important;
+}
+
+.profile-name,
+.profile-email,
+.profile-member-since,
+.card-title,
+.info-label,
+.info-value,
+.item-title,
+.item-details,
+.form-label,
+.form-input,
+.form-input::placeholder,
+.stat-label,
+.stat-value,
+.empty-text,
+.empty-subtext,
+.modal-title {
+  color: #e8f1ff !important;
+  -webkit-text-fill-color: #e8f1ff !important;
+}
+
+.profile-tab.active {
+  border-bottom-color: #7fa9de !important;
+}
+
+.modal-overlay {
+  background: rgba(11, 31, 59, 0.9) !important;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1041,11 +1357,20 @@ const styles = `
   }
 
   .profile-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .cards-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .profile-stats-grid > .stat-card {
+    min-height: 140px;
   }
 
   .profile-tabs {
@@ -1055,6 +1380,20 @@ const styles = `
 }
 
 @media (max-width: 480px) {
+  .profile-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-top-nav {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .profile-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .profile-avatar-large {
     width: 100px;
     height: 100px;
@@ -1072,7 +1411,7 @@ const styles = `
 `
 
 export default function CustomerProfile() {
-  const { user, completeLogout } = useAuth()
+  const { user, updateUser } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const [customer, setCustomer] = useState(null)
@@ -1096,16 +1435,58 @@ export default function CustomerProfile() {
     setCustomer(custData)
   }, [])
 
-  const initials = (user?.fullName || 'User').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
   const joinedDate = user?.joinedDate ? new Date(user.joinedDate) : null
   const membershipDays = joinedDate ? Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / (1000 * 60 * 60 * 24))) : 0
 
-  const handleLogout = () => {
-    if(confirm('Are you sure you want to logout?')) {
-      completeLogout()
-      navigate('/')
+  const displayUser = useMemo(() => {
+    const demoJoined = '2024-08-12T00:00:00.000Z'
+    return {
+      fullName: user?.fullName || 'Aarav Mehta',
+      email: user?.email || 'aarav.mehta@repairwale.in',
+      phone: user?.phone || '+91 98765 43210',
+      joinedDate: user?.joinedDate || demoJoined
     }
-  }
+  }, [user])
+
+  const displayCustomer = useMemo(() => {
+    const fallback = {
+      orders: [
+        { id: 'ORD-10482', status: 'Completed', totalAmount: 2499, createdAt: '2026-03-18T10:20:00.000Z' },
+        { id: 'ORD-10466', status: 'Completed', totalAmount: 1499, createdAt: '2026-03-03T15:40:00.000Z' },
+        { id: 'ORD-10445', status: 'In Progress', totalAmount: 3299, createdAt: '2026-02-21T09:10:00.000Z' },
+        { id: 'ORD-10411', status: 'Completed', totalAmount: 999, createdAt: '2026-02-05T18:30:00.000Z' },
+        { id: 'ORD-10389', status: 'Completed', totalAmount: 1899, createdAt: '2026-01-28T11:50:00.000Z' },
+        { id: 'ORD-10352', status: 'Completed', totalAmount: 2799, createdAt: '2026-01-14T13:00:00.000Z' }
+      ],
+      vehicles: [
+        { id: 'VH-88001', brand: 'Hyundai', model: 'Creta SX', plate: 'MH12 AB 4821', primary: true },
+        { id: 'VH-88002', brand: 'Honda', model: 'City VX', plate: 'MH14 KR 9102', primary: false }
+      ],
+      addresses: [
+        { id: 'ADDR-5001', label: 'Home', line: 'Flat 902, Orchid Heights, Baner Road', city: 'Pune', pincode: '411045' },
+        { id: 'ADDR-5002', label: 'Office', line: 'Tower B, Cyber One IT Park, Hinjewadi', city: 'Pune', pincode: '411057' }
+      ],
+      paymentMethods: [
+        { id: 'PM-7001', cardName: 'HDFC Regalia', cardLast4: '4721', expiryMonth: '09', expiryYear: '28', isDefault: true },
+        { id: 'PM-7002', cardName: 'ICICI Coral', cardLast4: '1198', expiryMonth: '02', expiryYear: '27', isDefault: false }
+      ]
+    }
+
+    const src = customer || {}
+    return {
+      ...src,
+      orders: (src.orders && src.orders.length > 0) ? src.orders : fallback.orders,
+      vehicles: (src.vehicles && src.vehicles.length > 0) ? src.vehicles : fallback.vehicles,
+      addresses: (src.addresses && src.addresses.length > 0) ? src.addresses : fallback.addresses,
+      paymentMethods: (src.paymentMethods && src.paymentMethods.length > 0) ? src.paymentMethods : fallback.paymentMethods
+    }
+  }, [customer])
+
+  const displayInitials = (displayUser.fullName || 'User').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
+  const displayJoinedDate = displayUser.joinedDate ? new Date(displayUser.joinedDate) : joinedDate
+  const displayMembershipDays = displayJoinedDate
+    ? Math.max(0, Math.floor((Date.now() - displayJoinedDate.getTime()) / (1000 * 60 * 60 * 24)))
+    : membershipDays
 
   const openProfileModal = () => {
     setProfileForm({ 
@@ -1123,9 +1504,8 @@ export default function CustomerProfile() {
     }
     
     const updated = { ...user, fullName: profileForm.fullName, phone: profileForm.phone }
-    localStorage.setItem('repairwale_user', JSON.stringify(updated))
+    updateUser(updated)
     setShowProfileModal(false)
-    window.location.reload()
   }
 
   const openVehicleModal = (vehicle = null) => {
@@ -1266,7 +1646,7 @@ export default function CustomerProfile() {
   }
 
   return (
-    <div className="profile-wrapper">
+    <div className="profile-wrapper" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       <style>{styles}</style>
       
       {/* Hero Header */}
@@ -1274,33 +1654,31 @@ export default function CustomerProfile() {
         <div className="profile-hero-content">
           <div className="profile-top-nav">
             <button className="back-btn" onClick={() => navigate('/customer')}>
-              ← Back to Home
+              <span className="icon-inline" aria-hidden>←</span>
+              Back to Home
             </button>
             <div className="profile-actions">
-              <button className="action-icon-btn" onClick={() => navigate('/favorites')} title="Favorites">
-                ❤
-              </button>
-              <button className="action-icon-btn" onClick={handleLogout} title="Logout">
-                ⎋
+              <button className="action-icon-btn" onClick={() => navigate('/favorites')} title="Favorites" aria-label="Favorites">
+                <IconStar size={20} />
               </button>
             </div>
           </div>
           
           <div className="profile-header-main">
             <div className="profile-avatar-wrapper">
-              <div className="profile-avatar-large">{initials}</div>
+              <div className="profile-avatar-large">{displayInitials}</div>
               <div className="profile-status-badge">Verified</div>
             </div>
             
             <div className="profile-info">
-              <h1 className="profile-name">{user?.fullName || 'My Profile'}</h1>
-              <p className="profile-email">{user?.email}</p>
+              <h1 className="profile-name">{displayUser.fullName || 'My Profile'}</h1>
+              <p className="profile-email">{displayUser.email}</p>
               <div className="profile-badges">
-                <span className="profile-badge">Customer</span>
-                <span className="profile-badge">4.8 Rating</span>
+                <span className="profile-badge"><IconUser size={14} /> Customer</span>
+                <span className="profile-badge"><IconStar size={14} /> 4.8 Rating</span>
               </div>
               <p className="profile-member-since">
-                Member since {joinedDate?.toLocaleDateString() || 'Recently'}
+                Member since {displayJoinedDate?.toLocaleDateString() || 'Recently'}
               </p>
             </div>
           </div>
@@ -1311,23 +1689,23 @@ export default function CustomerProfile() {
       <div className="profile-stats-container">
         <div className="profile-stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">📅</div>
-            <div className="stat-value">{membershipDays}</div>
+            <div className="stat-icon"><IconCompass size={26} /></div>
+            <div className="stat-value">{displayMembershipDays}</div>
             <div className="stat-label">Days Active</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">📦</div>
-            <div className="stat-value">{customer?.orders?.length || 0}</div>
+            <div className="stat-icon"><IconList size={26} /></div>
+            <div className="stat-value">{displayCustomer?.orders?.length || 0}</div>
             <div className="stat-label">Total Orders</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">🚗</div>
-            <div className="stat-value">{customer?.vehicles?.length || 0}</div>
+            <div className="stat-icon"><IconTruck size={26} /></div>
+            <div className="stat-value">{displayCustomer?.vehicles?.length || 0}</div>
             <div className="stat-label">Vehicles</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">📍</div>
-            <div className="stat-value">{customer?.addresses?.length || 0}</div>
+            <div className="stat-icon"><IconMapPin size={26} /></div>
+            <div className="stat-value">{displayCustomer?.addresses?.length || 0}</div>
             <div className="stat-label">Addresses</div>
           </div>
         </div>
@@ -1341,25 +1719,29 @@ export default function CustomerProfile() {
             className={`profile-tab ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveTab('overview')}
           >
-            <span>📊</span> Overview
+            <span className="icon-inline"><IconUser size={16} /></span>
+            Overview
           </button>
           <button 
             className={`profile-tab ${activeTab === 'vehicles' ? 'active' : ''}`}
             onClick={() => setActiveTab('vehicles')}
           >
-            <span>🚗</span> Vehicles
+            <span className="icon-inline"><IconTruck size={16} /></span>
+            Vehicles
           </button>
           <button 
             className={`profile-tab ${activeTab === 'addresses' ? 'active' : ''}`}
             onClick={() => setActiveTab('addresses')}
           >
-            <span>📍</span> Addresses
+            <span className="icon-inline"><IconMapPin size={16} /></span>
+            Addresses
           </button>
           <button 
             className={`profile-tab ${activeTab === 'payments' ? 'active' : ''}`}
             onClick={() => setActiveTab('payments')}
           >
-            <span>💳</span> Payments
+            <span className="icon-inline"><IconCard size={16} /></span>
+            Payments
           </button>
         </div>
 
@@ -1369,7 +1751,7 @@ export default function CustomerProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">👤</span>
+                  <span className="card-title-icon"><IconUser size={20} /></span>
                   Personal Information
                 </div>
                 <button className="card-edit-btn" onClick={openProfileModal}>Edit</button>
@@ -1377,19 +1759,19 @@ export default function CustomerProfile() {
               <div className="info-rows">
                 <div className="info-row">
                   <span className="info-label">Full Name</span>
-                  <span className="info-value">{user?.fullName}</span>
+                  <span className="info-value">{displayUser.fullName}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Email</span>
-                  <span className="info-value">{user?.email}</span>
+                  <span className="info-value">{displayUser.email}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Phone</span>
-                  <span className="info-value">{user?.phone || 'Not added'}</span>
+                  <span className="info-value">{displayUser.phone || 'Not added'}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Member Since</span>
-                  <span className="info-value highlight">{joinedDate?.toLocaleDateString()}</span>
+                  <span className="info-value highlight">{displayJoinedDate?.toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
@@ -1397,26 +1779,26 @@ export default function CustomerProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">📊</span>
+                  <span className="card-title-icon"><IconSpark size={20} /></span>
                   Account Statistics
                 </div>
               </div>
               <div className="info-rows">
                 <div className="info-row">
                   <span className="info-label">Total Orders</span>
-                  <span className="info-value highlight">{customer?.orders?.length || 0}</span>
+                  <span className="info-value highlight">{displayCustomer?.orders?.length || 0}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Rating</span>
-                  <span className="info-value highlight">⭐ 4.8 / 5.0</span>
+                  <span className="info-value highlight"> 4.8 / 5.0</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Account Status</span>
-                  <span className="info-value" style={{color: '#E6EDF7'}}>Active</span>
+                  <span className="info-value" style={{color: '#d7e6ff'}}>Active</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Email Status</span>
-                  <span className="info-value" style={{color: '#E6EDF7'}}>Verified</span>
+                  <span className="info-value" style={{color: '#d7e6ff'}}>Verified</span>
                 </div>
               </div>
             </div>
@@ -1429,24 +1811,24 @@ export default function CustomerProfile() {
             <div className="info-card" style={{gridColumn: '1 / -1'}}>
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">🚗</span>
+                  <span className="card-title-icon"><IconTruck size={20} /></span>
                   My Vehicles
                 </div>
               </div>
               
-              {(!customer?.vehicles || customer.vehicles.length === 0) ? (
+              {(!displayCustomer?.vehicles || displayCustomer.vehicles.length === 0) ? (
                 <div className="empty-state">
-                  <div className="empty-icon">🚗</div>
+                  <div className="empty-icon"><IconTruck size={48} /></div>
                   <div className="empty-text">No vehicles added yet</div>
                   <div className="empty-subtext">Add your first vehicle to get started</div>
                 </div>
               ) : (
                 <div className="items-list">
-                  {customer.vehicles.map(vehicle => (
+                  {displayCustomer.vehicles.map(vehicle => (
                     <div key={vehicle.id} className="item-card">
                       <div className="item-header">
                         <div className="item-title">
-                          🚗 {vehicle.brand} {vehicle.model}
+                          <span className="icon-inline"><IconTruck size={16} /></span> {vehicle.brand} {vehicle.model}
                           {vehicle.primary && <span className="item-badge">Primary</span>}
                         </div>
                         <div className="item-actions">
@@ -1483,25 +1865,22 @@ export default function CustomerProfile() {
           <div className="cards-grid">
             <div className="info-card" style={{gridColumn: '1 / -1'}}>
               <div className="card-header">
-                <div className="card-title">
-                  <span className="card-title-icon">📍</span>
-                  Saved Addresses
-                </div>
+                <div className="card-title"><span className="card-title-icon"><IconMapPin size={20} /></span>Saved Addresses</div>
               </div>
               
-              {(!customer?.addresses || customer.addresses.length === 0) ? (
+              {(!displayCustomer?.addresses || displayCustomer.addresses.length === 0) ? (
                 <div className="empty-state">
-                  <div className="empty-icon">📍</div>
+                  <div className="empty-icon"><IconMapPin size={48} /></div>
                   <div className="empty-text">No addresses saved yet</div>
                   <div className="empty-subtext">Add an address for faster checkout</div>
                 </div>
               ) : (
                 <div className="items-list">
-                  {customer.addresses.map(address => (
+                  {displayCustomer.addresses.map(address => (
                     <div key={address.id} className="item-card">
                       <div className="item-header">
                         <div className="item-title">
-                          📍 {address.label}
+                          <span className="icon-inline"><IconMapPin size={16} /></span> {address.label}
                         </div>
                         <div className="item-actions">
                           <button className="item-action-btn danger" onClick={() => removeAddress(address.id)}>
@@ -1530,25 +1909,22 @@ export default function CustomerProfile() {
           <div className="cards-grid">
             <div className="info-card" style={{gridColumn: '1 / -1'}}>
               <div className="card-header">
-                <div className="card-title">
-                  <span className="card-title-icon">💳</span>
-                  Payment Methods
-                </div>
+                <div className="card-title"><span className="card-title-icon"><IconCard size={20} /></span>Payment Methods</div>
               </div>
               
-              {(!customer?.paymentMethods || customer.paymentMethods.length === 0) ? (
+              {(!displayCustomer?.paymentMethods || displayCustomer.paymentMethods.length === 0) ? (
                 <div className="empty-state">
-                  <div className="empty-icon">💳</div>
+                  <div className="empty-icon"><IconCard size={48} /></div>
                   <div className="empty-text">No payment methods added</div>
                   <div className="empty-subtext">Add a payment method for faster checkout</div>
                 </div>
               ) : (
                 <div className="items-list">
-                  {customer.paymentMethods.map(payment => (
+                  {displayCustomer.paymentMethods.map(payment => (
                     <div key={payment.id} className="item-card">
                       <div className="item-header">
                         <div className="item-title">
-                          💳 {payment.cardName}
+                          <span className="icon-inline"><IconCard size={16} /></span> {payment.cardName}
                           {payment.isDefault && <span className="item-badge">Default</span>}
                         </div>
                         <div className="item-actions">
@@ -1563,7 +1939,7 @@ export default function CustomerProfile() {
                         </div>
                       </div>
                       <div className="item-details">
-                        •••• •••• •••• {payment.cardLast4}<br/>
+                           {payment.cardLast4}<br/>
                         Expires: {payment.expiryMonth}/{payment.expiryYear}
                       </div>
                     </div>
@@ -1586,8 +1962,8 @@ export default function CustomerProfile() {
         <div className="modal-overlay" onClick={() => setShowProfileModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">✏️ Edit Profile</div>
-              <button className="modal-close" onClick={() => setShowProfileModal(false)}>×</button>
+              <div className="modal-title"><IconUser size={18} /> Edit Profile</div>
+              <button className="modal-close" onClick={() => setShowProfileModal(false)}>Close</button>
             </div>
             
             <div className="form-group">
@@ -1636,8 +2012,8 @@ export default function CustomerProfile() {
         <div className="modal-overlay" onClick={() => setShowVehicleModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">🚗 {editingVehicle ? 'Edit' : 'Add'} Vehicle</div>
-              <button className="modal-close" onClick={() => setShowVehicleModal(false)}>×</button>
+              <div className="modal-title"><IconTruck size={18} /> {editingVehicle ? 'Edit' : 'Add'} Vehicle</div>
+              <button className="modal-close" onClick={() => setShowVehicleModal(false)}>Close</button>
             </div>
             
             <div className="form-group">
@@ -1686,8 +2062,8 @@ export default function CustomerProfile() {
         <div className="modal-overlay" onClick={() => setShowAddressModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">📍 Add Address</div>
-              <button className="modal-close" onClick={() => setShowAddressModal(false)}>×</button>
+              <div className="modal-title"><IconMapPin size={18} /> Add Address</div>
+              <button className="modal-close" onClick={() => setShowAddressModal(false)}>Close</button>
             </div>
             
             <div className="form-group">
@@ -1747,8 +2123,8 @@ export default function CustomerProfile() {
         <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">💳 Add Payment Method</div>
-              <button className="modal-close" onClick={() => setShowPaymentModal(false)}>×</button>
+              <div className="modal-title"><IconCard size={18} /> Add Payment Method</div>
+              <button className="modal-close" onClick={() => setShowPaymentModal(false)}>Close</button>
             </div>
             
             <div className="form-group">
@@ -1822,3 +2198,5 @@ export default function CustomerProfile() {
     </div>
   )
 }
+
+

@@ -9,7 +9,17 @@ const morgan = require('morgan');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+const { createKnowledgeEngine } = require('./ai/knowledgeEngine');
 let Razorpay; // lazy require
+
+// Database
+const { connectDB, isDBConnected } = require('./db/connection');
+const User = require('./models/User');
+const Order = require('./models/Order');
+const Message = require('./models/Message');
 
 // JWT secret (in production, use environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'repairwale-secret-key-change-in-production';
@@ -85,8 +95,31 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable for dev, enable in production
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per window
+  message: { ok: false, error: 'Too many authentication attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute
+  message: { ok: false, error: 'Too many requests, please slow down' }
+});
+
+app.use(express.json({ limit: '8mb' }));
 app.use(morgan('tiny'));
+app.use('/api', apiLimiter);
 // Razorpay init (only if env vars present)
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -111,33 +144,152 @@ if (razorpayKeyId && razorpayKeySecret) {
 
 const fs = require('fs');
 
+const aiKnowledgeEngine = createKnowledgeEngine({
+  persistPath: path.join(__dirname, 'db', 'ai_knowledge.json')
+});
+aiKnowledgeEngine.load();
+aiKnowledgeEngine.bootstrapDefaults();
+
+function requireAIAdmin(req, res, next) {
+  const adminKey = process.env.AI_ADMIN_KEY;
+  if (!adminKey) return next();
+
+  const requestKey = req.headers['x-ai-admin-key'];
+  if (requestKey !== adminKey) {
+    return res.status(403).json({ ok: false, error: 'Forbidden: invalid AI admin key' });
+  }
+
+  next();
+}
+
 // Serve static frontend: prefer production build in `client/dist` if present,
 // otherwise fall back to serving the raw `client` directory (useful for prototype).
 const clientRoot = path.join(__dirname, '..', 'client');
 const clientDist = path.join(clientRoot, 'dist');
 const servingDist = fs.existsSync(clientDist);
 console.log('[STATIC] dist exists?', servingDist, 'path:', servingDist ? clientDist : clientRoot);
+const isProduction = process.env.NODE_ENV === 'production';
+const frontendDevUrl = process.env.FRONTEND_DEV_URL || 'http://localhost:5173';
 
 // Health endpoints (must be defined before SPA catch-all)
 app.get('/health', (req, res) => res.json({ ok: true, service: 'repairwale-server' }));
 app.get('/api/health', (req, res) => res.json({ ok: true, service: 'repairwale-server' }));
-
-app.use('/', express.static(servingDist ? clientDist : clientRoot, {
-  setHeaders: (res) => {
-    res.setHeader('Cache-Control','no-store'); // ensure latest build served after changes
-  }
-}));
-
-// For SPA client-side routing, serve index.html for any unknown GET route
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
-  const indexPath = servingDist ? path.join(clientDist, 'index.html') : path.join(clientRoot, 'index.html');
-  if (!fs.existsSync(indexPath)) {
-    console.error('[STATIC] index.html missing. Did you run build? Expected at', indexPath);
-    return res.status(500).send('Build not found. Run "npm run build" in client folder.');
-  }
-  res.sendFile(indexPath);
+app.get('/api/status', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'repairwale-server',
+    environment: process.env.NODE_ENV || 'development',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    database: {
+      connected: isDBConnected()
+    },
+    aiKnowledge: {
+      ...aiKnowledgeEngine.stats()
+    }
+  });
 });
+
+app.get('/api/ai/knowledge/stats', (req, res) => {
+  res.json({ ok: true, stats: aiKnowledgeEngine.stats() });
+});
+
+app.post('/api/ai/knowledge/import', requireAIAdmin, (req, res) => {
+  try {
+    const { documents, reset = false, persist = true, chunkSize = 120, overlap = 24, sourcePrefix = 'dataset' } = req.body || {};
+
+    if (!Array.isArray(documents) || !documents.length) {
+      return res.status(400).json({ ok: false, error: 'documents[] is required' });
+    }
+
+    if (documents.length > 1000) {
+      return res.status(400).json({ ok: false, error: 'Too many documents in one request (max 1000)' });
+    }
+
+    const sanitized = documents.map((doc, i) => ({
+      source: doc.source || `${sourcePrefix}-${i + 1}`,
+      title: String(doc.title || `Document ${i + 1}`),
+      tags: Array.isArray(doc.tags) ? doc.tags.slice(0, 20) : [],
+      content: String(doc.content || '').slice(0, 100000)
+    })).filter((doc) => doc.content.trim().length > 0);
+
+    if (!sanitized.length) {
+      return res.status(400).json({ ok: false, error: 'No valid document content found' });
+    }
+
+    const result = aiKnowledgeEngine.ingestDocuments(sanitized, {
+      resetBefore: Boolean(reset),
+      sourcePrefix,
+      chunkSize: Math.max(50, Math.min(Number(chunkSize) || 120, 300)),
+      overlap: Math.max(0, Math.min(Number(overlap) || 24, 80))
+    });
+
+    if (persist) {
+      aiKnowledgeEngine.save();
+    }
+
+    res.json({ ok: true, result, stats: aiKnowledgeEngine.stats() });
+  } catch (error) {
+    console.error('[AI] Import failed:', error);
+    res.status(500).json({ ok: false, error: 'Failed to import AI knowledge documents' });
+  }
+});
+
+app.post('/api/ai/knowledge/search', (req, res) => {
+  try {
+    const { query, topK = 5 } = req.body || {};
+    if (!query || !String(query).trim()) {
+      return res.status(400).json({ ok: false, error: 'query is required' });
+    }
+
+    const matches = aiKnowledgeEngine.search(String(query), Number(topK) || 5);
+    res.json({ ok: true, matches });
+  } catch (error) {
+    console.error('[AI] Search failed:', error);
+    res.status(500).json({ ok: false, error: 'Failed to search AI knowledge base' });
+  }
+});
+
+app.post('/api/ai/chat', (req, res) => {
+  try {
+    const { message, topK = 4 } = req.body || {};
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ ok: false, error: 'message is required' });
+    }
+
+    const response = aiKnowledgeEngine.answerQuestion(String(message), Number(topK) || 4);
+    res.json({ ok: true, ...response });
+  } catch (error) {
+    console.error('[AI] Chat failed:', error);
+    res.status(500).json({ ok: false, error: 'AI chat failed' });
+  }
+});
+
+if (isProduction) {
+  app.use('/', express.static(servingDist ? clientDist : clientRoot, {
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control','no-store'); // ensure latest build served after changes
+    }
+  }));
+
+  // For SPA client-side routing, serve index.html for any unknown GET route
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
+    const indexPath = servingDist ? path.join(clientDist, 'index.html') : path.join(clientRoot, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      console.error('[STATIC] index.html missing. Did you run build? Expected at', indexPath);
+      return res.status(500).send('Build not found. Run "npm run build" in client folder.');
+    }
+    res.sendFile(indexPath);
+  });
+} else {
+  // In development, always use Vite dev server so source edits hot-reload immediately.
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
+    const target = `${frontendDevUrl}${req.originalUrl || '/'}`;
+    return res.redirect(307, target);
+  });
+}
 
 // API 404 fallback (moved to end below after route definitions)
 
@@ -147,6 +299,60 @@ const mechanics = [
   { id: 'm2', name: 'Sai Mechanics', lat: 28.6200, lng: 77.2100, rating: 4.4 },
   { id: 'm3', name: 'QuickFix Auto', lat: 28.6100, lng: 77.2000, rating: 4.7 }
 ];
+
+const servicesCatalog = [
+  {
+    id: 'svc-breakdown-quick-fix',
+    title: 'Breakdown Quick Fix',
+    category: 'Emergency',
+    price: 549,
+    duration: '30-45 min',
+    description: 'Rapid roadside diagnosis and temporary repair to get you moving.'
+  },
+  {
+    id: 'svc-flat-tyre-assist',
+    title: 'Flat Tyre Assist',
+    category: 'Emergency',
+    price: 399,
+    duration: '20-35 min',
+    description: 'On-site tyre replacement or puncture support.'
+  },
+  {
+    id: 'svc-battery-jumpstart',
+    title: 'Battery Jump-Start',
+    category: 'Emergency',
+    price: 299,
+    duration: '15-25 min',
+    description: 'Quick battery start support with basic electrical checks.'
+  },
+  {
+    id: 'svc-basic-maintenance',
+    title: 'Basic Service',
+    category: 'Maintenance',
+    price: 1299,
+    duration: '60-90 min',
+    description: 'General inspection, fluids top-up, and essential tune-up.'
+  },
+  {
+    id: 'svc-comprehensive-maintenance',
+    title: 'Comprehensive Service',
+    category: 'Maintenance',
+    price: 2299,
+    duration: '90-150 min',
+    description: 'Complete preventive maintenance and deep vehicle health check.'
+  }
+];
+const runtimeMechanics = {}; // dynamic mechanic presence updates from app
+
+function getMechanicPool() {
+  const merged = [...mechanics];
+  Object.values(runtimeMechanics).forEach((item) => {
+    const idx = merged.findIndex((m) => m.id === item.id);
+    if (idx >= 0) merged[idx] = { ...merged[idx], ...item };
+    else merged.push(item);
+  });
+  return merged.filter((m) => m.isAvailable !== false);
+}
 
 // In-memory users database (in production, use a real database)
 const users = [];
@@ -184,42 +390,39 @@ function authenticateToken(req, res, next) {
   });
 }
 
+function toUserId(user) {
+  return user.id || user._id.toString();
+}
+
+async function getUserById(userId) {
+  if (isDBConnected()) {
+    return User.findById(userId);
+  }
+  return users.find(u => u.id === userId) || null;
+}
+
 // Register new user
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', authLimiter, [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }),
+  body('fullName').trim().isLength({ min: 2 })
+], async (req, res) => {
   try {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ ok: false, error: errors.array()[0].msg });
+    }
     const { email, password, fullName } = req.body;
 
-    // Validate input
-    if (!email || !password || !fullName) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Email, password, and full name are required' 
-      });
-    }
-
-    if (!validateEmail(email)) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Invalid email format' 
-      });
-    }
-
-    if (!validatePassword(password)) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Password must be at least 6 characters long' 
-      });
-    }
-
-    if (fullName.trim().length < 2) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Full name must be at least 2 characters long' 
-      });
-    }
-
     // Check if user already exists
-    const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    let existingUser;
+    if (isDBConnected()) {
+      existingUser = await User.findOne({ email: email.toLowerCase() });
+    } else {
+      existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    }
+    
     if (existingUser) {
       return res.status(409).json({ 
         ok: false, 
@@ -230,23 +433,35 @@ app.post('/api/auth/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
-    const newUser = {
-      id: `user_${uuidv4()}`,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      fullName: fullName.trim(),
-      role: null, // Role will be set later
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
+    let newUser;
+    if (isDBConnected()) {
+      // Use MongoDB
+      newUser = new User({
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        fullName: fullName.trim(),
+        role: null
+      });
+      await newUser.save();
+    } else {
+    // Fallback to in-memory
+      newUser = {
+        id: `user_${uuidv4()}`,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        fullName: fullName.trim(),
+        role: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      users.push(newUser);
+    }
 
     // Generate JWT token
+    const userId = toUserId(newUser);
     const token = jwt.sign(
       { 
-        id: newUser.id, 
+        id: userId,
         email: newUser.email,
         fullName: newUser.fullName
       }, 
@@ -261,7 +476,7 @@ app.post('/api/auth/register', async (req, res) => {
       ok: true,
       token,
       user: {
-        id: newUser.id,
+        id: userId,
         email: newUser.email,
         fullName: newUser.fullName,
         role: newUser.role,
@@ -279,27 +494,27 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // Login user
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, [
+  body('email').isEmail().normalizeEmail(),
+  body('password').notEmpty()
+], async (req, res) => {
   try {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ ok: false, error: 'Invalid input' });
+    }
+
     const { email, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Email and password are required' 
-      });
-    }
-
-    if (!validateEmail(email)) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Invalid email format' 
-      });
-    }
-
     // Find user
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    let user;
+    if (isDBConnected()) {
+      user = await User.findOne({ email: email.toLowerCase() });
+    } else {
+      user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    }
+    
     if (!user) {
       return res.status(401).json({ 
         ok: false, 
@@ -317,9 +532,10 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Generate JWT token
+    const userId = toUserId(user);
     const token = jwt.sign(
       { 
-        id: user.id, 
+        id: userId, 
         email: user.email,
         fullName: user.fullName,
         role: user.role
@@ -335,7 +551,7 @@ app.post('/api/auth/login', async (req, res) => {
       ok: true,
       token,
       user: {
-        id: user.id,
+        id: userId,
         email: user.email,
         fullName: user.fullName,
         role: user.role,
@@ -367,7 +583,7 @@ app.post('/api/auth/set-role', authenticateToken, async (req, res) => {
     }
 
     // Find and update user
-    const user = users.find(u => u.id === req.user.id);
+    const user = await getUserById(req.user.id);
     if (!user) {
       return res.status(404).json({ 
         ok: false, 
@@ -376,14 +592,20 @@ app.post('/api/auth/set-role', authenticateToken, async (req, res) => {
     }
 
     user.role = role;
-    user.updatedAt = new Date().toISOString();
+    if (isDBConnected()) {
+      await user.save();
+    } else {
+      user.updatedAt = new Date().toISOString();
+    }
+
+    const userId = toUserId(user);
 
     console.log(`✅ User role updated: ${user.email} → ${role}`);
 
     res.json({
       ok: true,
       user: {
-        id: user.id,
+        id: userId,
         email: user.email,
         fullName: user.fullName,
         role: user.role
@@ -402,7 +624,7 @@ app.post('/api/auth/set-role', authenticateToken, async (req, res) => {
 // Get current user profile
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
-    const user = users.find(u => u.id === req.user.id);
+    const user = await getUserById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ 
@@ -411,10 +633,12 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
       });
     }
 
+    const userId = toUserId(user);
+
     res.json({
       ok: true,
       user: {
-        id: user.id,
+        id: userId,
         email: user.email,
         fullName: user.fullName,
         role: user.role,
@@ -432,6 +656,10 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 });
 
 // ==================== END AUTHENTICATION ====================
+
+app.get('/api/services', (req, res) => {
+  res.json({ ok: true, services: servicesCatalog });
+});
 
 app.get('/api/mechanics', (req, res) => {
   res.json(mechanics);
@@ -454,6 +682,207 @@ app.post('/api/request', (req, res) => {
 // In-memory storage for mechanic data (in production, use a database)
 const mechanicRequests = {}; // { mechanicId: [requests] }
 const mechanicStats = {}; // { mechanicId: { todayJobs, todayEarnings, monthlyJobs, monthlyEarnings } }
+const dispatchRequests = []; // customer dispatch lifecycle
+const dispatchTimers = {}; // { requestId: timeoutId }
+
+function upsertMechanicRequest(mechanicId, request) {
+  if (!mechanicRequests[mechanicId]) mechanicRequests[mechanicId] = [];
+  const existingIndex = mechanicRequests[mechanicId].findIndex((r) => r.id === request.id);
+  if (existingIndex >= 0) {
+    mechanicRequests[mechanicId][existingIndex] = request;
+  } else {
+    mechanicRequests[mechanicId].push(request);
+  }
+}
+
+function removeMechanicRequest(mechanicId, requestId) {
+  const list = mechanicRequests[mechanicId] || [];
+  mechanicRequests[mechanicId] = list.filter((r) => r.id !== requestId);
+}
+
+function toMechanicPreview(dispatch, mechanic, distanceKm) {
+  return {
+    id: dispatch.id,
+    customerId: dispatch.customerId,
+    customerName: dispatch.customerName,
+    problem: dispatch.problem,
+    location: dispatch.location.text,
+    distance: `${distanceKm.toFixed(1)} km`,
+    price: dispatch.estimatedPrice || 0,
+    status: dispatch.status,
+    createdAt: dispatch.createdAt,
+    lat: dispatch.location.lat,
+    lng: dispatch.location.lng,
+    serviceItems: dispatch.serviceItems,
+    rebroadcasted: dispatch.rebroadcasted || false
+  }
+}
+
+function clearDispatchTimer(requestId) {
+  const timer = dispatchTimers[requestId];
+  if (timer) {
+    clearTimeout(timer);
+    delete dispatchTimers[requestId];
+  }
+}
+
+function scheduleDispatchTimeout(dispatch) {
+  clearDispatchTimer(dispatch.id);
+
+  dispatchTimers[dispatch.id] = setTimeout(() => {
+    const target = dispatchRequests.find((r) => r.id === dispatch.id);
+    if (!target || target.status !== 'pending') {
+      clearDispatchTimer(dispatch.id);
+      return;
+    }
+
+    const expandedNearby = getNearbyMechanics(target.location.lat, target.location.lng, 25).slice(0, 12);
+    target.rebroadcasted = true;
+    target.events.push({ type: 'rebroadcast', at: Date.now(), message: 'No acceptance yet. Expanding search radius to more mechanics.' });
+
+    expandedNearby.forEach((m) => {
+      const preview = toMechanicPreview(target, m, Number(m.distance || 0));
+      upsertMechanicRequest(m.id, preview);
+      io.to(`mechanic:${m.id}`).emit('dispatch:new-request', preview);
+    });
+
+    io.to(`customer:${target.customerId}`).emit('dispatch:rebroadcast', target);
+    io.to(`dispatch:${target.id}`).emit('dispatch:rebroadcast', target);
+
+    dispatchTimers[target.id] = setTimeout(() => {
+      const current = dispatchRequests.find((r) => r.id === target.id);
+      if (!current || current.status !== 'pending') {
+        clearDispatchTimer(target.id);
+        return;
+      }
+
+      current.status = 'expired';
+      current.events.push({ type: 'expired', at: Date.now(), message: 'No mechanics accepted this request in time.' });
+      io.to(`customer:${current.customerId}`).emit('dispatch:expired', current);
+      io.to(`dispatch:${current.id}`).emit('dispatch:expired', current);
+      clearDispatchTimer(current.id);
+    }, 60000);
+  }, 25000);
+}
+
+app.post('/api/dispatch/create', (req, res) => {
+  try {
+    const {
+      customerId,
+      customerName,
+      customerPhone,
+      lat,
+      lng,
+      serviceItems,
+      problem,
+      locationText,
+      estimatedPrice,
+      orderId
+    } = req.body || {};
+
+    if (!customerName || !problem) {
+      return res.status(400).json({ ok: false, error: 'customerName and problem are required' });
+    }
+
+    const requestId = `REQ-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const userLat = Number(lat) || 28.6139;
+    const userLng = Number(lng) || 77.2090;
+    const nearby = getNearbyMechanics(userLat, userLng, 15).slice(0, 6);
+
+    const newDispatch = {
+      id: requestId,
+      orderId: orderId || null,
+      customerId: customerId || 'guest-customer',
+      customerName,
+      customerPhone: customerPhone || '',
+      location: {
+        lat: userLat,
+        lng: userLng,
+        text: locationText || 'Customer location'
+      },
+      serviceItems: Array.isArray(serviceItems) ? serviceItems : [],
+      problem,
+      estimatedPrice: Number(estimatedPrice) || 0,
+      status: 'pending',
+      createdAt: Date.now(),
+      assignedMechanicId: null,
+      assignedMechanicName: null,
+      events: [{ type: 'created', at: Date.now(), message: 'Request created and sent to nearby mechanics' }]
+    };
+
+    dispatchRequests.push(newDispatch);
+
+    nearby.forEach((m) => {
+      const preview = toMechanicPreview(newDispatch, m, Number(m.distance || 0));
+      upsertMechanicRequest(m.id, preview);
+      io.to(`mechanic:${m.id}`).emit('dispatch:new-request', preview);
+    });
+
+    scheduleDispatchTimeout(newDispatch);
+
+    io.to(`customer:${newDispatch.customerId}`).emit('dispatch:created', {
+      requestId,
+      nearbyMechanics: nearby.length,
+      createdAt: newDispatch.createdAt
+    });
+
+    res.json({ ok: true, request: newDispatch, nearbyMechanics: nearby.map((m) => ({ id: m.id, name: m.name, distance: m.distance })) });
+  } catch (error) {
+    console.error('[DISPATCH] create failed:', error);
+    res.status(500).json({ ok: false, error: 'Failed to create dispatch request' });
+  }
+});
+
+app.get('/api/dispatch/customer/:requestId', (req, res) => {
+  const request = dispatchRequests.find((r) => r.id === req.params.requestId);
+  if (!request) {
+    return res.status(404).json({ ok: false, error: 'Dispatch request not found' });
+  }
+  res.json({ ok: true, request });
+});
+
+app.post('/api/dispatch/accept', (req, res) => {
+  try {
+    const { requestId, mechanicId } = req.body || {};
+    if (!requestId || !mechanicId) {
+      return res.status(400).json({ ok: false, error: 'requestId and mechanicId required' });
+    }
+
+    const dispatch = dispatchRequests.find((r) => r.id === requestId);
+    if (!dispatch) return res.status(404).json({ ok: false, error: 'Dispatch not found' });
+    if (dispatch.status !== 'pending') {
+      return res.status(409).json({ ok: false, error: 'Request already accepted or closed', request: dispatch });
+    }
+
+    const mechanic = mechanics.find((m) => m.id === mechanicId);
+    dispatch.status = 'accepted';
+    dispatch.assignedMechanicId = mechanicId;
+    dispatch.assignedMechanicName = mechanic?.name || `Mechanic ${mechanicId}`;
+    dispatch.acceptedAt = Date.now();
+    dispatch.events.push({ type: 'accepted', at: Date.now(), message: `${dispatch.assignedMechanicName} accepted the request` });
+    clearDispatchTimer(dispatch.id);
+
+    Object.keys(mechanicRequests).forEach((mId) => {
+      if (mId !== mechanicId) removeMechanicRequest(mId, requestId);
+    });
+
+    const ownRequest = (mechanicRequests[mechanicId] || []).find((r) => r.id === requestId);
+    if (ownRequest) {
+      ownRequest.status = 'active';
+      ownRequest.acceptedAt = dispatch.acceptedAt;
+      ownRequest.assignedMechanicName = dispatch.assignedMechanicName;
+      upsertMechanicRequest(mechanicId, ownRequest);
+    }
+
+    io.to(`customer:${dispatch.customerId}`).emit('dispatch:accepted', dispatch);
+    io.to(`dispatch:${requestId}`).emit('dispatch:accepted', dispatch);
+
+    res.json({ ok: true, request: dispatch });
+  } catch (error) {
+    console.error('[DISPATCH] accept failed:', error);
+    res.status(500).json({ ok: false, error: 'Failed to accept dispatch request' });
+  }
+});
 
 // Get requests for a specific mechanic
 app.get('/api/mechanic/requests', (req, res) => {
@@ -473,6 +902,24 @@ app.post('/api/mechanic/accept-request', (req, res) => {
     const { mechanicId, requestId } = req.body;
     if (!mechanicId || !requestId) {
       return res.status(400).json({ ok: false, error: 'mechanicId and requestId required' });
+    }
+
+    const dispatch = dispatchRequests.find((d) => d.id === requestId);
+    if (dispatch && dispatch.status === 'pending') {
+      const mechanic = mechanics.find((m) => m.id === mechanicId);
+      dispatch.status = 'accepted';
+      dispatch.assignedMechanicId = mechanicId;
+      dispatch.assignedMechanicName = mechanic?.name || `Mechanic ${mechanicId}`;
+      dispatch.acceptedAt = Date.now();
+      dispatch.events.push({ type: 'accepted', at: Date.now(), message: `${dispatch.assignedMechanicName} accepted the request` });
+      clearDispatchTimer(dispatch.id);
+
+      Object.keys(mechanicRequests).forEach((mId) => {
+        if (mId !== mechanicId) removeMechanicRequest(mId, requestId);
+      });
+
+      io.to(`customer:${dispatch.customerId}`).emit('dispatch:accepted', dispatch);
+      io.to(`dispatch:${requestId}`).emit('dispatch:accepted', dispatch);
     }
 
     const requests = mechanicRequests[mechanicId] || [];
@@ -504,8 +951,7 @@ app.post('/api/mechanic/reject-request', (req, res) => {
       return res.status(400).json({ ok: false, error: 'mechanicId and requestId required' });
     }
 
-    const requests = mechanicRequests[mechanicId] || [];
-    mechanicRequests[mechanicId] = requests.filter(r => r.id !== requestId);
+    removeMechanicRequest(mechanicId, requestId);
 
     res.json({ ok: true });
   } catch (error) {
@@ -567,6 +1013,32 @@ app.get('/api/mechanic/stats', (req, res) => {
   }
 });
 
+app.post('/api/mechanic/presence/update', (req, res) => {
+  try {
+    const { mechanicId, name, lat, lng, isAvailable = true, rating, serviceAreaKm = 15 } = req.body || {};
+    if (!mechanicId) return res.status(400).json({ ok: false, error: 'mechanicId required' });
+
+    const existing = runtimeMechanics[mechanicId] || {};
+    runtimeMechanics[mechanicId] = {
+      ...existing,
+      id: mechanicId,
+      name: name || existing.name || `Mechanic ${mechanicId}`,
+      lat: Number(lat) || existing.lat || 28.6139,
+      lng: Number(lng) || existing.lng || 77.2090,
+      rating: Number(rating) || existing.rating || 4.5,
+      isAvailable: Boolean(isAvailable),
+      serviceAreaKm: Number(serviceAreaKm) || existing.serviceAreaKm || 15,
+      updatedAt: Date.now()
+    };
+
+    io.to(`mechanic:${mechanicId}`).emit('mechanic:presence-updated', runtimeMechanics[mechanicId]);
+    res.json({ ok: true, mechanic: runtimeMechanics[mechanicId] });
+  } catch (error) {
+    console.error('[MECHANIC] presence update failed:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update mechanic presence' });
+  }
+});
+
 // -------- End Mechanic API endpoints --------
 
 // In-memory storage for chat and tracking
@@ -589,10 +1061,34 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 
 // Helper: Get mechanics near a location
 function getNearbyMechanics(userLat, userLng, radiusKm = 10) {
-  return mechanics.map(m => ({
+  return getMechanicPool().map(m => ({
     ...m,
     distance: calculateDistance(userLat, userLng, m.lat, m.lng)
   })).filter(m => m.distance <= radiusKm);
+}
+
+function getCustomerLocationForOrder(orderId) {
+  const dispatch = dispatchRequests.find((r) => r.id === orderId || r.orderId === orderId)
+  if (dispatch?.location?.lat && dispatch?.location?.lng) {
+    return { lat: Number(dispatch.location.lat), lng: Number(dispatch.location.lng) }
+  }
+  return null
+}
+
+function buildMechanicLocationPayload(orderId, location) {
+  const payload = {
+    location,
+    timestamp: location?.timestamp || Date.now()
+  }
+
+  const customerLoc = getCustomerLocationForOrder(orderId)
+  if (customerLoc && typeof location?.lat === 'number' && typeof location?.lng === 'number') {
+    const distance = calculateDistance(location.lat, location.lng, customerLoc.lat, customerLoc.lng)
+    payload.distance = Number(distance.toFixed(2))
+    payload.eta = `${Math.max(1, Math.round(distance * 2.5))} min`
+  }
+
+  return payload
 }
 
 // Socket.io for real-time chat, GPS tracking, and presence
@@ -607,6 +1103,12 @@ io.on('connection', (socket) => {
 
   socket.on('leave', (room) => {
     socket.leave(room);
+  });
+
+  socket.on('dispatch:join', ({ role, id, requestId }) => {
+    if (role === 'mechanic' && id) socket.join(`mechanic:${id}`);
+    if (role === 'customer' && id) socket.join(`customer:${id}`);
+    if (requestId) socket.join(`dispatch:${requestId}`);
   });
 
   socket.on('message', (payload) => {
@@ -656,36 +1158,50 @@ io.on('connection', (socket) => {
     const room = `gps:${orderId}`;
     socket.join(room);
     console.log(`📍 Started GPS tracking for order ${orderId}`);
+
+    if (mechanicLocations[orderId]) {
+      io.to(room).emit('mechanic-location-update', buildMechanicLocationPayload(orderId, mechanicLocations[orderId]));
+    }
     
     // Simulate mechanic location updates (in production, this would come from mechanic's app)
     const interval = setInterval(() => {
-      const baseLocation = mechanicLocations[orderId] || { 
-        lat: 28.6139 + (Math.random() - 0.5) * 0.1, 
-        lng: 77.2090 + (Math.random() - 0.5) * 0.1 
+      const existing = mechanicLocations[orderId];
+      const existingTs = Number(existing?.timestamp || 0);
+      const hasFreshRealLocation = existing && (Date.now() - existingTs) < 15000;
+
+      if (hasFreshRealLocation) {
+        io.to(room).emit('mechanic-location-update', buildMechanicLocationPayload(orderId, existing));
+        return;
+      }
+
+      const baseLocation = existing || {
+        lat: 28.6139 + (Math.random() - 0.5) * 0.1,
+        lng: 77.2090 + (Math.random() - 0.5) * 0.1
       };
       
       // Simulate movement towards customer
       const location = {
         lat: baseLocation.lat + (Math.random() - 0.5) * 0.001,
-        lng: baseLocation.lng + (Math.random() - 0.5) * 0.001
+        lng: baseLocation.lng + (Math.random() - 0.5) * 0.001,
+        timestamp: Date.now()
       };
       
       mechanicLocations[orderId] = location;
-      
-      // Calculate mock distance and ETA
-      const distance = (Math.random() * 5 + 0.5).toFixed(1); // 0.5-5.5 km
-      const eta = `${Math.round(distance * 1.5)} min`;
-      
-      io.to(room).emit('mechanic-location-update', {
-        location,
-        distance: parseFloat(distance),
-        eta,
-        timestamp: Date.now()
-      });
+
+      io.to(room).emit('mechanic-location-update', buildMechanicLocationPayload(orderId, location));
     }, 5000); // Update every 5 seconds
-    
-    socket.on('stop-tracking', () => {
+
+    const stopTrackingHandler = ({ orderId: stopOrderId } = {}) => {
+      if (stopOrderId && stopOrderId !== orderId) return;
       clearInterval(interval);
+      socket.off('stop-tracking', stopTrackingHandler);
+    };
+
+    socket.on('stop-tracking', stopTrackingHandler);
+
+    socket.on('disconnect', () => {
+      clearInterval(interval);
+      socket.off('stop-tracking', stopTrackingHandler);
     });
   });
 
@@ -693,10 +1209,7 @@ io.on('connection', (socket) => {
     // Mechanic app sends real location
     mechanicLocations[orderId] = location;
     const room = `gps:${orderId}`;
-    io.to(room).emit('mechanic-location-update', {
-      location,
-      timestamp: Date.now()
-    });
+    io.to(room).emit('mechanic-location-update', buildMechanicLocationPayload(orderId, location));
   });
 
   socket.on('disconnect', () => {
@@ -746,6 +1259,7 @@ io.on('connection', (socket) => {
     // Update mechanic location
     if (orderId) {
       mechanicLocations[orderId] = { lat, lng, timestamp };
+      io.to(`gps:${orderId}`).emit('mechanic-location-update', buildMechanicLocationPayload(orderId, mechanicLocations[orderId]));
     }
     
     socket.join(`mechanic:${mechanicId}`);
@@ -786,7 +1300,23 @@ function startListening(port){
     console.error('[START ERROR]', e);
   }
 }
-startListening(currentPort);
+
+// Start server with database connection
+async function startServer() {
+  try {
+    // Connect to database first (optional, continues without DB if not available)
+    await connectDB();
+    
+    // Then start listening
+    startListening(currentPort);
+  } catch (error) {
+    console.error('[STARTUP ERROR]', error);
+    console.log('[STARTUP] Starting server without database...');
+    startListening(currentPort);
+  }
+}
+
+startServer();
 
 // -----------------------
 // Payment Endpoints

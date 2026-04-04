@@ -1,0 +1,16 @@
+{
+  "name": "repairwale-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "start": "npm --prefix server start",
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "dev": "concurrently -k -n server,client -c green,blue \"npm --prefix server start\" \"npm --prefix client run dev\"",
+    "backend": "npm --prefix server start",
+    "frontend": "npm --prefix client run dev",
+    "build": "npm --prefix client run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

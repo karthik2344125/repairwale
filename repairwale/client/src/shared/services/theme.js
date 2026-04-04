@@ -15,3 +15,5 @@ export function applyTheme(theme){
   if(!el) return
   el.setAttribute('data-theme', t)
 }
+
+

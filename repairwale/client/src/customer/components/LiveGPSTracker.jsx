@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { io } from 'socket.io-client'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { connectRealtimeWithFallback } from '../../shared/services/realtime'
+import { watchDeviceLocation } from '../../shared/services/liveTracking'
 
 // Fix Leaflet default icons
 L.Icon.Default.mergeOptions({
@@ -11,18 +12,18 @@ L.Icon.Default.mergeOptions({
 })
 
 const mechanicIcon = L.divIcon({
-  html: `<div style="background:#10b981;color:#fff;padding:6px 10px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(16,185,129,0.4)">🔧</div>`,
+  html: `<div style="width:32px;height:32px;background:#1e3a8a;color:#FFFFFF;border:2px solid #FFFFFF;border-radius:50%;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(15,23,42,0.35)">M</div>`,
   iconSize: [32, 32],
   className: 'mechanic-marker'
 })
 
 const customerIcon = L.divIcon({
-  html: `<div style="background:#3b82f6;color:#fff;padding:6px 10px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(59,130,246,0.4)">📍</div>`,
+  html: `<div style="width:32px;height:32px;background:#0f172a;color:#FFFFFF;border:2px solid #FFFFFF;border-radius:50%;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(15,23,42,0.35)">You</div>`,
   iconSize: [32, 32],
   className: 'customer-marker'
 })
 
-export default function LiveGPSTracker({ orderId, mechanicId }) {
+export default function LiveGPSTracker({ orderId, mechanicId, customerId, initialCustomerLocation = null }) {
   const [mechanicLocation, setMechanicLocation] = useState(null)
   const [customerLocation, setCustomerLocation] = useState(null)
   const [eta, setEta] = useState(null)
@@ -35,55 +36,101 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
   const mechanicMarkerRef = useRef(null)
   const customerMarkerRef = useRef(null)
   const routeLineRef = useRef(null)
+  const hasInitialFitRef = useRef(false)
+  const lastLocationRef = useRef(null)
 
   useEffect(() => {
-    // Get customer location
+    if (initialCustomerLocation?.lat && initialCustomerLocation?.lng) {
+      setCustomerLocation(initialCustomerLocation)
+      lastLocationRef.current = initialCustomerLocation
+    }
+
+    const updateCustomerLocation = (loc) => {
+      lastLocationRef.current = loc
+      setCustomerLocation(loc)
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const loc = {
+          updateCustomerLocation({
             lat: position.coords.latitude,
-            lng: position.coords.longitude
-          }
-          setCustomerLocation(loc)
+            lng: position.coords.longitude,
+            timestamp: Date.now()
+          })
         },
         (error) => {
           console.error('Location error:', error)
-          // Fallback to default location
-          setCustomerLocation({ lat: 28.6139, lng: 77.2090 }) // Delhi
-        }
+          if (!initialCustomerLocation) {
+            updateCustomerLocation({ lat: 28.6139, lng: 77.2090, timestamp: Date.now() })
+          }
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
       )
     }
 
-    // Connect to socket for real-time updates
-    const socket = io('http://localhost:3000', {
-      transports: ['websocket', 'polling']
-    })
-    
-    socketRef.current = socket
+    const realtime = connectRealtimeWithFallback({
+      onConnect: (socket) => {
+        socketRef.current = socket
+        setIsTracking(true)
+        socket.emit('track-mechanic', { orderId, mechanicId })
 
-    socket.on('connect', () => {
-      console.log('✅ GPS Tracker connected')
-      socket.emit('track-mechanic', { orderId, mechanicId })
-      setIsTracking(true)
+        const activeCustomerId = customerId || JSON.parse(localStorage.getItem('repairwale_user') || '{}')?.id || 'guest-customer'
+        if (lastLocationRef.current) {
+          socket.emit('user:location', {
+            userId: activeCustomerId,
+            lat: lastLocationRef.current.lat,
+            lng: lastLocationRef.current.lng,
+            timestamp: lastLocationRef.current.timestamp || Date.now()
+          })
+        }
+
+        socket.on('mechanic-location-update', (data) => {
+          if (!data?.location) return
+          setMechanicLocation(data.location)
+          setEta(data.eta)
+          setDistance(data.distance)
+          if (data.route) setRoute(data.route)
+        })
+
+        socket.on('mechanic:location-update', (data) => {
+          if (!data || (data.orderId && data.orderId !== orderId)) return
+          const location = { lat: data.lat, lng: data.lng, timestamp: data.timestamp }
+          setMechanicLocation(location)
+        })
+
+        socket.on('disconnect', () => {
+          setIsTracking(false)
+        })
+      }
     })
 
-    socket.on('mechanic-location-update', (data) => {
-      setMechanicLocation(data.location)
-      setEta(data.eta)
-      setDistance(data.distance)
-      if (data.route) setRoute(data.route)
-    })
-
-    socket.on('disconnect', () => {
-      setIsTracking(false)
+    const stopWatch = watchDeviceLocation({
+      options: { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 },
+      onError: () => {},
+      onLocation: (location) => {
+        updateCustomerLocation(location)
+        if (!socketRef.current) return
+        const activeCustomerId = customerId || JSON.parse(localStorage.getItem('repairwale_user') || '{}')?.id || 'guest-customer'
+        socketRef.current.emit('user:location', {
+          userId: activeCustomerId,
+          lat: location.lat,
+          lng: location.lng,
+          timestamp: location.timestamp
+        })
+      }
     })
 
     return () => {
-      socket.emit('stop-tracking', { orderId })
-      socket.disconnect()
+      try {
+        stopWatch()
+      } catch {}
+      try {
+        if (socketRef.current) socketRef.current.emit('stop-tracking', { orderId })
+      } catch {}
+      realtime.disconnect()
     }
-  }, [orderId, mechanicId])
+  }, [orderId, mechanicId, customerId, initialCustomerLocation])
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -97,7 +144,7 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
 
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+      attribution: ' OpenStreetMap contributors',
       maxZoom: 19
     }).addTo(leafletMapRef.current)
 
@@ -119,29 +166,47 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
   useEffect(() => {
     if (!leafletMapRef.current || !mechanicLocation) return
 
-    // Remove old mechanic marker
-    if (mechanicMarkerRef.current) {
-      leafletMapRef.current.removeLayer(mechanicMarkerRef.current)
+    // Create once, then update position for smoother tracking.
+    if (!mechanicMarkerRef.current) {
+      mechanicMarkerRef.current = L.marker([mechanicLocation.lat, mechanicLocation.lng], {
+        icon: mechanicIcon,
+        title: 'Mechanic Location'
+      }).addTo(leafletMapRef.current)
+    } else {
+      mechanicMarkerRef.current.setLatLng([mechanicLocation.lat, mechanicLocation.lng])
     }
-
-    // Add new mechanic marker
-    mechanicMarkerRef.current = L.marker([mechanicLocation.lat, mechanicLocation.lng], {
-      icon: mechanicIcon,
-      title: 'Mechanic Location'
-    }).addTo(leafletMapRef.current)
 
     // Remove old route
     if (routeLineRef.current) {
       leafletMapRef.current.removeLayer(routeLineRef.current)
     }
 
-    // Draw route line
+    // Draw route line (use server route when available)
     if (customerLocation) {
+      const routePoints = Array.isArray(route) && route.length > 1
+        ? route
+            .map((point) => {
+              if (Array.isArray(point) && point.length >= 2) {
+                return [point[0], point[1]]
+              }
+              if (point && typeof point === 'object') {
+                if (typeof point.lat === 'number' && typeof point.lng === 'number') {
+                  return [point.lat, point.lng]
+                }
+                if (typeof point.latitude === 'number' && typeof point.longitude === 'number') {
+                  return [point.latitude, point.longitude]
+                }
+              }
+              return null
+            })
+            .filter(Boolean)
+        : [
+            [customerLocation.lat, customerLocation.lng],
+            [mechanicLocation.lat, mechanicLocation.lng]
+          ]
+
       routeLineRef.current = L.polyline(
-        [
-          [customerLocation.lat, customerLocation.lng],
-          [mechanicLocation.lat, mechanicLocation.lng]
-        ],
+        routePoints,
         {
           color: '#3b82f6',
           weight: 3,
@@ -150,14 +215,16 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
         }
       ).addTo(leafletMapRef.current)
 
-      // Fit map to show both markers
-      const bounds = L.latLngBounds(
-        [customerLocation.lat, customerLocation.lng],
-        [mechanicLocation.lat, mechanicLocation.lng]
-      )
-      leafletMapRef.current.fitBounds(bounds, { padding: [80, 80] })
+      // Fit bounds only once, then preserve current zoom/interaction while panning softly.
+      const bounds = L.latLngBounds(routePoints)
+      if (!hasInitialFitRef.current) {
+        leafletMapRef.current.fitBounds(bounds, { padding: [80, 80] })
+        hasInitialFitRef.current = true
+      } else if (!leafletMapRef.current.getBounds().contains([mechanicLocation.lat, mechanicLocation.lng])) {
+        leafletMapRef.current.panTo([mechanicLocation.lat, mechanicLocation.lng], { animate: true })
+      }
     }
-  }, [mechanicLocation, customerLocation])
+  }, [mechanicLocation, customerLocation, route])
 
   const calculateETA = () => {
     if (!distance) return 'Calculating...'
@@ -177,7 +244,7 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
       {/* Status Bar */}
       <div style={{
         padding: '16px 20px',
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)',
         color: '#ffffff',
         display: 'flex',
         alignItems: 'center',
@@ -188,12 +255,12 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
             width: 10,
             height: 10,
             borderRadius: '50%',
-            background: isTracking ? '#ffffff' : '#ef4444',
-            boxShadow: isTracking ? '0 0 8px #ffffff' : 'none',
+            background: isTracking ? '#FFFFFF' : 'rgba(255,255,255,0.65)',
+            boxShadow: isTracking ? '0 0 8px rgba(255,255,255,0.8)' : 'none',
             animation: isTracking ? 'pulse 2s infinite' : 'none'
           }} />
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>📍 Live GPS Tracking</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}> Live GPS Tracking</div>
             <div style={{ fontSize: 11, opacity: 0.9 }}>
               {isTracking ? 'Tracking in real-time' : 'Waiting for location...'}
             </div>
@@ -201,7 +268,7 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
         </div>
         {eta && (
           <div style={{
-            background: 'rgba(255,255,255,0.2)',
+            background: 'rgba(255,255,255,0.12)',
             padding: '8px 16px',
             borderRadius: 12,
             fontSize: 13,
@@ -246,8 +313,8 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
           textAlign: 'center'
         }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#10b981' }}>
-            {mechanicLocation ? '🚗 En Route' : '⏳ Pending'}
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF' }}>
+            {mechanicLocation ? ' En Route' : ' Pending'}
           </div>
         </div>
       </div>
@@ -285,7 +352,7 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
                 marginBottom: 16,
                 animation: 'bounce 2s infinite'
               }}>
-                📍
+                
               </div>
               <div style={{
                 fontSize: 16,
@@ -312,7 +379,7 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
           marginBottom: 12,
           color: 'var(--text)'
         }}>
-          📡 Live Updates
+           Live Updates
         </div>
         <div style={{
           display: 'flex',
@@ -323,31 +390,31 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
             <>
               <div style={{
                 padding: '8px 12px',
-                background: 'rgba(16,185,129,0.1)',
-                border: '1px solid rgba(16,185,129,0.3)',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: 8,
                 fontSize: 12,
-                color: '#10b981',
+                color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8
               }}>
-                <span>✅</span>
+                <span></span>
                 <span>GPS tracking active</span>
               </div>
               {mechanicLocation && (
                 <div style={{
                   padding: '8px 12px',
-                  background: 'rgba(59,130,246,0.1)',
-                  border: '1px solid rgba(59,130,246,0.3)',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
                   borderRadius: 8,
                   fontSize: 12,
-                  color: '#3b82f6',
+                  color: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8
                 }}>
-                  <span>🚗</span>
+                  <span></span>
                   <span>Mechanic location updated {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               )}
@@ -355,16 +422,16 @@ export default function LiveGPSTracker({ orderId, mechanicId }) {
           ) : (
             <div style={{
               padding: '8px 12px',
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 8,
               fontSize: 12,
-              color: '#ef4444',
+              color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               gap: 8
             }}>
-              <span>⚠️</span>
+              <span></span>
               <span>Connecting to GPS...</span>
             </div>
           )}

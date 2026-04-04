@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { io } from 'socket.io-client'
 import Button from './Button'
+import { connectRealtimeWithFallback } from '../services/realtime'
 
 export default function RealTimeChat({ orderId, userRole = 'customer', mechanicName = 'Mechanic' }) {
   const [messages, setMessages] = useState([])
@@ -16,22 +16,23 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
   const userName = currentUser.fullName || (userRole === 'customer' ? 'Customer' : mechanicName)
 
   useEffect(() => {
-    const socket = io('http://localhost:3000', {
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+    const { socket, disconnect } = connectRealtimeWithFallback({
+      options: {
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      }
     })
     
     socketRef.current = socket
 
     socket.on('connect', () => {
-      console.log('✅ Chat connected')
+      console.log('... Chat connected')
       setIsConnected(true)
       socket.emit('join-chat', { orderId, userRole, userName })
     })
 
     socket.on('disconnect', () => {
-      console.log('❌ Chat disconnected')
+      console.log(' Chat disconnected')
       setIsConnected(false)
     })
 
@@ -57,8 +58,8 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
     })
 
     return () => {
-      socket.emit('leave-chat', { orderId })
-      socket.disconnect()
+      try { socket.emit('leave-chat', { orderId }) } catch {}
+      disconnect()
       clearTimeout(typingTimeoutRef.current)
     }
   }, [orderId])
@@ -126,7 +127,7 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
       {/* Header */}
       <div style={{
         padding: '16px 20px',
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+        background: 'linear-gradient(135deg, #0f172a 0%, #0B1F3B 100%)',
         color: '#ffffff',
         display: 'flex',
         alignItems: 'center',
@@ -139,12 +140,12 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
             width: 10,
             height: 10,
             borderRadius: '50%',
-            background: isConnected ? '#10b981' : '#ef4444',
-            boxShadow: `0 0 8px ${isConnected ? '#10b981' : '#ef4444'}`,
+            background: isConnected ? '#FFFFFF' : '#1f3f6b',
+            boxShadow: `0 0 8px ${isConnected ? '#FFFFFF' : '#1f3f6b'}`,
             animation: isConnected ? 'pulse 2s infinite' : 'none'
           }} />
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>💬 Live Chat</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}> Live Chat</div>
             <div style={{ fontSize: 11, opacity: 0.8 }}>
               {isConnected ? `with ${userRole === 'customer' ? mechanicName : 'Customer'}` : 'Connecting...'}
             </div>
@@ -153,7 +154,7 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {unreadCount > 0 && !isMinimized && (
             <div style={{
-              background: '#ef4444',
+              background: '#FFFFFF',
               color: '#fff',
               fontSize: 11,
               fontWeight: 800,
@@ -165,7 +166,7 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
               {unreadCount}
             </div>
           )}
-          <div style={{ fontSize: 20 }}>{isMinimized ? '▲' : '▼'}</div>
+          <div style={{ fontSize: 20 }}>{isMinimized ? '-' : '-'}</div>
         </div>
       </div>
 
@@ -190,7 +191,7 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
                 color: 'var(--text-muted)',
                 fontSize: 14
               }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>💬</div>
+                <div style={{ fontSize: 32, marginBottom: 12 }}></div>
                 <div>No messages yet</div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>Start the conversation!</div>
               </div>
@@ -216,7 +217,7 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
                     )}
                     <div style={{
                       background: isOwn 
-                        ? 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
+                        ? 'linear-gradient(135deg, #0B1F3B 0%, #FFFFFF 100%)'
                         : 'var(--surface)',
                       color: isOwn ? '#ffffff' : 'var(--text)',
                       padding: '10px 14px',
@@ -224,7 +225,7 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
                       maxWidth: '75%',
                       wordBreak: 'break-word',
                       border: isOwn ? 'none' : '1px solid var(--border)',
-                      boxShadow: isOwn ? '0 2px 8px rgba(30,58,138,0.3)' : 'none'
+                      boxShadow: isOwn ? '0 2px 8px rgba(29,99,255,0.3)' : 'none'
                     }}>
                       <div style={{ fontSize: 14, lineHeight: 1.5 }}>{msg.text}</div>
                       <div style={{
@@ -260,9 +261,9 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
                   borderRadius: 16,
                   border: '1px solid var(--border)'
                 }}>
-                  <span style={{ animation: 'bounce 1.4s infinite' }}>●</span>
-                  <span style={{ animation: 'bounce 1.4s infinite 0.2s' }}>●</span>
-                  <span style={{ animation: 'bounce 1.4s infinite 0.4s' }}>●</span>
+                  <span style={{ animation: 'bounce 1.4s infinite' }}>.</span>
+                  <span style={{ animation: 'bounce 1.4s infinite 0.2s' }}>.</span>
+                  <span style={{ animation: 'bounce 1.4s infinite 0.4s' }}>.</span>
                 </div>
               </div>
             )}
@@ -278,15 +279,15 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
             {!isConnected && (
               <div style={{
                 padding: '8px 12px',
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.3)',
+                background: 'rgba(255,206,50,0.1)',
+                border: '1px solid rgba(255,206,50,0.3)',
                 borderRadius: 8,
                 fontSize: 12,
-                color: '#ef4444',
+                color: '#FFFFFF',
                 marginBottom: 12,
                 textAlign: 'center'
               }}>
-                ⚠️ Connecting to chat server...
+                Connecting to chat server...
               </div>
             )}
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
@@ -330,7 +331,7 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
               marginTop: 8,
               textAlign: 'center'
             }}>
-              Press Enter to send • Shift+Enter for new line
+              Press Enter to send  Shift+Enter for new line
             </div>
           </div>
         </>
@@ -349,3 +350,5 @@ export default function RealTimeChat({ orderId, userRole = 'customer', mechanicN
     </div>
   )
 }
+
+

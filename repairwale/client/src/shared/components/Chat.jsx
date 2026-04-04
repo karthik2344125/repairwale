@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { db, hasFirebase } from '../../firebase'
 import { collection, addDoc, onSnapshot, query, orderBy, where, limit } from 'firebase/firestore'
-import { io } from 'socket.io-client'
+import { connectRealtimeWithFallback } from '../services/realtime'
 
 // AI Assistant Configuration
 const AI_RESPONSES = {
   greeting: [
-    "Hello! 👋 I'm RepairWale AI Assistant. How can I help you today?",
+    "Hello!  I'm RepairWale AI Assistant. How can I help you today?",
     "Hi there! I'm here to assist you with your vehicle service needs. What can I do for you?",
     "Welcome! I'm your AI assistant. Feel free to ask me about our services, pricing, or anything else!"
   ],
@@ -14,15 +14,15 @@ const AI_RESPONSES = {
   pricing: {
     keywords: ['price', 'cost', 'how much', 'charges', 'rate', 'fee', 'expensive', 'cheap'],
     responses: [
-      "Our pricing varies by service. For example:\n• Engine Tune-up: ₹1,799\n• Brake Service: ₹999\n• Oil Change: ₹1,299\nCheck the Services page for complete pricing!",
-      "We offer competitive pricing! Basic services start at ₹299 (puncture repair) up to premium services like PPF coating at ₹12,999. What specific service are you interested in?"
+      "Our pricing varies by service. For example:\n Engine Tune-up: 1,799\n Brake Service: 999\n Oil Change: 1,299\nCheck the Services page for complete pricing!",
+      "We offer competitive pricing! Basic services start at 299 (puncture repair) up to premium services like PPF coating at 12,999. What specific service are you interested in?"
     ]
   },
   
   services: {
     keywords: ['service', 'repair', 'fix', 'maintenance', 'what do you do', 'what services', 'help with'],
     responses: [
-      "We offer comprehensive vehicle services:\n🚨 Emergency Roadside\n🔧 Scheduled Maintenance\n⚙️ Mechanical & Electrical\n🚛 Towing & Transport\n🛞 Tyres & Wheels\n💎 Body & Care\n\nWhat are you looking for?",
+      "We offer comprehensive vehicle services:\n Emergency Roadside\n Scheduled Maintenance\n Mechanical & Electrical\n Towing & Transport\n Tyres & Wheels\n Body & Care\n\nWhat are you looking for?",
       "RepairWale provides everything from emergency breakdown assistance to premium body care! Our mechanics handle oil changes, brake services, AC repair, detailing, and much more. Need help with something specific?"
     ]
   },
@@ -30,55 +30,55 @@ const AI_RESPONSES = {
   emergency: {
     keywords: ['emergency', 'urgent', 'breakdown', 'stuck', 'help now', 'asap', 'immediate', 'quick'],
     responses: [
-      "🚨 Emergency assistance available! We offer:\n• Breakdown Quick Fix (30-60 mins) - ₹549\n• Flat Tyre Assist (30 mins) - ₹399\n• Battery Jump-Start (20-30 mins) - ₹299\n\nBook now for immediate dispatch!",
-      "Don't worry, we've got you covered! 🚗💨 Our emergency services include roadside repairs, jump-starts, fuel delivery, and towing. Response time: 30-90 minutes. What's your issue?"
+      " Emergency assistance available! We offer:\n Breakdown Quick Fix (30-60 mins) - 549\n Flat Tyre Assist (30 mins) - 399\n Battery Jump-Start (20-30 mins) - 299\n\nBook now for immediate dispatch!",
+      "Don't worry, we've got you covered! - Our emergency services include roadside repairs, jump-starts, fuel delivery, and towing. Response time: 30-90 minutes. What's your issue?"
     ]
   },
   
   location: {
     keywords: ['where', 'location', 'area', 'come to', 'service area', 'available in', 'nearby'],
     responses: [
-      "We serve all major areas! Our mechanics come to your location - home, office, or roadside. Just share your address when booking. 📍",
-      "RepairWale operates across the city! We provide doorstep service anywhere within the metro area. No need to visit a workshop - we come to you! 🚗"
+      "We serve all major areas! Our mechanics come to your location - home, office, or roadside. Just share your address when booking. ",
+      "RepairWale operates across the city! We provide doorstep service anywhere within the metro area. No need to visit a workshop - we come to you! -"
     ]
   },
   
   booking: {
     keywords: ['book', 'schedule', 'appointment', 'reserve', 'order', 'how to book', 'process'],
     responses: [
-      "Booking is super easy! 📱\n1. Browse services & add to cart\n2. Proceed to checkout\n3. Choose date/time & location\n4. Confirm booking\n\nYou'll get live tracking once assigned!",
-      "To book a service:\n✓ Select your needed services\n✓ Add to cart\n✓ Fill in vehicle & location details\n✓ Choose your preferred time slot\n✓ Pay & confirm!\n\nWant me to guide you?"
+      "Booking is super easy! \n1. Browse services & add to cart\n2. Proceed to checkout\n3. Choose date/time & location\n4. Confirm booking\n\nYou'll get live tracking once assigned!",
+      "To book a service:\n Select your needed services\n Add to cart\n Fill in vehicle & location details\n Choose your preferred time slot\n Pay & confirm!\n\nWant me to guide you?"
     ]
   },
   
   payment: {
     keywords: ['payment', 'pay', 'cash', 'card', 'upi', 'online', 'razorpay', 'refund'],
     responses: [
-      "We accept multiple payment methods:\n💳 Credit/Debit Cards\n📱 UPI (GPay, PhonePe, Paytm)\n💵 Cash on Service\n🔒 Secure Razorpay gateway\n\nAll transactions are safe & encrypted!",
-      "Payment is flexible! You can pay online via UPI/Cards or cash after service completion. We use secure Razorpay for online payments. Full refund available for cancellations! 💰"
+      "We accept multiple payment methods:\n Credit/Debit Cards\n UPI (GPay, PhonePe, Paytm)\n Cash on Service\n Secure Razorpay gateway\n\nAll transactions are safe & encrypted!",
+      "Payment is flexible! You can pay online via UPI/Cards or cash after service completion. We use secure Razorpay for online payments. Full refund available for cancellations! "
     ]
   },
   
   tracking: {
     keywords: ['track', 'status', 'where is', 'eta', 'mechanic location', 'when will', 'arrive'],
     responses: [
-      "You can track your service in real-time! 📍\n• Live mechanic location\n• Estimated arrival time\n• Service status updates\n• In-app chat with mechanic\n\nCheck the Tracking page after booking!",
-      "Live tracking is included FREE! Once a mechanic is assigned, you'll see their location, ETA, and can chat directly. You'll get notifications at every step! 🚗💨"
+      "You can track your service in real-time! \n Live mechanic location\n Estimated arrival time\n Service status updates\n In-app chat with mechanic\n\nCheck the Tracking page after booking!",
+      "Live tracking is included FREE! Once a mechanic is assigned, you'll see their location, ETA, and can chat directly. You'll get notifications at every step! -"
     ]
   },
   
   quality: {
     keywords: ['quality', 'guarantee', 'warranty', 'certified', 'trusted', 'genuine', 'oem', 'parts'],
     responses: [
-      "We ensure top quality! ✨\n✓ Certified mechanics only\n✓ OEM & branded parts\n✓ Service warranty included\n✓ Quality inspections\n✓ 100% satisfaction guarantee\n\nYour vehicle is in safe hands!",
-      "Quality is our priority! All mechanics are verified & trained. We use genuine parts, provide service warranties, and maintain high standards. Check our customer reviews! ⭐⭐⭐⭐⭐"
+      "We ensure top quality! \n Certified mechanics only\n OEM & branded parts\n Service warranty included\n Quality inspections\n 100% satisfaction guarantee\n\nYour vehicle is in safe hands!",
+      "Quality is our priority! All mechanics are verified & trained. We use genuine parts, provide service warranties, and maintain high standards. Check our customer reviews! "
     ]
   },
   
   help: {
     keywords: ['help', 'support', 'contact', 'talk to', 'human', 'agent', 'customer care'],
     responses: [
-      "Need human assistance? 👨‍💼\nOur support team is available:\n📞 Call: 1800-REPAIR-NOW\n✉️ Email: support@repairwale.com\n💬 Live Chat: Available 24/7\n\nHow else can I help you?",
+      "Need human assistance? \nOur support team is available:\n Call: 1800-REPAIR-NOW\n Email: support@repairwale.com\n Live Chat: Available 24/7\n\nHow else can I help you?",
       "I'm here to help! You can also reach our human support team via phone, email, or request a callback. What specific assistance do you need?"
     ]
   },
@@ -86,15 +86,15 @@ const AI_RESPONSES = {
   reviews: {
     keywords: ['review', 'rating', 'feedback', 'testimonial', 'experience', 'trustworthy'],
     responses: [
-      "We're proud of our 4.8⭐ rating! Customers love our quick service, transparent pricing, and professional mechanics. Check reviews on our Services page! 🌟",
-      "Our customers speak for us! We have 1000+ verified reviews with an average 4.7⭐ rating. Quality service and customer satisfaction are our top priorities! 💯"
+      "We're proud of our 4.8 rating! Customers love our quick service, transparent pricing, and professional mechanics. Check reviews on our Services page! ",
+      "Our customers speak for us! We have 1000+ verified reviews with an average 4.7 rating. Quality service and customer satisfaction are our top priorities! "
     ]
   },
   
   default: [
-    "I'm not sure I understand. Could you rephrase that? I can help with services, pricing, bookings, emergency assistance, and more! 🤔",
-    "Hmm, I didn't quite get that. Try asking about:\n• Available services\n• Pricing & payment\n• Booking process\n• Emergency help\n• Service tracking\n\nWhat would you like to know?",
-    "I'm here to help! Ask me about our services, how to book, pricing, or anything else related to RepairWale. What can I assist you with? 😊"
+    "I'm not sure I understand. Could you rephrase that? I can help with services, pricing, bookings, emergency assistance, and more! ",
+    "Hmm, I didn't quite get that. Try asking about:\n Available services\n Pricing & payment\n Booking process\n Emergency help\n Service tracking\n\nWhat would you like to know?",
+    "I'm here to help! Ask me about our services, how to book, pricing, or anything else related to RepairWale. What can I assist you with? "
   ]
 }
 
@@ -137,11 +137,11 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
   const room = requestId ? `req:${requestId}` : 'public'
 
   const quickSuggestions = [
-    '💰 Show me pricing',
-    '🚨 Emergency help',
-    '📅 How to book?',
-    '📍 Track my service',
-    '⭐ Customer reviews'
+    ' Show me pricing',
+    ' Emergency help',
+    '... How to book?',
+    ' Track my service',
+    ' Customer reviews'
   ]
 
   // Load user data
@@ -153,7 +153,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
     // Send welcome message from AI
     if (aiEnabled && messages.length === 0) {
       setTimeout(() => {
-        addAIMessage("Hello! 👋 I'm RepairWale AI Assistant. How can I help you today?")
+        addAIMessage("Hello!  I'm RepairWale AI Assistant. How can I help you today?")
       }, 500)
     }
   }, [])
@@ -178,42 +178,46 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
       return () => unsub()
     }
 
-    // Socket.io fallback
-    const socket = io('http://localhost:3000', {
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    })
-    
-    socketRef.current = socket
+    // Socket.io fallback with automatic backend-port discovery
+    const realtime = connectRealtimeWithFallback({
+      options: {
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      },
+      onConnect: (socket) => {
+        socketRef.current = socket
+        setConnectionStatus('connected')
+        socket.emit('join', room)
 
-    socket.on('connect', () => {
-      setConnectionStatus('connected')
-      socket.emit('join', room)
-    })
+        socket.on('disconnect', () => {
+          setConnectionStatus('disconnected')
+        })
 
-    socket.on('disconnect', () => {
-      setConnectionStatus('disconnected')
-    })
+        socket.on('message', (payload) => {
+          setMessages(prev => [...prev, {
+            id: `${payload.ts}-${Math.random().toString(36).slice(2)}`,
+            ...payload,
+            read: false
+          }])
+        })
 
-    socket.on('message', (payload) => {
-      setMessages(prev => [...prev, { 
-        id: `${payload.ts}-${Math.random().toString(36).slice(2)}`, 
-        ...payload,
-        read: false
-      }])
-    })
-
-    socket.on('user:typing', (data) => {
-      if (data.user !== userData.name) {
-        setIsTyping(true)
-        setTimeout(() => setIsTyping(false), 2000)
+        socket.on('user:typing', (data) => {
+          if (data.user !== userData.name) {
+            setIsTyping(true)
+            setTimeout(() => setIsTyping(false), 2000)
+          }
+        })
+      },
+      onError: () => {
+        setConnectionStatus('disconnected')
       }
     })
 
     return () => {
-      try { socket.emit('leave', room) } catch {}
-      socket.disconnect()
+      const socket = socketRef.current
+      try { if (socket) socket.emit('leave', room) } catch {}
+      realtime.disconnect()
     }
   }, [requestId, userData.name])
 
@@ -226,11 +230,11 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
   function addAIMessage(text) {
     const aiMessage = {
       id: `ai-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      from: '🤖 AI Assistant',
+      from: '- AI Assistant',
       role: 'ai',
       text: text,
       ts: Date.now(),
-      avatar: '🤖',
+      avatar: '-',
       isAI: true
     }
     setMessages(prev => [...prev, aiMessage])
@@ -264,7 +268,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
         ts: Date.now(),
         requestId: requestId || null,
         read: false,
-        avatar: userData.role === 'mechanic' ? '🔧' : '👤'
+        avatar: userData.role === 'mechanic' ? 'M' : 'C'
       }
 
       if (hasFirebase && db) {
@@ -311,20 +315,20 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
   // Get role badge color
   function getRoleColor(role) {
     switch(role) {
-      case 'mechanic': return '#f59e0b'
-      case 'customer': return '#06b6d4'
-      case 'ai': return '#10b981'
-      default: return '#6b7280'
+      case 'mechanic': return '#FFFFFF'
+      case 'customer': return '#0B1F3B'
+      case 'ai': return '#FFFFFF'
+      default: return '#FFFFFF'
     }
   }
 
   // Get role badge label
   function getRoleLabel(role) {
     switch(role) {
-      case 'mechanic': return '🔧 Mechanic'
-      case 'customer': return '👤 Customer'
-      case 'ai': return '🤖 AI'
-      default: return '❓ User'
+      case 'mechanic': return 'Mechanic'
+      case 'customer': return 'Customer'
+      case 'ai': return 'AI'
+      default: return 'User'
     }
   }
 
@@ -348,7 +352,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
       {/* Header */}
       <div style={{
         padding: '16px 20px',
-        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+        background: 'linear-gradient(135deg, #0f172a, #0B1F3B)',
         borderBottom: '2px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
@@ -356,7 +360,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
       }}>
         <div>
           <h3 style={{ margin: '0 0 4px 0', fontSize: 16, fontWeight: 800, color: '#fff' }}>
-            💬 {serviceName}
+             {serviceName}
           </h3>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{
@@ -364,29 +368,29 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: connectionStatus === 'connected' ? '#10b981' : '#ef4444'
+              background: connectionStatus === 'connected' ? '#FFFFFF' : '#1f3f6b'
             }} />
-            {connectionStatus === 'connected' ? '🟢 Connected' : '🔴 Connecting...'}
-            {aiEnabled && <span style={{ marginLeft: 8 }}>• 🤖 AI Enabled</span>}
+            {connectionStatus === 'connected' ? ' Connected' : ' Connecting...'}
+            {aiEnabled && <span style={{ marginLeft: 8 }}>AI Enabled</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             onClick={() => setAiEnabled(!aiEnabled)}
             style={{
-              background: aiEnabled ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.2)',
+              background: aiEnabled ? 'rgba(96,165,250,0.18)' : 'rgba(255,255,255,0.08)',
               padding: '6px 12px',
               borderRadius: 6,
               fontSize: 11,
               fontWeight: 600,
               color: '#fff',
-              border: `1px solid ${aiEnabled ? '#10b981' : 'rgba(255,255,255,0.3)'}`,
+              border: `1px solid ${aiEnabled ? '#FFFFFF' : 'rgba(255,255,255,0.3)'}`,
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}
             title={aiEnabled ? 'AI Assistant ON' : 'AI Assistant OFF'}
           >
-            🤖 AI {aiEnabled ? 'ON' : 'OFF'}
+            - AI {aiEnabled ? 'ON' : 'OFF'}
           </button>
           <div style={{
             background: 'rgba(255,255,255,0.2)',
@@ -421,7 +425,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
             height: '100%',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}></div>
             <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 16, color: 'var(--text)' }}>No messages yet</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 24 }}>Start the conversation</div>
             
@@ -429,7 +433,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
             {aiEnabled && (
               <div style={{ width: '100%', maxWidth: 400 }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-light)', marginBottom: 12 }}>
-                  💡 Quick Questions
+                   Quick Questions
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                   {quickSuggestions.map((suggestion, idx) => (
@@ -437,7 +441,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
                       key={idx}
                       onClick={() => handleSuggestionClick(suggestion)}
                       style={{
-                        background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1))',
+                        background: 'linear-gradient(135deg, rgba(29,99,255,0.1), rgba(29,99,255,0.1))',
                         border: '1.5px solid var(--accent)',
                         padding: '8px 16px',
                         borderRadius: 20,
@@ -454,7 +458,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
                         e.target.style.transform = 'translateY(-2px)';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1))';
+                        e.target.style.background = 'linear-gradient(135deg, rgba(29,99,255,0.1), rgba(29,99,255,0.1))';
                         e.target.style.color = 'var(--accent)';
                         e.target.style.transform = 'translateY(0)';
                       }}
@@ -490,7 +494,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
                     fontSize: 16,
                     flexShrink: 0
                   }}>
-                    {msg.avatar || '👤'}
+                    {msg.avatar || ''}
                   </div>
                 )}
                 {!isCurrentUser && !showAvatar && <div style={{ width: 32 }} />}
@@ -528,13 +532,13 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
                   <div style={{
                     padding: '10px 14px',
                     borderRadius: 12,
-                    background: msg.role === 'ai' ? '#10b981' : (isCurrentUser ? '#3b82f6' : 'var(--bg)'),
+                    background: msg.role === 'ai' ? '#FFFFFF' : (isCurrentUser ? '#0B1F3B' : 'var(--bg)'),
                     color: msg.role === 'ai' ? '#fff' : (isCurrentUser ? '#fff' : 'var(--text)'),
                     border: (isCurrentUser || msg.role === 'ai') ? 'none' : '1px solid var(--border)',
                     wordBreak: 'break-word',
                     lineHeight: 1.4,
                     fontSize: 13,
-                    boxShadow: msg.role === 'ai' ? '0 4px 12px rgba(16,185,129,0.3)' : (isCurrentUser ? '0 4px 12px rgba(59,130,246,0.3)' : 'none')
+                    boxShadow: msg.role === 'ai' ? '0 4px 12px rgba(255,206,50,0.3)' : (isCurrentUser ? '0 4px 12px rgba(29,99,255,0.3)' : 'none')
                   }}>
                     {msg.text}
                   </div>
@@ -553,9 +557,9 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
             color: 'var(--text-secondary)',
             fontStyle: 'italic'
           }}>
-            <span>💭</span>
+            <span></span>
             <span>Someone is typing</span>
-            <span style={{ animation: 'blink 1.4s infinite' }}>•••</span>
+            <span style={{ animation: 'blink 1.4s infinite' }}></span>
           </div>
         )}
         
@@ -627,7 +631,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
             transition: 'all 0.2s',
             opacity: connectionStatus !== 'connected' ? 0.6 : 1
           }}
-          onFocus={e => e.currentTarget.style.borderColor = '#3b82f6'}
+          onFocus={e => e.currentTarget.style.borderColor = '#0B1F3B'}
           onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
         />
         
@@ -638,7 +642,7 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
             padding: '12px 20px',
             borderRadius: 10,
             border: 'none',
-            background: text.trim() && connectionStatus === 'connected' ? '#3b82f6' : '#9ca3af',
+            background: text.trim() && connectionStatus === 'connected' ? '#0B1F3B' : '#FFFFFF',
             color: '#fff',
             fontWeight: 700,
             cursor: text.trim() && connectionStatus === 'connected' ? 'pointer' : 'not-allowed',
@@ -650,18 +654,18 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
           }}
           onMouseEnter={e => {
             if (text.trim() && connectionStatus === 'connected') {
-              e.currentTarget.style.background = '#2563eb'
+              e.currentTarget.style.background = '#0B1F3B'
               e.currentTarget.style.transform = 'translateY(-2px)'
             }
           }}
           onMouseLeave={e => {
             if (text.trim() && connectionStatus === 'connected') {
-              e.currentTarget.style.background = '#3b82f6'
+              e.currentTarget.style.background = '#0B1F3B'
               e.currentTarget.style.transform = 'translateY(0)'
             }
           }}
         >
-          <span>{isLoading ? '⏳' : '✈️'}</span>
+          <span>{isLoading ? '...' : '>'}</span>
           <span>{isLoading ? 'Sending...' : 'Send'}</span>
         </button>
       </div>
@@ -681,3 +685,5 @@ export default function Chat({ requestId = null, serviceName = 'Support Chat' })
     </div>
   )
 }
+
+

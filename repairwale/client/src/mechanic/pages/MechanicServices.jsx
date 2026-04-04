@@ -6,7 +6,7 @@ import { showSuccess } from '../../shared/services/toast'
 const styles = `
 .mechanic-services {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0b1220 0%, #152239 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   padding: 40px 20px;
 }
 
@@ -25,35 +25,35 @@ const styles = `
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  color: #E6EDF7;
+  color: #FFFFFF;
   margin: 0;
 }
 
 .page-subtitle {
-  color: rgba(166, 173, 186, 0.7);
+  color: rgba(255,206,50,0.7);
   font-size: 14px;
   margin-top: 6px;
 }
 
 .card {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 12px rgba(8, 14, 24, 0.4);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
   margin-bottom: 24px;
   transition: all 0.3s ease;
 }
 
 .card:hover {
-  border-color: #4A9EFF;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.12);
+  border-color: #0B1F3B;
+  box-shadow: 0 0 12px rgba(29,99,255,0.12);
 }
 
 .card-title {
   font-size: 18px;
   font-weight: 700;
-  color: #E6EDF7;
+  color: #FFFFFF;
   margin: 0 0 16px 0;
 }
 
@@ -64,17 +64,17 @@ const styles = `
 }
 
 .service-item {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
   border-radius: 10px;
   padding: 16px;
   transition: all 0.3s ease;
 }
 
 .service-item:hover {
-  border-color: #4A9EFF;
-  background: linear-gradient(135deg, #0F1728 0%, #1a2d4d 100%);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.12);
+  border-color: #0B1F3B;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  box-shadow: 0 0 12px rgba(29,99,255,0.12);
   transform: translateY(-2px);
 }
 
@@ -86,18 +86,18 @@ const styles = `
 }
 
 .service-name {
-  color: #E6EDF7;
+  color: #FFFFFF;
   font-weight: 700;
   font-size: 16px;
 }
 
 .service-meta {
-  color: rgba(166, 173, 186, 0.7);
+  color: rgba(255,206,50,0.7);
   font-size: 12px;
 }
 
 .service-price {
-  color: #4A9EFF;
+  color: #0B1F3B;
   font-weight: 700;
   font-size: 14px;
 }
@@ -111,13 +111,13 @@ const styles = `
 }
 
 .badge.active {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: rgba(255,206,50,0.2);
+  color: #FFFFFF;
 }
 
 .badge.inactive {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background: rgba(255,206,50,0.2);
+  color: #FFFFFF;
 }
 
 .form-grid {
@@ -128,7 +128,7 @@ const styles = `
 
 .form-group label {
   display: block;
-  color: rgba(166, 173, 186, 0.7);
+  color: rgba(255,206,50,0.7);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -138,25 +138,25 @@ const styles = `
 .form-input {
   width: 100%;
   padding: 12px 14px;
-  background: rgba(42, 67, 104, 0.15);
-  border: 1px solid #2A4368;
+  background: rgba(29,99,255,0.15);
+  border: 1px solid #0B1F3B;
   border-radius: 8px;
-  color: #E6EDF7;
+  color: #FFFFFF;
   font-size: 14px;
   transition: all 0.3s ease;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #4A9EFF;
-  background: rgba(42, 67, 104, 0.25);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.12);
+  border-color: #0B1F3B;
+  background: rgba(29,99,255,0.25);
+  box-shadow: 0 0 12px rgba(29,99,255,0.12);
 }
 
 .empty {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(166, 173, 186, 0.7);
+  color: rgba(255,206,50,0.7);
 }
 
 .action-row {
@@ -166,9 +166,9 @@ const styles = `
 }
 
 .toggle-btn {
-  background: rgba(42, 67, 104, 0.3);
-  border: 1px solid #2A4368;
-  color: #E6EDF7;
+  background: rgba(29,99,255,0.3);
+  border: 1px solid #0B1F3B;
+  color: #FFFFFF;
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 12px;
@@ -177,9 +177,9 @@ const styles = `
 }
 
 .toggle-btn:hover {
-  border-color: #4A9EFF;
-  background: rgba(96, 165, 250, 0.1);
-  box-shadow: 0 0 15px rgba(96, 165, 250, 0.12);
+  border-color: #0B1F3B;
+  background: rgba(29,99,255,0.1);
+  box-shadow: 0 0 15px rgba(29,99,255,0.12);
 }
 
 @media (max-width: 768px) {
@@ -323,22 +323,22 @@ const styles = `
 
 /* ===== PREMIUM THEME WITH HIGHLIGHTS ===== */
 .mechanic-services {
-  background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
+  background: linear-gradient(180deg, #0B1F3B 0%, #0B1F3B 100%) !important;
 }
 
 .page-title {
-  color: #E6EDF7 !important;
-  text-shadow: 0 2px 8px rgba(74, 158, 255, 0.1);
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 8px rgba(29,99,255,0.1);
 }
 
 .page-subtitle {
-  color: rgba(230, 237, 247, 0.7) !important;
+  color: rgba(255,255,255,0.7) !important;
 }
 
 .card {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
   position: relative;
 }
 
@@ -349,7 +349,7 @@ const styles = `
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(135deg, #4A9EFF, #60A5FF);
+  background: linear-gradient(135deg, #0B1F3B, #0B1F3B);
   border-radius: 12px;
   opacity: 0;
   z-index: -1;
@@ -361,87 +361,85 @@ const styles = `
 }
 
 .card:hover {
-  box-shadow: 0 12px 40px rgba(74, 158, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(29,99,255,0.12);
 }
 
 .card-title {
-  color: #E6EDF7 !important;
-  text-shadow: 0 2px 8px rgba(74, 158, 255, 0.1);
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 8px rgba(29,99,255,0.1);
 }
 
 .service-item {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
   transition: all 0.3s ease;
 }
 
 .service-item:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 4px 16px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 4px 16px rgba(29,99,255,0.12);
 }
 
 .service-name {
-  color: #E6EDF7 !important;
+  color: #FFFFFF !important;
 }
 
 .service-meta {
-  color: rgba(230, 237, 247, 0.7) !important;
+  color: rgba(255,255,255,0.7) !important;
 }
 
 .service-price {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 2px 4px rgba(74, 158, 255, 0.18));
+  color: #FFFFFF !important;
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .badge.active {
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
   font-weight: 800;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 8px rgba(255,206,50,0.3);
 }
 
 .badge.inactive {
-  background: linear-gradient(135deg, #3D1A1A 0%, #5C2A2A 100%) !important;
-  color: #FF6B6B !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  color: #FFFFFF !important;
   font-weight: 800;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 8px rgba(255,206,50,0.3);
 }
 
 .form-group label {
-  color: rgba(230, 237, 247, 0.7) !important;
+  color: rgba(255,255,255,0.7) !important;
 }
 
 .form-input {
-  background: rgba(11, 18, 32, 0.8) !important;
-  border: 2px solid #2A4368 !important;
-  color: #E6EDF7 !important;
+  background: rgba(29,99,255,0.8) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
   transition: all 0.3s ease;
 }
 
 .form-input:focus {
-  border-color: #4A9EFF !important;
-  background: rgba(26, 58, 92, 0.5) !important;
-  box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.1);
+  border-color: #0B1F3B !important;
+  background: rgba(29,99,255,0.5) !important;
+  box-shadow: 0 0 0 4px rgba(29,99,255,0.1);
 }
 
 .empty {
-  color: rgba(230, 237, 247, 0.7) !important;
+  color: rgba(255,255,255,0.7) !important;
 }
 
 .toggle-btn {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border: 2px solid #4A9EFF !important;
-  color: #4A9EFF !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
   transition: all 0.2s;
 }
 
 .toggle-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.22);
+  box-shadow: 0 6px 20px rgba(29,99,255,0.22);
 }
 `
 
@@ -495,7 +493,7 @@ export default function MechanicServices() {
   }
 
   return (
-    <div className="mechanic-services">
+    <div className="mechanic-services" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       <style>{styles}</style>
       <div className="services-container">
         <div className="page-header">
@@ -529,7 +527,7 @@ export default function MechanicServices() {
               />
             </div>
             <div className="form-group">
-              <label>PRICE (INR)</label>
+              <label>PRICE (₹)</label>
               <input
                 className="form-input"
                 type="number"
@@ -568,9 +566,9 @@ export default function MechanicServices() {
                       {service.active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  <div className="service-meta">{service.category} {service.duration ? `• ${service.duration}` : ''}</div>
+                  <div className="service-meta">{service.category} {service.duration ? ` ${service.duration}` : ''}</div>
                   <div style={{marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    <div className="service-price">INR {service.price || 0}</div>
+                    <div className="service-price">₹ {service.price || 0}</div>
                     <div style={{display: 'flex', gap: 8}}>
                       <button className="toggle-btn" onClick={() => handleToggle(service.id)}>
                         {service.active ? 'Disable' : 'Enable'}
@@ -587,3 +585,5 @@ export default function MechanicServices() {
     </div>
   )
 }
+
+

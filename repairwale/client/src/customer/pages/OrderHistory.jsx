@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../shared/components/Button'
+import { apiCall } from '../../shared/services/api'
 
 function formatINR(value) {
-  return `₹${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+  return `₹ ${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
 }
 
 function formatDate(dateStr) {
@@ -12,6 +13,44 @@ function formatDate(dateStr) {
     return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
   } catch {
     return dateStr
+  }
+}
+
+function PageIcon({ name, size = 14 }) {
+  const props = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    xmlns: 'http://www.w3.org/2000/svg',
+    'aria-hidden': 'true'
+  }
+
+  switch (name) {
+    case 'orders':
+      return <svg {...props}><path d="M7 4h10l3 3v13H4V4h3z" stroke="currentColor" strokeWidth="1.8"/><path d="M14 4v4h4" stroke="currentColor" strokeWidth="1.8"/><path d="M8 12h8M8 16h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+    case 'completed':
+      return <svg {...props}><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8"/><path d="m8.5 12 2.2 2.2 4.8-4.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    case 'live':
+      return <svg {...props}><path d="M12 3v4M12 17v4M3 12h4M17 12h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.8"/></svg>
+    case 'spent':
+      return <svg {...props}><path d="M4 7h16v10H4z" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="12" r="2.2" stroke="currentColor" strokeWidth="1.8"/></svg>
+    case 'date':
+      return <svg {...props}><rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+    case 'location':
+      return <svg {...props}><path d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="11" r="2.2" stroke="currentColor" strokeWidth="1.8"/></svg>
+    case 'services':
+      return <svg {...props}><path d="M14.8 4.7a3 3 0 0 1 4.2 4.2l-2.3 2.3-4.2-4.2 2.3-2.3zM11.3 8.2l4.2 4.2-6.8 6.8H4.5v-4.2l6.8-6.8z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>
+    case 'total':
+      return <svg {...props}><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8"/><path d="M12 7v10M9.2 9.2h4a2 2 0 1 1 0 4h-2.4a2 2 0 1 0 0 4h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+    case 'view':
+      return <svg {...props}><path d="M2.8 12s3.4-5.5 9.2-5.5 9.2 5.5 9.2 5.5-3.4 5.5-9.2 5.5S2.8 12 2.8 12z" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="12" r="2.4" stroke="currentColor" strokeWidth="1.8"/></svg>
+    case 'pending':
+      return <svg {...props}><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+    case 'cancelled':
+      return <svg {...props}><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8"/><path d="m9 9 6 6M15 9l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+    default:
+      return null
   }
 }
 
@@ -65,15 +104,87 @@ export default function OrderHistory() {
     }
   ]
 
+  const mapServerOrder = (order) => {
+    const sourceItems = Array.isArray(order.items) ? order.items : []
+    const normalizedItems = sourceItems.map((item) => {
+      const qty = Number(item.qty || item.quantity || 1)
+      const price = Number(item.price || item.amount || item.unitPrice || 0)
+      return {
+        title: item.title || item.name || item.serviceName || 'Service item',
+        qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
+        price: Number.isFinite(price) && price >= 0 ? price : 0
+      }
+    })
+
+    const locationFromBilling = [
+      order?.billing?.locality,
+      order?.billing?.city,
+      order?.billing?.state
+    ].filter(Boolean).join(', ')
+
+    const totalAmount = Number(
+      order.total || order.amount || order.amountInRupees || order.subtotal || 0
+    )
+
+    return {
+      id: String(order.id || `ord_${Date.now()}`),
+      status: String(order.status || 'pending').toLowerCase(),
+      date: order.createdAt || order.date || new Date().toISOString(),
+      location: locationFromBilling || order.location || 'Your Location',
+      items: normalizedItems,
+      total: Number.isFinite(totalAmount) ? totalAmount : 0
+    }
+  }
+
   useEffect(() => {
     loadOrders()
   }, [])
 
-  const loadOrders = () => {
+  const loadOrders = async () => {
+    let fallbackOrders = sampleOrders
+
     try {
       const stored = JSON.parse(localStorage.getItem('rw_orders') || '[]')
-      const ordersData = Array.isArray(stored) && stored.length > 0 ? stored : sampleOrders
-      setOrders(ordersData.sort((a, b) => new Date(b.date) - new Date(a.date)))
+      if (Array.isArray(stored) && stored.length > 0) {
+        fallbackOrders = stored
+      }
+    } catch {}
+
+    setOrders([...fallbackOrders].sort((a, b) => new Date(b.date) - new Date(a.date)))
+
+    try {
+      const user = JSON.parse(localStorage.getItem('repairwale_user') || '{}')
+      const userId = user?.id || user?._id
+      if (!userId) return
+
+      const listResponse = await apiCall(`/orders?userId=${encodeURIComponent(userId)}`, {
+        suppressErrorToast: true
+      })
+
+      const orderList = Array.isArray(listResponse?.orders) ? listResponse.orders : []
+      if (orderList.length === 0) return
+
+      const detailedOrders = await Promise.all(
+        orderList.map(async (order) => {
+          try {
+            const detailResponse = await apiCall(`/orders/${encodeURIComponent(order.id)}`, {
+              suppressErrorToast: true
+            })
+            return detailResponse?.order ? { ...order, ...detailResponse.order } : order
+          } catch {
+            return order
+          }
+        })
+      )
+
+      const normalized = detailedOrders
+        .map(mapServerOrder)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+
+      if (normalized.length > 0) {
+        setOrders(normalized)
+        localStorage.setItem('rw_orders', JSON.stringify(normalized))
+      }
     } catch {}
   }
 
@@ -95,22 +206,12 @@ export default function OrderHistory() {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: ['#f59e0b', 'rgba(245, 158, 11, 0.12)'],
-      in_progress: ['#60a5fa', 'rgba(96, 165, 250, 0.14)'],
-      completed: ['#34d399', 'rgba(52, 211, 153, 0.12)'],
-      cancelled: ['#f87171', 'rgba(248, 113, 113, 0.12)']
+      pending: ['#A16207', 'rgba(245, 158, 11, 0.15)'],
+      in_progress: ['#1D4ED8', 'rgba(37, 99, 235, 0.14)'],
+      completed: ['#047857', 'rgba(16, 185, 129, 0.16)'],
+      cancelled: ['#B91C1C', 'rgba(239, 68, 68, 0.15)']
     }
-    return colors[status] || ['#9aa0a6', 'rgba(154, 160, 166, 0.12)']
-  }
-
-  const getStatusIcon = (status) => {
-    const icons = {
-      pending: '⏳',
-      in_progress: '🛠️',
-      completed: '✅',
-      cancelled: '❌'
-    }
-    return icons[status] || '📌'
+    return colors[status] || ['#0B1F3B', '#FFFFFF']
   }
 
   const getStatusLabel = (status) => {
@@ -126,170 +227,118 @@ export default function OrderHistory() {
   const premiumStyles = `
     .orders-page {
       min-height: 100vh;
-      background: radial-gradient(1200px 600px at 90% -10%, rgba(56, 189, 248, 0.08) 0%, transparent 55%),
-                  radial-gradient(900px 500px at -10% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 60%),
-                  linear-gradient(180deg, #070b14 0%, #0b1220 52%, #0d1628 100%);
-      padding-bottom: 44px;
-      color: #e6edf7;
+      background: radial-gradient(1200px 500px at 10% -10%, rgba(37,99,235,0.2), transparent), linear-gradient(180deg, #0B1F3B 0%, #0E274A 58%, #102E58 100%);
+      color: #EAF1FF;
+      padding-bottom: 32px;
     }
 
     .orders-hero {
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(140deg, #0f1d34 0%, #0c172a 48%, #0a1220 100%);
-      border-bottom: 1px solid rgba(125, 211, 252, 0.16);
-      box-shadow: 0 14px 32px rgba(5, 10, 20, 0.52);
-      padding: 44px 24px;
-    }
-
-    .orders-hero::before,
-    .orders-hero::after {
-      content: '';
-      position: absolute;
-      width: 320px;
-      height: 320px;
-      border-radius: 999px;
-      pointer-events: none;
-      filter: blur(18px);
-      opacity: 0.35;
-    }
-
-    .orders-hero::before {
-      top: -150px;
-      right: -70px;
-      background: radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0) 72%);
-    }
-
-    .orders-hero::after {
-      bottom: -170px;
-      left: -110px;
-      background: radial-gradient(circle, rgba(168, 85, 247, 0.26) 0%, rgba(168, 85, 247, 0) 70%);
+      background: linear-gradient(135deg, rgba(11,31,59,0.96), rgba(14,39,74,0.94));
+      color: #FFFFFF;
+      padding: 32px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     .orders-hero-inner,
     .orders-main {
-      max-width: 1400px;
+      width: 100%;
+      max-width: 1040px;
       margin: 0 auto;
-      position: relative;
-      z-index: 1;
     }
 
     .orders-top {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
+      gap: 14px;
+      margin-bottom: 20px;
     }
 
     .orders-logo {
-      width: 62px;
-      height: 62px;
-      border-radius: 16px;
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
       display: grid;
       place-items: center;
-      font-size: 30px;
-      background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 52%, #7c3aed 100%);
-      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
-      border: 1px solid rgba(191, 219, 254, 0.24);
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      border: 1px solid #FFFFFF;
+      color: #FFFFFF;
+      background: #0B1F3B;
     }
 
     .orders-title {
       margin: 0;
-      font-size: 36px;
+      font-size: 34px;
       line-height: 1.1;
-      letter-spacing: -0.8px;
       font-weight: 900;
-      background: linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 45%, #a78bfa 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 2px 10px rgba(56, 189, 248, 0.14));
+      color: #FFFFFF;
     }
 
     .orders-subtitle {
-      margin: 8px 0 0;
-      color: rgba(203, 213, 225, 0.84);
+      margin: 6px 0 0;
+      color: #FFFFFF;
       font-size: 14px;
       font-weight: 600;
-      letter-spacing: 0.2px;
+      opacity: 0.95;
     }
 
     .orders-stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
     }
 
     .orders-stat-card {
-      position: relative;
       display: flex;
       align-items: center;
       gap: 12px;
-      border-radius: 14px;
-      padding: 16px;
-      background: linear-gradient(145deg, rgba(17, 26, 43, 0.92), rgba(11, 20, 34, 0.98));
-      border: 1px solid rgba(125, 211, 252, 0.18);
-      box-shadow: 0 10px 22px rgba(5, 10, 20, 0.48);
-      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-      overflow: hidden;
-    }
-
-    .orders-stat-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.09) 50%, transparent 65%);
-      transform: translateX(-120%);
-      transition: transform 0.5s ease;
-    }
-
-    .orders-stat-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(125, 211, 252, 0.42);
-      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.22);
-    }
-
-    .orders-stat-card:hover::before {
-      transform: translateX(120%);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #EAF1FF;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.2);
     }
 
     .orders-stat-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
       display: grid;
       place-items: center;
-      font-size: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 0 16px rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #FFFFFF;
+      background: rgba(255,255,255,0.14);
     }
 
     .orders-stat-label {
       margin: 0 0 4px;
-      color: rgba(226, 232, 240, 0.68);
-      font-size: 12px;
-      font-weight: 700;
+      color: rgba(234,241,255,0.82);
+      font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.65px;
+      letter-spacing: 0.5px;
     }
 
     .orders-stat-value {
       margin: 0;
-      font-size: 24px;
+      color: #FFFFFF;
+      font-size: 20px;
       font-weight: 900;
+      line-height: 1;
     }
 
     .orders-main {
-      padding: 30px 24px;
+      padding: 22px 20px;
     }
 
     .orders-filters {
       display: flex;
-      gap: 10px;
-      margin-bottom: 26px;
+      gap: 8px;
+      margin-bottom: 20px;
       overflow-x: auto;
-      padding: 0 0 10px;
-      border-bottom: 1px solid rgba(125, 211, 252, 0.18);
-      scrollbar-width: thin;
+      padding-bottom: 8px;
     }
 
     .orders-filter-btn {
@@ -297,114 +346,98 @@ export default function OrderHistory() {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      border-radius: 12px;
-      border: 1px solid rgba(125, 211, 252, 0.22);
-      background: rgba(15, 23, 38, 0.84);
-      color: rgba(226, 232, 240, 0.88);
-      padding: 11px 17px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: #EAF1FF;
+      padding: 10px 14px;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 800;
       font-size: 13px;
-      transition: all 0.25s ease;
-    }
-
-    .orders-filter-btn:hover {
-      border-color: rgba(125, 211, 252, 0.52);
-      background: rgba(30, 64, 175, 0.2);
-      transform: translateY(-1px);
     }
 
     .orders-filter-btn.active {
-      border-color: rgba(125, 211, 252, 0.62);
-      color: #eff6ff;
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.34), rgba(124, 58, 237, 0.22));
-      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.24);
+      background: rgba(255,255,255,0.92);
+      color: #FFFFFF;
     }
 
     .orders-badge {
       border-radius: 999px;
-      padding: 2px 8px;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       font-size: 11px;
-      font-weight: 800;
-      background: rgba(96, 165, 250, 0.1);
-      color: #e2e8f0;
+      font-weight: 900;
+      background: #0B1F3B;
+      color: #FFFFFF;
     }
 
     .orders-filter-btn.active .orders-badge {
-      background: rgba(147, 197, 253, 0.3);
-      color: #eff6ff;
-      box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.2);
+      background: #0B1F3B;
+      color: #0B1F3B;
     }
 
     .orders-empty {
       text-align: center;
-      border-radius: 18px;
-      border: 1px dashed rgba(125, 211, 252, 0.2);
-      background: linear-gradient(145deg, rgba(15, 26, 44, 0.9), rgba(10, 17, 30, 0.96));
-      padding: 64px 26px;
-      box-shadow: 0 14px 34px rgba(4, 8, 16, 0.56);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      padding: 42px 20px;
     }
 
     .orders-empty-icon {
-      font-size: 62px;
-      margin-bottom: 18px;
-      filter: drop-shadow(0 8px 14px rgba(96, 165, 250, 0.12));
-      animation: orders-float 3s ease-in-out infinite;
+      margin-bottom: 12px;
+      color: #EAF1FF;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
     }
 
     .orders-empty h3 {
       margin: 0 0 8px;
       font-size: 22px;
       font-weight: 800;
-      color: #f8fafc;
+      color: #FFFFFF;
     }
 
     .orders-empty p {
       max-width: 420px;
       margin: 0 auto;
-      color: rgba(226, 232, 240, 0.72);
+      color: rgba(234,241,255,0.85);
       font-size: 14px;
-      line-height: 1.55;
+      line-height: 1.5;
     }
 
     .orders-list {
       display: grid;
-      gap: 16px;
+      gap: 14px;
     }
 
     .order-card {
-      position: relative;
-      border-radius: 18px;
-      border: 1px solid rgba(125, 211, 252, 0.2);
-      background: linear-gradient(145deg, #101b2f 0%, #0b1525 62%, #0a1220 100%);
-      padding: 20px;
-      box-shadow: 0 12px 24px rgba(4, 8, 16, 0.5);
+      border-radius: 14px;
+      border: 1px solid rgba(15,23,42,0.08);
+      background: #F7FAFF;
+      padding: 16px;
       cursor: pointer;
-      transition: transform 0.26s ease, box-shadow 0.26s ease, border-color 0.26s ease;
-      animation: orders-slide-up 0.45s ease-out both;
-      overflow: hidden;
-    }
-
-    .order-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.75), transparent);
+      display: grid;
+      gap: 10px;
+      box-shadow: 0 14px 30px rgba(7, 20, 40, 0.16);
+      transition: transform 0.18s ease, box-shadow 0.2s ease;
     }
 
     .order-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(125, 211, 252, 0.42);
-      box-shadow: 0 16px 32px rgba(30, 64, 175, 0.24);
+      transform: translateY(-2px);
+      box-shadow: 0 18px 34px rgba(7, 20, 40, 0.2);
     }
 
-    .order-card:hover::before {
-      opacity: 1;
+    .order-segment {
+      border-radius: 10px;
+      border: 1px solid #D6E2F5;
+      background: #FFFFFF;
+      padding: 10px 12px;
     }
 
     .order-top,
@@ -413,48 +446,51 @@ export default function OrderHistory() {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .order-top {
-      margin-bottom: 14px;
-      align-items: flex-start;
+      margin-bottom: 0;
+      align-items: center;
     }
 
     .order-caption {
       margin: 0;
       font-size: 11px;
-      font-weight: 700;
-      color: rgba(226, 232, 240, 0.56);
-      letter-spacing: 0.9px;
+      font-weight: 800;
+      color: #5B6B84;
+      letter-spacing: 0.6px;
     }
 
     .order-id {
       margin: 4px 0 0;
-      font-size: 19px;
+      font-size: 18px;
       font-weight: 900;
-      color: #7dd3fc;
-      letter-spacing: 0.7px;
+      color: #10233F;
+      letter-spacing: 0.4px;
     }
 
     .order-status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 14px;
+      padding: 7px 12px;
       border-radius: 999px;
-      border: 1px solid transparent;
+      border: 1px solid #D7E1F0;
       font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
     }
 
     .order-meta {
-      margin-bottom: 16px;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(125, 211, 252, 0.16);
-      background: rgba(12, 20, 34, 0.68);
+      margin-bottom: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .order-services-block {
+      margin: 0;
     }
 
     .order-meta-item {
@@ -463,35 +499,41 @@ export default function OrderHistory() {
     }
 
     .order-meta-label {
-      margin: 0 0 5px;
+      margin: 0 0 4px;
       font-size: 10px;
       font-weight: 800;
-      color: rgba(226, 232, 240, 0.5);
+      color: #5E6E87;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .order-meta-value {
       margin: 0;
       font-size: 13px;
       font-weight: 700;
-      color: #e2e8f0;
+      color: #10233F;
       line-height: 1.4;
     }
 
     .order-services-title {
-      margin: 0 0 10px;
+      margin: 0 0 8px;
       font-size: 12px;
       font-weight: 800;
-      color: rgba(226, 232, 240, 0.74);
-      letter-spacing: 0.7px;
+      color: #2B3D58;
+      letter-spacing: 0.6px;
       text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .order-services-list {
       display: grid;
       gap: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .order-service-item {
@@ -500,15 +542,15 @@ export default function OrderHistory() {
       align-items: center;
       gap: 10px;
       border-radius: 10px;
-      border: 1px solid rgba(125, 211, 252, 0.15);
-      background: rgba(20, 32, 50, 0.55);
-      padding: 10px 12px;
+      border: 1px solid #DAE4F3;
+      background: #F8FBFF;
+      padding: 9px 10px;
     }
 
     .order-service-name {
       font-size: 13px;
-      color: #e2e8f0;
-      font-weight: 600;
+      color: #10233F;
+      font-weight: 700;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -517,7 +559,7 @@ export default function OrderHistory() {
     .order-service-right {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       white-space: nowrap;
     }
 
@@ -525,27 +567,27 @@ export default function OrderHistory() {
       font-size: 11px;
       border-radius: 999px;
       padding: 2px 8px;
-      background: rgba(96, 165, 250, 0.12);
-      color: #dbeafe;
-      font-weight: 700;
+      background: #10233F;
+      color: #FFFFFF;
+      font-weight: 800;
     }
 
     .order-service-price {
       font-size: 12px;
-      color: #93c5fd;
+      color: #153158;
       font-weight: 800;
     }
 
     .order-more {
-      margin: 10px 0 0;
+      margin: 8px 0 0;
       font-size: 12px;
-      color: rgba(125, 211, 252, 0.82);
+      color: #4C5E79;
       font-weight: 700;
     }
 
     .order-footer {
-      padding-top: 14px;
-      border-top: 1px solid rgba(125, 211, 252, 0.16);
+      padding-top: 0;
+      border-top: 0;
     }
 
     .order-total-label {
@@ -553,160 +595,63 @@ export default function OrderHistory() {
       font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
-      color: rgba(226, 232, 240, 0.52);
-      letter-spacing: 0.8px;
+      color: #4C5E79;
+      letter-spacing: 0.7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .order-total-value {
       margin: 0;
       font-size: 21px;
       font-weight: 900;
-      background: linear-gradient(130deg, #bae6fd 0%, #38bdf8 50%, #a78bfa 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.16));
-    }
-
-    .order-view-cta {
-      border-radius: 10px;
-      border: 1px solid rgba(125, 211, 252, 0.42);
-      background: linear-gradient(135deg, rgba(2, 132, 199, 0.92), rgba(59, 130, 246, 0.9));
-      color: #eff6ff;
-      font-size: 12px;
-      font-weight: 800;
-      padding: 10px 15px;
-      box-shadow: 0 10px 18px rgba(2, 132, 199, 0.24);
-      transition: transform 0.2s ease;
-      white-space: nowrap;
-    }
-
-    .order-card:hover .order-view-cta {
-      transform: translateX(3px);
+      color: #0C2244;
     }
 
     @media (max-width: 1024px) {
-      .orders-title {
-        font-size: 32px;
-      }
-
-      .orders-main,
-      .orders-hero {
-        padding-left: 18px;
-        padding-right: 18px;
-      }
-
       .orders-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 768px) {
-      .orders-hero {
-        padding-top: 34px;
-        padding-bottom: 34px;
-      }
-
-      .orders-top {
-        align-items: flex-start;
-      }
-
-      .orders-logo {
-        width: 54px;
-        height: 54px;
-        border-radius: 14px;
-        font-size: 25px;
+      .orders-hero,
+      .orders-main {
+        padding-left: 14px;
+        padding-right: 14px;
       }
 
       .orders-title {
-        font-size: 27px;
-      }
-
-      .orders-subtitle {
-        font-size: 13px;
+        font-size: 28px;
       }
 
       .orders-stats {
         grid-template-columns: 1fr;
       }
 
-      .orders-stat-value {
-        font-size: 21px;
-      }
-
       .order-top,
-      .order-footer {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .order-status {
-        align-self: flex-start;
-      }
-
+      .order-footer,
       .order-meta {
         flex-direction: column;
         align-items: flex-start;
       }
-
-      .order-meta-item {
-        width: 100%;
-      }
-
-      .order-view-cta {
-        width: 100%;
-        text-align: center;
-      }
-
-      .orders-empty {
-        padding: 48px 18px;
-      }
     }
 
     @media (max-width: 480px) {
-      .orders-main,
-      .orders-hero {
-        padding-left: 14px;
-        padding-right: 14px;
-      }
-
-      .orders-title {
-        font-size: 24px;
-      }
-
       .order-card {
-        padding: 16px;
+        padding: 14px;
       }
 
       .order-service-item {
         flex-direction: column;
         align-items: flex-start;
-        gap: 8px;
       }
 
       .order-service-right {
         width: 100%;
         justify-content: space-between;
       }
-
-      .order-total-value {
-        font-size: 19px;
-      }
-    }
-
-    @keyframes orders-slide-up {
-      from {
-        opacity: 0;
-        transform: translateY(18px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes orders-float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-7px); }
     }
   `
 
@@ -715,7 +660,7 @@ export default function OrderHistory() {
       <div className="orders-hero">
         <div className="orders-hero-inner">
           <div className="orders-top">
-            <div className="orders-logo">📦</div>
+            <div className="orders-logo">Rw</div>
             <div>
               <h1 className="orders-title">My Orders</h1>
               <p className="orders-subtitle">Track your service bookings and history</p>
@@ -724,16 +669,16 @@ export default function OrderHistory() {
 
           <div className="orders-stats">
             {[
-              { label: 'Total Orders', value: stats.total, icon: '📦', color: '#60a5fa' },
-              { label: 'Completed', value: stats.completed, icon: '✅', color: '#34d399' },
-              { label: 'In Progress', value: stats.pending, icon: '🛠️', color: '#f59e0b' },
-              { label: 'Total Spent', value: formatINR(stats.totalSpent), icon: '💰', color: '#a78bfa' }
+              { label: 'Total Orders', value: stats.total, icon: 'orders' },
+              { label: 'Completed', value: stats.completed, icon: 'completed' },
+              { label: 'In Progress', value: stats.pending, icon: 'live' },
+              { label: 'Total Spent', value: formatINR(stats.totalSpent), icon: 'spent' }
             ].map((stat, idx) => (
               <div key={idx} className="orders-stat-card">
-                <div className="orders-stat-icon" style={{ background: `${stat.color}20` }}>{stat.icon}</div>
+                <div className="orders-stat-icon"><PageIcon name={stat.icon} size={18} /></div>
                 <div>
                   <p className="orders-stat-label">{stat.label}</p>
-                  <p className="orders-stat-value" style={{ color: stat.color }}>{stat.value}</p>
+                  <p className="orders-stat-value">{stat.value}</p>
                 </div>
               </div>
             ))}
@@ -762,7 +707,7 @@ export default function OrderHistory() {
 
         {filteredOrders.length === 0 ? (
           <div className="orders-empty">
-            <div className="orders-empty-icon">🧾</div>
+            <div className="orders-empty-icon">No orders</div>
             <h3>No {filter !== 'all' ? filter : 'orders'} found</h3>
             <p style={{ marginBottom: 24 }}>
               {filter !== 'all'
@@ -775,45 +720,47 @@ export default function OrderHistory() {
           </div>
         ) : (
           <div className="orders-list">
-            {filteredOrders.map((order, idx) => {
+            {filteredOrders.map((order) => {
               const [statusColor, statusBg] = getStatusColor(order.status)
               return (
                 <div
                   key={order.id}
                   className="order-card"
-                  style={{ animationDelay: `${idx * 0.05}s` }}
                   onClick={() => navigate(`/tracking/${order.id}`)}
                 >
-                  <div className="order-top">
+                  <div className="order-top order-segment">
                     <div>
-                      <p className="order-caption">ORDER ID</p>
+                      <p className="order-caption">Order id</p>
                       <p className="order-id">#{order.id.slice(-8).toUpperCase()}</p>
                     </div>
                     <div className="order-status" style={{ background: statusBg, borderColor: `${statusColor}55`, color: statusColor }}>
-                      <span style={{ fontSize: 14 }}>{getStatusIcon(order.status)}</span>
+                      {order.status === 'completed' && <PageIcon name="completed" size={14} />}
+                      {order.status === 'in_progress' && <PageIcon name="live" size={14} />}
+                      {order.status === 'pending' && <PageIcon name="pending" size={14} />}
+                      {order.status === 'cancelled' && <PageIcon name="cancelled" size={14} />}
                       <span>{getStatusLabel(order.status)}</span>
                     </div>
                   </div>
 
-                  <div className="order-meta">
+                  <div className="order-meta order-segment">
                     <div className="order-meta-item">
-                      <p className="order-meta-label">Date</p>
-                      <p className="order-meta-value">📅 {formatDate(order.date)}</p>
+                      <p className="order-meta-label"><PageIcon name="date" size={12} /> Date</p>
+                      <p className="order-meta-value">{formatDate(order.date)}</p>
                     </div>
                     <div className="order-meta-item">
-                      <p className="order-meta-label">Location</p>
-                      <p className="order-meta-value">📍 {order.location || 'Your Location'}</p>
+                      <p className="order-meta-label"><PageIcon name="location" size={12} /> Location</p>
+                      <p className="order-meta-value">{order.location || 'Your Location'}</p>
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: 16 }}>
-                    <p className="order-services-title">Services ({order.items?.length || 0})</p>
+                  <div className="order-services-block order-segment">
+                    <p className="order-services-title"><PageIcon name="services" size={13} /> Services ({order.items?.length || 0})</p>
                     <div className="order-services-list">
                       {order.items?.slice(0, 3).map((item, itemIdx) => (
                         <div key={itemIdx} className="order-service-item">
                           <span className="order-service-name">{item.title}</span>
                           <div className="order-service-right">
-                            <span className="order-qty">×{item.qty}</span>
+                            <span className="order-qty">Qty {item.qty}</span>
                             <span className="order-service-price">{formatINR(item.price * item.qty)}</span>
                           </div>
                         </div>
@@ -826,12 +773,11 @@ export default function OrderHistory() {
                     )}
                   </div>
 
-                  <div className="order-footer">
+                  <div className="order-footer order-segment">
                     <div>
-                      <p className="order-total-label">Total Amount</p>
+                      <p className="order-total-label"><PageIcon name="total" size={12} /> Total Amount</p>
                       <p className="order-total-value">{formatINR(order.total)}</p>
                     </div>
-                    <div className="order-view-cta">View Details →</div>
                   </div>
                 </div>
               )
@@ -844,3 +790,5 @@ export default function OrderHistory() {
     </div>
   )
 }
+
+

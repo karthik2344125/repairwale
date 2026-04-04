@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Button from '../../shared/components/Button'
 import { showSuccess, showError } from '../../shared/services/toast'
 
 export default function OnboardingCustomer(){
+  const navigate = useNavigate()
   const [form, setForm] = useState({ fullName: '', phone: '', vehicleType: 'Car', vehicleNumber: '' })
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function OnboardingCustomer(){
       localStorage.setItem('rw_customer', JSON.stringify(form))
       sessionStorage.setItem('rw_vehicle_type', form.vehicleType)
       showSuccess('Profile saved. You can now request help!')
-      window.location.href = '/map'
+      navigate('/map')
     }catch{
       showError('Could not save. Please retry')
     }
@@ -66,27 +68,27 @@ export default function OnboardingCustomer(){
           <input className="rw-input" value={form.vehicleNumber} onChange={e=>setForm({...form, vehicleNumber: e.target.value})} placeholder="e.g., KA01 AB 1234" />
         </div>
         <div style={{display:'flex',gap:10,justifyContent:'flex-end',marginTop:8}}>
-          <Button variant="ghost" onClick={()=> window.history.back()}>Cancel</Button>
+          <Button variant="ghost" onClick={() => navigate(-1)}>Cancel</Button>
           <Button variant="primary" onClick={save}>Save & Continue</Button>
         </div>
       </div>
 
       <style>{`
-        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        /* PREMIUM THEME WITH #0B1F3B BACKGROUND */
         body {
-          background: linear-gradient(180deg, #070b14 0%, #0b1220 100%) !important;
+          background: linear-gradient(180deg, #000000 0%, #0B1F3B 100%) !important;
         }
 
         .svc-card {
-          background: linear-gradient(135deg, #0b1220 0%, #0f1d34 100%) !important;
-          border: 1px solid #243449 !important;
-          box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1) !important;
+          background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+          border: 1px solid #0B1F3B !important;
+          box-shadow: 0 8px 32px rgba(29,99,255,0.1) !important;
           border-radius: 16px !important;
           padding: 32px !important;
         }
 
         .svc-title {
-          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
           -webkit-background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
           background-clip: text !important;
@@ -94,23 +96,25 @@ export default function OnboardingCustomer(){
         }
 
         .rw-input {
-          background: rgba(11, 18, 32, 0.8) !important;
-          border: 1px solid #243449 !important;
-          color: #e6edf7 !important;
+          background: rgba(29,99,255,0.8) !important;
+          border: 1px solid #0B1F3B !important;
+          color: #FFFFFF !important;
           transition: all 0.3s ease !important;
         }
 
         .rw-input:focus {
-          border-color: #38bdf8 !important;
-          box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1) !important;
+          border-color: #0B1F3B !important;
+          box-shadow: 0 0 0 4px rgba(29,99,255,0.1) !important;
           outline: none !important;
         }
 
         .rw-label {
-          color: #e6edf7 !important;
+          color: #FFFFFF !important;
           font-weight: 600 !important;
         }
       `}</style>
     </div>
   )
 }
+
+

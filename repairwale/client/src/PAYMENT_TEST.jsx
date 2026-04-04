@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 
 function formatINR(value){
-  return `₹${Number(value||0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+  return `₹ ${Number(value||0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
 }
 
 export default function PaymentTest(){
@@ -38,7 +38,7 @@ export default function PaymentTest(){
       // Simulate load Razorpay script
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      setMessage('✓ Razorpay script loaded. Opening payment modal...')
+      setMessage(' Razorpay script loaded. Opening payment modal...')
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Simulate Razorpay modal
@@ -54,10 +54,10 @@ export default function PaymentTest(){
           email: mockOrder.billing.email,
           contact: mockOrder.billing.phone
         },
-        theme: { color: '#38bdf8' }
+        theme: { color: '#0B1F3B' }
       }
 
-      setMessage('💳 Razorpay Modal Opened')
+      setMessage(' Razorpay Modal Opened')
       setMessage(prev => prev + '\n\nEnter test card: 4111 1111 1111 1111\nExpiry: Any future date\nCVV: Any 3 digits')
 
       // Simulate payment completion
@@ -66,7 +66,7 @@ export default function PaymentTest(){
       const paymentId = 'pay_' + Math.random().toString(36).substr(2, 9)
       const signature = 'sig_' + Math.random().toString(36).substr(2, 20)
 
-      setMessage(prev => prev + '\n\n✅ Payment successful!\nPayment ID: ' + paymentId)
+      setMessage(prev => prev + '\n\n... Payment successful!\nPayment ID: ' + paymentId)
 
       // Simulate verification
       await new Promise(resolve => setTimeout(resolve, 1500))
@@ -83,7 +83,7 @@ export default function PaymentTest(){
       setStep('success')
       setLoading(false)
     } catch (e) {
-      setError('❌ ' + (e.message || 'Payment failed'))
+      setError(' ' + (e.message || 'Payment failed'))
       setLoading(false)
     }
   }
@@ -97,12 +97,12 @@ export default function PaymentTest(){
       await new Promise(resolve => setTimeout(resolve, 800))
 
       const upiLink = `upi://pay?pa=repairwale@bank&pn=RepairWale&am=${mockOrder.amount}&tr=${mockOrder.orderId}`
-      setMessage('📱 UPI Payment Ready\n\nUPI Link: ' + upiLink)
+      setMessage(' UPI Payment Ready\n\nUPI Link: ' + upiLink)
 
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       const transactionId = 'UPI' + Date.now()
-      setMessage(prev => prev + '\n\n✅ UPI Payment Verified!\nTransaction ID: ' + transactionId)
+      setMessage(prev => prev + '\n\n... UPI Payment Verified!\nTransaction ID: ' + transactionId)
 
       await new Promise(resolve => setTimeout(resolve, 1500))
 
@@ -119,7 +119,7 @@ export default function PaymentTest(){
       setStep('success')
       setLoading(false)
     } catch (e) {
-      setError('❌ ' + (e.message || 'UPI payment failed'))
+      setError(' ' + (e.message || 'UPI payment failed'))
       setLoading(false)
     }
   }
@@ -133,19 +133,19 @@ export default function PaymentTest(){
       await new Promise(resolve => setTimeout(resolve, 800))
 
       const walletBalance = 10000
-      setMessage(`👛 Wallet Balance: ${formatINR(walletBalance)}`)
+      setMessage(` Wallet Balance: ${formatINR(walletBalance)}`)
 
       if (walletBalance < mockOrder.amount) {
-        throw new Error(`Insufficient balance. Need ₹${mockOrder.amount - walletBalance} more`)
+        throw new Error(`Insufficient balance. Need ${mockOrder.amount - walletBalance} more`)
       }
 
-      setMessage(prev => prev + `\n✓ Processing payment of ${formatINR(mockOrder.amount)}...`)
+      setMessage(prev => prev + `\n Processing payment of ${formatINR(mockOrder.amount)}...`)
 
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       const newBalance = walletBalance - mockOrder.amount
 
-      setMessage(prev => prev + `\n\n✅ Wallet Payment Successful!\nNew Balance: ${formatINR(newBalance)}`)
+      setMessage(prev => prev + `\n\n... Wallet Payment Successful!\nNew Balance: ${formatINR(newBalance)}`)
 
       await new Promise(resolve => setTimeout(resolve, 1500))
 
@@ -162,7 +162,7 @@ export default function PaymentTest(){
       setStep('success')
       setLoading(false)
     } catch (e) {
-      setError('❌ ' + (e.message || 'Wallet payment failed'))
+      setError(' ' + (e.message || 'Wallet payment failed'))
       setLoading(false)
     }
   }
@@ -174,23 +174,23 @@ export default function PaymentTest(){
   }
 
   return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(180deg, #070b14 0%, #0b1220 50%, #0f1d34 100%)',padding:20}}>
+    <div style={{minHeight:'100vh',background:'linear-gradient(180deg, #07111f 0%, #0f172a 50%, #0B1F3B 100%)',padding:20}}>
       <div style={{maxWidth:800,margin:'0 auto'}}>
-        <h1 style={{color:'#38bdf8',marginBottom:32,textAlign:'center',fontSize:28,fontWeight:900}}>
-          💳 Payment Methods Demo
+        <h1 style={{color:'#FFFFFF',marginBottom:32,textAlign:'center',fontSize:28,fontWeight:900}}>
+           Payment Methods Demo
         </h1>
 
         {/* Order Summary */}
-        <div style={{background:'linear-gradient(135deg, #0b1220 0%, #0f1d34 100%)',border:'1px solid #2A4368',borderRadius:12,padding:24,marginBottom:24}}>
+        <div style={{background:'linear-gradient(135deg, #0f172a 0%, #0B1F3B 100%)',border:'1px solid #0B1F3B',borderRadius:12,padding:24,marginBottom:24}}>
           <h2 style={{margin:'0 0 16px 0',color:'#fff',fontSize:18}}>Order Summary</h2>
           {mockOrder.items.map(item => (
-            <div key={item.id} style={{display:'flex',justifyContent:'space-between',marginBottom:8,fontSize:14,color:'#9aa0a6'}}>
-              <span>{item.title} × {item.qty}</span>
+            <div key={item.id} style={{display:'flex',justifyContent:'space-between',marginBottom:8,fontSize:14,color:'#FFFFFF'}}>
+              <span>{item.title} - {item.qty}</span>
               <strong style={{color:'#fff'}}>{formatINR(item.unitPrice * item.qty)}</strong>
             </div>
           ))}
-          <div style={{height:1,background:'#2A4368',margin:'12px 0'}}/>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:18,fontWeight:800,color:'#38bdf8'}}>
+          <div style={{height:1,background:'#1f3f6b',margin:'12px 0'}}/>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:18,fontWeight:800,color:'#FFFFFF'}}>
             <span>Total</span>
             <span>{formatINR(mockOrder.amount)}</span>
           </div>
@@ -200,12 +200,12 @@ export default function PaymentTest(){
           <>
             {/* Payment Method Selection */}
             <div style={{marginBottom:24}}>
-              <h3 style={{color:'#fff',marginBottom:12,fontSize:16}}>Select Payment Method</h3>
+              <h3 style={{color:'#eef4ff',marginBottom:12,fontSize:16}}>Select Payment Method</h3>
               <div style={{display:'grid',gap:12}}>
                 {[
-                  { id: 'razorpay', name: '💳 Razorpay', desc: 'Credit/Debit Card, Net Banking', testInfo: 'Test: 4111 1111 1111 1111' },
-                  { id: 'upi', name: '📱 UPI', desc: 'Google Pay, PhonePe, Paytm', testInfo: 'Test: Any UPI ID' },
-                  { id: 'wallet', name: '👛 Wallet', desc: 'RepairWale Credits (Balance: ₹10,000)', testInfo: 'Test: Auto-deducted' }
+                  { id: 'razorpay', name: ' Razorpay', desc: 'Credit/Debit Card, Net Banking', testInfo: 'Test: 4111 1111 1111 1111' },
+                  { id: 'upi', name: ' UPI', desc: 'Google Pay, PhonePe, Paytm', testInfo: 'Test: Any UPI ID' },
+                  { id: 'wallet', name: ' Wallet', desc: 'RepairWale Credits (Balance: 10,000)', testInfo: 'Test: Auto-deducted' }
                 ].map(method => (
                   <div
                     key={method.id}
@@ -213,20 +213,20 @@ export default function PaymentTest(){
                     style={{
                       padding:16,
                       borderRadius:12,
-                      border: paymentMethod === method.id ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.12)',
-                      background: paymentMethod === method.id ? 'rgba(56,189,248,0.1)' : 'rgba(255,255,255,0.03)',
+                      border: paymentMethod === method.id ? '2px solid #FFFFFF' : '1px solid rgba(255,255,255,0.12)',
+                      background: paymentMethod === method.id ? 'rgba(29,78,216,0.12)' : 'rgba(255,255,255,0.03)',
                       cursor:'pointer',
                       transition:'all 0.2s'
                     }}
                   >
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <div>
-                        <div style={{fontWeight:700,fontSize:14,color:'#fff'}}>{method.name}</div>
-                        <div style={{fontSize:12,color:'#9aa0a6',marginTop:4}}>{method.desc}</div>
-                        <div style={{fontSize:11,color:'#38bdf8',marginTop:6}}>ℹ️ {method.testInfo}</div>
+                        <div style={{fontWeight:700,fontSize:14,color:'#eef4ff'}}>{method.name}</div>
+                        <div style={{fontSize:12,color:'#FFFFFF',marginTop:4}}>{method.desc}</div>
+                        <div style={{fontSize:11,color:'#FFFFFF',marginTop:6}}> {method.testInfo}</div>
                       </div>
-                      <div style={{width:20,height:20,borderRadius:'50%',border:'2px solid',borderColor: paymentMethod === method.id ? '#38bdf8' : 'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                        {paymentMethod === method.id && <div style={{width:10,height:10,borderRadius:'50%',background:'#38bdf8'}}/>}
+                      <div style={{width:20,height:20,borderRadius:'50%',border:'2px solid',borderColor: paymentMethod === method.id ? '#FFFFFF' : 'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        {paymentMethod === method.id && <div style={{width:10,height:10,borderRadius:'50%',background:'#FFFFFF'}}/>}
                       </div>
                     </div>
                   </div>
@@ -243,13 +243,13 @@ export default function PaymentTest(){
                 padding:'14px 24px',
                 borderRadius:10,
                 border:'none',
-                background:'linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%)',
-                color:'#000',
+                background:'linear-gradient(135deg, #0B1F3B 0%, #FFFFFF 100%)',
+                color:'#ffffff',
                 fontWeight:700,
                 fontSize:16,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.7 : 1,
-                boxShadow:'0 4px 16px rgba(56, 189, 248, 0.3)'
+                boxShadow:'0 4px 16px rgba(29,78,216,0.3)'
               }}
             >
               {loading ? 'Processing...' : `Pay ${formatINR(mockOrder.amount)}`}
@@ -258,21 +258,21 @@ export default function PaymentTest(){
         )}
 
         {step === 'payment' && (
-          <div style={{background:'rgba(56,189,248,0.1)',border:'1px solid #38bdf8',borderRadius:12,padding:24,textAlign:'center'}}>
-            <div style={{fontSize:40,marginBottom:16}}>⏳</div>
-            <p style={{color:'#9aa0a6',fontSize:14,marginBottom:12}}>Processing {paymentMethod === 'razorpay' ? 'Razorpay' : paymentMethod === 'upi' ? 'UPI' : 'Wallet'} payment...</p>
-            {message && <div style={{whiteSpace:'pre-wrap',color:'#38bdf8',fontSize:12,fontFamily:'monospace',background:'rgba(0,0,0,0.3)',padding:12,borderRadius:8}}>{message}</div>}
-            {error && <div style={{color:'#ff6b6b',marginTop:12,fontSize:12}}>{error}</div>}
+          <div style={{background:'rgba(29,99,255,0.1)',border:'1px solid #0B1F3B',borderRadius:12,padding:24,textAlign:'center'}}>
+            <div style={{fontSize:40,marginBottom:16}}></div>
+            <p style={{color:'#FFFFFF',fontSize:14,marginBottom:12}}>Processing {paymentMethod === 'razorpay' ? 'Razorpay' : paymentMethod === 'upi' ? 'UPI' : 'Wallet'} payment...</p>
+            {message && <div style={{whiteSpace:'pre-wrap',color:'#0B1F3B',fontSize:12,fontFamily:'monospace',background:'rgba(0,0,0,0.3)',padding:12,borderRadius:8}}>{message}</div>}
+            {error && <div style={{color:'#FFFFFF',marginTop:12,fontSize:12}}>{error}</div>}
           </div>
         )}
 
         {step === 'success' && orderData && (
-          <div style={{background:'rgba(16,185,129,0.15)',border:'1px solid #10b981',borderRadius:12,padding:24}}>
-            <div style={{fontSize:48,textAlign:'center',marginBottom:16}}>✅</div>
-            <h2 style={{color:'#10b981',textAlign:'center',marginBottom:12}}>Payment Successful!</h2>
+          <div style={{background:'rgba(255,206,50,0.15)',border:'1px solid #FFFFFF',borderRadius:12,padding:24}}>
+            <div style={{fontSize:28,textAlign:'center',marginBottom:16,fontWeight:800}}>Success</div>
+            <h2 style={{color:'#FFFFFF',textAlign:'center',marginBottom:12}}>Payment Successful!</h2>
             
             <div style={{background:'rgba(255,255,255,0.05)',borderRadius:8,padding:16,marginBottom:16}}>
-              <div style={{display:'grid',gap:10,fontSize:13,color:'#9aa0a6'}}>
+              <div style={{display:'grid',gap:10,fontSize:13,color:'#FFFFFF'}}>
                 <div><strong style={{color:'#fff'}}>Order ID:</strong> {orderData.orderId}</div>
                 <div><strong style={{color:'#fff'}}>Amount:</strong> {formatINR(orderData.amount)}</div>
                 <div><strong style={{color:'#fff'}}>Method:</strong> {paymentMethod.toUpperCase()}</div>
@@ -284,7 +284,7 @@ export default function PaymentTest(){
                     <div><strong style={{color:'#fff'}}>New Balance:</strong> {formatINR(orderData.newBalance)}</div>
                   </>
                 )}
-                <div><strong style={{color:'#fff'}}>Status:</strong> <span style={{color:'#10b981'}}>PAID</span></div>
+                <div><strong style={{color:'#fff'}}>Status:</strong> <span style={{color:'#FFFFFF'}}>PAID</span></div>
                 <div><strong style={{color:'#fff'}}>Time:</strong> {orderData.timestamp}</div>
               </div>
             </div>
@@ -300,9 +300,9 @@ export default function PaymentTest(){
                 width:'100%',
                 padding:'12px 24px',
                 borderRadius:10,
-                border:'1px solid #10b981',
-                background:'rgba(16,185,129,0.1)',
-                color:'#10b981',
+                border:'1px solid #FFFFFF',
+                background:'rgba(255,206,50,0.1)',
+                color:'#FFFFFF',
                 fontWeight:700,
                 fontSize:14,
                 cursor:'pointer'
@@ -324,3 +324,5 @@ export default function PaymentTest(){
     </div>
   )
 }
+
+

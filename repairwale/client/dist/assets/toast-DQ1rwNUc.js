@@ -1,1 +1,0 @@
-let c=[];function n(o,r="info",t=3e3){const s=Date.now();return c.forEach(e=>{e({id:s,message:o,type:r,duration:t})}),s}function u(o){return n(o,"success",3e3)}function a(o){return n(o,"error",4e3)}function f(o){return n(o,"info",3e3)}export{a,f as b,u as s};

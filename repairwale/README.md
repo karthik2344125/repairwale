@@ -1,156 +1,267 @@
-# RepairWale — Prototype
+# 🚗 RepairWale - On-Demand Mechanic Platform
 
-This repository contains a small full-stack prototype for the RepairWale app concept.
+Full-stack platform connecting customers with mechanics for roadside assistance and vehicle repairs.
 
-What you get:
-- A simple Express + Socket.io backend that serves a static frontend.
-- A static front-end prototype using Leaflet for maps, a mechanics list, a simple request flow, and a chat panel powered by Socket.io.
+## 🚀 Quick Start
 
-Prerequisites
-- Node.js (v14+ recommended)
+**Prerequisites:** Node.js 16+
 
-Run locally
-1. Open a terminal in `repairwale/server`.
-2. Install dependencies and start server:
+### Option 1: Root Workspace Command (Recommended)
 
 ```powershell
-cd c:\Users\Lenovo\Desktop\CAPSTONE\repairwale\server
+cd repairwale
 npm install
-npm start
+npm run install:all
+npm run dev
 ```
 
-3. Open http://localhost:3000 in your browser.
+This starts backend and frontend together.
 
-Web client (React + Vite)
-
-The web client has been converted to a React + Vite app located in `repairwale/client`.
-
-Development (recommended): run the backend and the Vite dev server in parallel.
+### Option 2: Use Batch Files (Windows)
 
 ```powershell
-# from one terminal (backend)
-cd C:\Users\Lenovo\Desktop\CAPSTONE\repairwale\server
+# Start everything
+start-all.bat
+
+# Or start individually
+start-backend.bat    # Terminal 1
+start-frontend.bat   # Terminal 2
+```
+
+### Option 3: Manual Start
+
+```powershell
+# Terminal 1 - Backend
+cd server
 npm install
 npm start
 
-# from another terminal (web client)
-cd C:\Users\Lenovo\Desktop\CAPSTONE\repairwale\client
+# Terminal 2 - Frontend
+cd client
 npm install
 npm run dev
 ```
 
-When `vite` is running it will serve the web client (usually on http://localhost:5173). The web app will call backend endpoints at the same origin if you run it through a proxy or you can configure the client to use `http://localhost:3000` for API calls.
+**Access:** http://localhost:5173
 
-Web Firebase setup
+---
 
-1. Copy the example Firebase config into the client and edit it:
+## 📁 Project Structure
 
-```powershell
-cd C:\Users\Lenovo\Desktop\CAPSTONE\repairwale\client
-copy firebaseConfig.example.js src/firebaseConfig.js
-# open src/firebaseConfig.js and paste your Firebase project settings
+```
+repairwale/
+├── client/          # React + Vite frontend
+├── server/          # Express + Socket.io backend
+├── mobile/          # React Native mobile app
+└── README.md        # This file
 ```
 
-2. Firestore collections used by the web client:
-  - `requests` — stores service requests created by users
-  - `messages` — public chat messages
+---
 
-3. For quick testing set Firestore to test mode (or add permissive rules) and then run the dev server.
+## ✨ Features
 
+### Authentication
+- JWT-based auth with bcrypt password hashing
+- Role-based access (Customer/Mechanic)
+- Protected routes
 
-Production build:
+### For Customers
+- Browse services & mechanics
+- Interactive map view
+- Real-time service tracking
+- Chat with mechanic
+- Razorpay payment integration
+- Order history & favorites
+
+### For Mechanics  
+- Manage services
+- Accept/update requests
+- Real-time notifications
+- Chat with customers
+- Dashboard with stats
+
+### Tech Stack
+- **Frontend:** React 18, Vite, React Router, Leaflet Maps, Socket.io-client
+- **Backend:** Express, Socket.io, JWT, bcrypt, Mongoose
+- **Mobile:** React Native, Expo
+- **Database:** MongoDB (ready, needs connection)
+- **Payment:** Razorpay
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Copy `server/.env.example` to `server/.env` and set values as needed.
+
+**Server (`server/.env`):**
+```env
+PORT=3000
+JWT_SECRET=your_secure_secret_here
+MONGODB_URI=your_mongodb_connection_string
+RAZORPAY_KEY_ID=your_razorpay_key
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+```
+
+### Database Setup (Free)
+
+1. Create MongoDB Atlas account (free tier)
+2. Create cluster
+3. Get connection string
+4. Add to `server/.env` as `MONGODB_URI`
+
+---
+
+## 📱 Mobile App
 
 ```powershell
-cd C:\Users\Lenovo\Desktop\CAPSTONE\repairwale\client
+cd mobile
+npm install
+npx expo start
+```
+
+Scan QR code with Expo Go app on your phone.
+
+---
+
+## 🤖 AI Chatbot Training (Large Dataset Ready)
+
+The chatbot now supports server-side knowledge ingestion and retrieval.
+
+### 1. Prepare Dataset
+
+Use JSON array or JSONL format with records like:
+
+```json
+{
+	"source": "faq-pricing",
+	"title": "Pricing FAQ",
+	"tags": ["pricing", "services"],
+	"content": "Your long text content here..."
+}
+```
+
+Sample file: `server/db/ai_knowledge.sample.json`
+
+### 2. Import Dataset
+
+```powershell
+cd server
+npm run ai:import -- .\db\ai_knowledge.sample.json --reset
+```
+
+For large datasets, split into multiple JSON/JSONL files and run imports in batches.
+
+### 3. Runtime APIs
+
+- `POST /api/ai/chat` - ask a question
+- `POST /api/ai/knowledge/import` - ingest docs (supports reset)
+- `POST /api/ai/knowledge/search` - retrieve top matches
+- `GET /api/ai/knowledge/stats` - index statistics
+
+Optional admin protection: set `AI_ADMIN_KEY` in `server/.env` and send header `x-ai-admin-key` for import endpoint.
+
+### 4. Retrieval Mode (Option 1 Implemented)
+
+The chatbot now uses **hybrid retrieval**:
+
+- lexical token overlap scoring
+- local embedding vector similarity (hashed embedding)
+
+This improves semantic matching even when user wording differs from dataset text.
+
+### 5. Evaluation Suite (Option 3 Implemented)
+
+Run benchmark scoring with QA dataset:
+
+```powershell
+cd server
+npm run ai:evaluate -- .\db\ai_eval.sample.json 4
+```
+
+Outputs:
+
+- `retrievalHitRate` (expected source found in top-k)
+- `answerKeywordScore` (answer includes expected terms)
+- `combinedScore`
+
+---
+
+## 🚀 Deployment (100% Free Options)
+
+### Backend + Frontend (All-in-one)
+**Render.com** (Free tier)
+- Auto-deploy from GitHub
+- Built-in SSL
+- 0 config needed
+
+### Frontend Only
+**Vercel/Netlify** (Free tier)
+- Deploy client folder
+- Point to separate backend API
+
+### Database
+**MongoDB Atlas** (Free tier)
+- 512MB storage
+- Shared cluster
+
+---
+
+## 🔒 Security Features
+
+- Strong JWT secret generation
+- Rate limiting (express-rate-limit)
+- Helmet.js security headers
+- Input validation (express-validator)
+- Password hashing (bcrypt)
+- CORS configuration
+
+---
+
+## 📝 Development
+
+```powershell
+# Build client for production
+cd client
 npm run build
+
+# Preview production build
+npm run preview
+
+# Check for errors
+npm audit
+
+# Fix vulnerabilities
+npm audit fix
 ```
 
-The built assets will be in `repairwale/client/dist`. If you want the Express server to serve the production build, update the server static path to point to this `dist` folder.
+---
 
-Persistent local run (avoid accidental exits)
-1. Use two dedicated terminals: one ONLY for the server, one for client builds/dev.
-2. Do not reuse the server terminal to run `npm run build` for the client (that will stop the server process if foreground).
-3. Optionally use `nodemon` (auto-restart on code changes) or `pm2` (process manager).
+## 🐛 Troubleshooting
 
-Add nodemon:
+**Port already in use:**
 ```powershell
-cd C:\Users\Lenovo\Desktop\CAPSTONE\repairwale\server
-npm install --save-dev nodemon
-# Add to server/package.json scripts: "dev": "nodemon index.js"
-npm run dev
+# Server auto-tries ports 3000-3020
+# Or manually set:
+$env:PORT=4000; npm start
 ```
 
-Add pm2 (persistent + restart on crash):
-```powershell
-npm install -g pm2
-pm2 start C:\Users\Lenovo\Desktop\CAPSTONE\repairwale\server\index.js --name repairwale
-pm2 logs repairwale
-pm2 save
-# To list processes
-pm2 ls
-```
+**Database not connecting:**
+- Check MONGODB_URI in .env
+- Verify network access in MongoDB Atlas (allow 0.0.0.0/0)
+- App works without DB (data stored in memory)
 
-Deployment options (choose one)
+**Payment not working:**
+- Add Razorpay keys to .env
+- Without keys, uses mock payment mode
 
-Render (recommended for combined Express + static build):
-1. Push repo to GitHub.
-2. Create new Web Service in Render pointing to `repairwale/server` folder.
-3. Build command:
-  ```bash
-  cd ../client && npm install && npm run build && cd ../server && npm install
-  ```
-4. Start command:
-  ```bash
-  node index.js
-  ```
-5. Ensure server code serves `../client/dist` (already auto-detected).
+---
 
-Railway / Fly.io similar steps: run build for client then start server.
+## 📄 License
 
-Vercel split (if you want edge‑optimized static site + separate API):
-1. Deploy `client/dist` via Vercel (configure build: `npm run build` inside client).
-2. Deploy server separately (Render/Railway). Update client API base URL to deployed server domain.
+ISC
 
-Environment variables:
-- `PORT` (optional) to override default 3000.
-- Future: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` for payment integration.
+---
 
-Common local exit causes & prevention:
-- Starting builds in same terminal -> open new terminal for builds.
-- Accidental Ctrl+C -> watch for signal log `[SIGNAL] SIGINT received`.
-- Path error (`node index.js` from wrong directory) -> use absolute path or `cd server` first.
-- Unhandled errors (now logged) -> check console for `[FATAL]` or `[SERVER ERROR]` lines.
-
-Health check:
-```powershell
-Invoke-WebRequest -UseBasicParsing http://localhost:3000/health | Select-Object -ExpandProperty Content
-```
-
-To run on different port:
-```powershell
-$env:PORT=4000; node index.js
-```
-
-Next deployment enhancements:
-- Add real payment order/signature verification route.
-- Add persistent data store (MongoDB / Postgres) instead of in-memory arrays.
-- Implement geo-indexed search (MongoDB 2dsphere, or Firestore + geohashing library).
-- Add rate limiting & request logging (morgan + pino). 
-
-
-Notes & next steps
-- This is a prototype. To build the real app:
-  - Replace the simple name-based mock auth with Firebase Auth (web or React Native SDK).
-  - Store mechanics and requests in Firestore and add geospatial queries.
-  - Integrate Google Maps (or continue with Leaflet) and real location tracking from devices.
-  - Use Razorpay server-side order creation and front-end checkout flow for payments.
-  - Migrate frontend to React Native (Expo) for cross-platform mobile builds — keep the same backend APIs.
-
-Files added
-- `server/` — Express + Socket.io server
-- `client/` — Static prototype: `index.html`, `app.js`, `styles.css`
-
-If you want, I can:
-- Convert the frontend to a React app or an Expo React Native project.
-- Add Firebase Auth + Firestore integration (I will need Firebase project config).
-- Add a simulated Razorpay checkout flow.
+**Last Updated:** March 2026 

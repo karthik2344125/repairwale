@@ -20,7 +20,7 @@ export function ProtectedRoute({ children, requireRole = null, allowWithoutRole 
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: '#0f172a'
+        background: '#0B1F3B'
       }}>
         <div style={{textAlign: 'center'}}>
           <div style={{
@@ -32,7 +32,7 @@ export function ProtectedRoute({ children, requireRole = null, allowWithoutRole 
             margin: '0 auto',
             animation: 'spin 0.8s linear infinite'
           }}/>
-          <div style={{marginTop: 16, color: '#94a3b8', fontSize: 14}}>Loading…</div>
+          <div style={{marginTop: 16, color: '#FFFFFF', fontSize: 14}}>Loading</div>
         </div>
       </div>
     )
@@ -74,3 +74,5 @@ export function PublicRoute({ children, requireRoleSelection = false }) {
   // Logged in but no role - allow to access login/role-selection (shouldn't happen but safety check)
   return children
 }
+
+

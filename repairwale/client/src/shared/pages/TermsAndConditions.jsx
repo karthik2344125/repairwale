@@ -4,12 +4,26 @@ import Button from '../components/Button'
 
 export default function TermsAndConditions() {
   const navigate = useNavigate()
+  const pageStyle = {
+    padding: '54px 0 80px',
+    background: 'linear-gradient(180deg, #06101d 0%, #0a1629 48%, #10223e 100%)',
+    minHeight: '100vh'
+  }
+
+  const backButtonStyle = {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    opacity: 0.82,
+    borderColor: 'rgba(228,216,191,0.28)',
+    color: '#f0e9da'
+  }
 
   return (
-    <div style={{padding:'54px 0 80px'}}>
+    <div style={pageStyle}>
       <div className="legal-wrapper">
         <div className="legal-hero">
-          <Button variant="ghost" onClick={()=> navigate(-1)} style={{position:'absolute',left:20,top:20,opacity:.65}}>← Back</Button>
+          <Button variant="ghost" onClick={()=> navigate(-1)} style={backButtonStyle}>Back</Button>
           <h1>Terms & Conditions</h1>
           <p className="legal-sub">Please review these terms carefully before using RepairWale. Continued use of the platform signifies acceptance.</p>
           <div className="legal-meta">Last updated: December 2, 2025</div>
@@ -31,13 +45,13 @@ export default function TermsAndConditions() {
             <h2>What We Offer</h2>
             <p>RepairWale operates as an intermediary platform that:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Connects customers with verified mechanics and service providers</li>
-              <li><span className="marker">•</span>Facilitates real-time location tracking and communication</li>
-              <li><span className="marker">•</span>Processes payments securely through integrated payment gateways</li>
-              <li><span className="marker">•</span>Provides service history and digital invoicing</li>
-              <li><span className="marker">•</span>Enables emergency roadside assistance requests</li>
+              <li><span className="marker"></span>Connects customers with verified mechanics and service providers</li>
+              <li><span className="marker"></span>Facilitates real-time location tracking and communication</li>
+              <li><span className="marker"></span>Processes payments securely through integrated payment gateways</li>
+              <li><span className="marker"></span>Provides service history and digital invoicing</li>
+              <li><span className="marker"></span>Enables emergency roadside assistance requests</li>
             </ul>
-            <p>RepairWale does not directly provide mechanical services. All services are performed by independent third‑party mechanics registered on our platform.</p>
+            <p>RepairWale does not directly provide mechanical services. All services are performed by independent third-party mechanics registered on our platform.</p>
           </section>
 
           {/* User Obligations */}
@@ -46,13 +60,13 @@ export default function TermsAndConditions() {
             <h2>User Responsibilities</h2>
             <p>As a user of RepairWale, you agree to:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Provide accurate and up-to-date information during registration and service requests</li>
-              <li><span className="marker">•</span>Use the platform only for lawful purposes</li>
-              <li><span className="marker">•</span>Not misuse or abuse the services or platform features</li>
-              <li><span className="marker">•</span>Treat service providers with respect and professionalism</li>
-              <li><span className="marker">•</span>Pay for services rendered as per the agreed pricing</li>
-              <li><span className="marker">•</span>Report any issues or disputes promptly through proper channels</li>
-              <li><span className="marker">•</span>Maintain the confidentiality of your account credentials</li>
+              <li><span className="marker"></span>Provide accurate and up-to-date information during registration and service requests</li>
+              <li><span className="marker"></span>Use the platform only for lawful purposes</li>
+              <li><span className="marker"></span>Not misuse or abuse the services or platform features</li>
+              <li><span className="marker"></span>Treat service providers with respect and professionalism</li>
+              <li><span className="marker"></span>Pay for services rendered as per the agreed pricing</li>
+              <li><span className="marker"></span>Report any issues or disputes promptly through proper channels</li>
+              <li><span className="marker"></span>Maintain the confidentiality of your account credentials</li>
             </ul>
           </section>
 
@@ -62,12 +76,12 @@ export default function TermsAndConditions() {
             <h2>Service Provider Requirements</h2>
             <p>Mechanics and service providers on RepairWale must:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Possess valid licenses, certifications, and insurance as required by law</li>
-              <li><span className="marker">•</span>Provide quality services in a professional and timely manner</li>
-              <li><span className="marker">•</span>Maintain accurate availability status on the platform</li>
-              <li><span className="marker">•</span>Honor pricing displayed on the platform</li>
-              <li><span className="marker">•</span>Handle customer data with confidentiality</li>
-              <li><span className="marker">•</span>Report service completion and issues accurately</li>
+              <li><span className="marker"></span>Possess valid licenses, certifications, and insurance as required by law</li>
+              <li><span className="marker"></span>Provide quality services in a professional and timely manner</li>
+              <li><span className="marker"></span>Maintain accurate availability status on the platform</li>
+              <li><span className="marker"></span>Honor pricing displayed on the platform</li>
+              <li><span className="marker"></span>Handle customer data with confidentiality</li>
+              <li><span className="marker"></span>Report service completion and issues accurately</li>
             </ul>
           </section>
 
@@ -75,12 +89,12 @@ export default function TermsAndConditions() {
           <section className="legal-section">
             <div className="legal-badge">PAYMENT TERMS</div>
             <h2>Pricing and Payment</h2>
-            <p>All prices displayed on RepairWale are in Indian Rupees (₹) and are indicative ranges. Final pricing may vary based on:</p>
+            <p>All prices displayed on RepairWale are in Indian Rupees (Rs) and are indicative ranges. Final pricing may vary based on:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Actual diagnostic findings</li>
-              <li><span className="marker">•</span>Parts and materials required</li>
-              <li><span className="marker">•</span>Distance traveled by the service provider</li>
-              <li><span className="marker">•</span>Time of service (emergency surcharges may apply)</li>
+              <li><span className="marker"></span>Actual diagnostic findings</li>
+              <li><span className="marker"></span>Parts and materials required</li>
+              <li><span className="marker"></span>Distance traveled by the service provider</li>
+              <li><span className="marker"></span>Time of service (emergency surcharges may apply)</li>
             </ul>
             <p>Payment is processed through Razorpay or other integrated payment gateways. RepairWale charges a service fee (deducted from mechanic payments) for platform usage.</p>
           </section>
@@ -91,15 +105,15 @@ export default function TermsAndConditions() {
             <h2>Cancellation and Refunds</h2>
             <p><strong>User Cancellations:</strong></p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Free cancellation within 2 minutes of booking</li>
-              <li><span className="marker">•</span>Cancellations after mechanic dispatch may incur a cancellation fee</li>
-              <li><span className="marker">•</span>No-shows may result in full charge</li>
+              <li><span className="marker"></span>Free cancellation within 2 minutes of booking</li>
+              <li><span className="marker"></span>Cancellations after mechanic dispatch may incur a cancellation fee</li>
+              <li><span className="marker"></span>No-shows may result in full charge</li>
             </ul>
             <p><strong>Refund Policy:</strong></p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Refunds for service issues are processed within 7-10 business days</li>
-              <li><span className="marker">•</span>Disputes must be raised within 48 hours of service completion</li>
-              <li><span className="marker">•</span>Refund amounts are determined on a case-by-case basis</li>
+              <li><span className="marker"></span>Refunds for service issues are processed within 7-10 business days</li>
+              <li><span className="marker"></span>Disputes must be raised within 48 hours of service completion</li>
+              <li><span className="marker"></span>Refund amounts are determined on a case-by-case basis</li>
             </ul>
           </section>
 
@@ -109,10 +123,10 @@ export default function TermsAndConditions() {
             <h2>Liability and Disclaimer</h2>
             <p>RepairWale acts solely as a platform intermediary. We do not:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Guarantee the quality, safety, or legality of services provided by mechanics</li>
-              <li><span className="marker">•</span>Assume liability for damages caused during service provision</li>
-              <li><span className="marker">•</span>Take responsibility for disputes between users and service providers</li>
-              <li><span className="marker">•</span>Guarantee mechanic availability or response times</li>
+              <li><span className="marker"></span>Guarantee the quality, safety, or legality of services provided by mechanics</li>
+              <li><span className="marker"></span>Assume liability for damages caused during service provision</li>
+              <li><span className="marker"></span>Take responsibility for disputes between users and service providers</li>
+              <li><span className="marker"></span>Guarantee mechanic availability or response times</li>
             </ul>
             <p>Users engage with service providers at their own risk. RepairWale is not liable for any direct, indirect, incidental, or consequential damages arising from platform use.</p>
           </section>
@@ -123,11 +137,11 @@ export default function TermsAndConditions() {
             <h2>Data Privacy and Security</h2>
             <p>RepairWale collects and processes user data including:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Personal information (name, phone, email, address)</li>
-              <li><span className="marker">•</span>Location data for service matching and tracking</li>
-              <li><span className="marker">•</span>Vehicle information</li>
-              <li><span className="marker">•</span>Payment details (securely processed through payment gateways)</li>
-              <li><span className="marker">•</span>Service history and communications</li>
+              <li><span className="marker"></span>Personal information (name, phone, email, address)</li>
+              <li><span className="marker"></span>Location data for service matching and tracking</li>
+              <li><span className="marker"></span>Vehicle information</li>
+              <li><span className="marker"></span>Payment details (securely processed through payment gateways)</li>
+              <li><span className="marker"></span>Service history and communications</li>
             </ul>
             <p>We use this data to provide services, improve platform quality, and ensure security. Data is stored securely and not shared with third parties except as required for service delivery or by law.</p>
           </section>
@@ -145,11 +159,11 @@ export default function TermsAndConditions() {
             <h2>Account Termination</h2>
             <p>RepairWale reserves the right to suspend or terminate user accounts for:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span>Violation of these Terms and Conditions</li>
-              <li><span className="marker">•</span>Fraudulent activity or payment disputes</li>
-              <li><span className="marker">•</span>Abusive behavior towards service providers or staff</li>
-              <li><span className="marker">•</span>Misuse of platform features</li>
-              <li><span className="marker">•</span>Providing false information</li>
+              <li><span className="marker"></span>Violation of these Terms and Conditions</li>
+              <li><span className="marker"></span>Fraudulent activity or payment disputes</li>
+              <li><span className="marker"></span>Abusive behavior towards service providers or staff</li>
+              <li><span className="marker"></span>Misuse of platform features</li>
+              <li><span className="marker"></span>Providing false information</li>
             </ul>
           </section>
 
@@ -173,108 +187,21 @@ export default function TermsAndConditions() {
             <h2>Contact Information</h2>
             <p>For questions, concerns, or support regarding these Terms and Conditions, please contact us:</p>
             <ul className="legal-list">
-              <li><span className="marker">•</span><strong>Email:</strong>&nbsp;support@repairwale.com</li>
-              <li><span className="marker">•</span><strong>Phone:</strong>&nbsp;+91-XXXX-XXXXXX</li>
-              <li><span className="marker">•</span><strong>Address:</strong>&nbsp;RepairWale Technologies Pvt. Ltd. [Your Business Address]</li>
+              <li><span className="marker"></span><strong>Email:</strong>&nbsp;support@repairwale.com</li>
+              <li><span className="marker"></span><strong>Phone:</strong>&nbsp;+91-XXXX-XXXXXX</li>
+              <li><span className="marker"></span><strong>Address:</strong>&nbsp;RepairWale Technologies Pvt. Ltd. [Your Business Address]</li>
             </ul>
           </section>
 
         </div>
         <div className="legal-accept">
-          <div className="tick">✓</div>
+          <div className="tick">OK</div>
           <h3>Acknowledgment & Acceptance</h3>
           <p>By using RepairWale, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.</p>
         </div>
       </div>
-
-      <style>{`
-        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
-        body {
-          background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
-        }
-
-        .legal-wrapper {
-          background: rgba(11, 18, 32, 0.5) !important;
-        }
-
-        .legal-hero {
-          background: linear-gradient(135deg, #0B1220 0%, #0F1728 100%) !important;
-          border-bottom: 2px solid #2A4368 !important;
-          box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1) !important;
-        }
-
-        .legal-hero h1 {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          background-clip: text !important;
-        }
-
-        .legal-section {
-          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
-          border: 1px solid #2A4368 !important;
-          box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1) !important;
-          border-radius: 16px !important;
-          padding: 32px !important;
-          margin-bottom: 24px !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .legal-section:hover {
-          transform: translateY(-2px) !important;
-          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1) !important;
-          border-color: #4A9EFF !important;
-        }
-
-        .legal-section h2 {
-          color: #E6EDF7 !important;
-        }
-
-        .legal-badge {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          color: white !important;
-          padding: 6px 16px !important;
-          border-radius: 20px !important;
-          font-size: 11px !important;
-          font-weight: 800 !important;
-          display: inline-block !important;
-          margin-bottom: 16px !important;
-        }
-
-        .legal-list {
-          color: #E6EDF7 !important;
-        }
-
-        .marker {
-          color: #4A9EFF !important;
-          font-weight: 800 !important;
-        }
-
-        .legal-accept {
-          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
-          border: 2px solid #2A4368 !important;
-          border-radius: 20px !important;
-          padding: 40px !important;
-          text-align: center !important;
-          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1) !important;
-        }
-
-        .legal-accept .tick {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.18) !important;
-        }
-
-        .legal-accept h3 {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          background-clip: text !important;
-        }
-
-        p {
-          color: #E6EDF7 !important;
-        }
-      `}</style>
     </div>
   )
 }
+
+

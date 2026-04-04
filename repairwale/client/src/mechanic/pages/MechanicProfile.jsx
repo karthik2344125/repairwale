@@ -6,18 +6,18 @@ import { getMechanic, saveMechanic } from '../../shared/services/roleData'
 const styles = `
 .profile-wrapper {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0b1220 0%, #0f1728 100%);
+  background: linear-gradient(180deg, #0B1F3B 0%, #0B1F3B 100%);
   padding: 0;
 }
 
 /* ===== HERO HEADER ===== */
 .profile-hero {
-  background: linear-gradient(140deg, #101f3a 0%, #0d1728 46%, #0a1321 100%);
+  background: linear-gradient(140deg, #0B1F3B 0%, #0B1F3B 46%, #0B1F3B 100%);
   padding: 60px 20px 100px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 12px 28px rgba(8, 14, 24, 0.45);
-  border-bottom: 1px solid rgba(96, 165, 250, 0.14);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  border-bottom: 1px solid rgba(29,99,255,0.14);
 }
 
 .profile-hero::before {
@@ -27,7 +27,7 @@ const styles = `
   right: 10%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(96, 165, 250, 0.24) 0%, transparent 72%);
+  background: radial-gradient(circle, rgba(29,99,255,0.24) 0%, transparent 72%);
   filter: blur(18px);
   animation: profile-float 20s ease-in-out infinite;
 }
@@ -50,9 +50,9 @@ const styles = `
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #E6EDF7;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #FFFFFF;
   padding: 12px 22px;
   border-radius: 12px;
   font-weight: 700;
@@ -60,15 +60,15 @@ const styles = `
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   font-size: 14px;
-  box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(29,99,255,0.1);
 }
 
 .back-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border-color: transparent;
-  color: #0b1220;
+  color: #0B1F3B;
   transform: translateX(-4px);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.14);
+  box-shadow: 0 0 12px rgba(29,99,255,0.14);
 }
 
 .profile-actions {
@@ -80,9 +80,9 @@ const styles = `
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #60a5fa;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #0B1F3B;
   font-size: 22px;
   cursor: pointer;
   display: flex;
@@ -90,15 +90,15 @@ const styles = `
   justify-content: center;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(29,99,255,0.1);
 }
 
 .action-icon-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border-color: transparent;
-  color: #0b1220;
+  color: #0B1F3B;
   transform: scale(1.12);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.14);
+  box-shadow: 0 0 12px rgba(29,99,255,0.14);
 }
 
 .profile-header-main {
@@ -115,29 +115,29 @@ const styles = `
   width: 120px;
   height: 120px;
   border-radius: 24px;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 48px;
   font-weight: 800;
-  color: #0b1220;
-  border: 3px solid rgba(96, 165, 250, 0.5);
-  box-shadow: 0 0 18px rgba(96, 165, 250, 0.14), 0 12px 40px rgba(8, 14, 24, 0.3);
+  color: #0B1F3B;
+  border: 3px solid rgba(29,99,255,0.5);
+  box-shadow: 0 0 18px rgba(29,99,255,0.14), 0 12px 40px rgba(0,0,0,0.3);
 }
 
 .profile-status-badge {
   position: absolute;
   bottom: -8px;
   right: -8px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   color: #ffffff;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
-  border: 3px solid #0b1220;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  border: 3px solid #0B1F3B;
+  box-shadow: 0 0 15px rgba(255,206,50,0.4);
 }
 
 .profile-info {
@@ -147,10 +147,10 @@ const styles = `
 .profile-name {
   font-size: 36px;
   font-weight: 900;
-  color: #E6EDF7;
+  color: #FFFFFF;
   margin: 0 0 8px 0;
   letter-spacing: -1px;
-  text-shadow: 0 2px 8px rgba(96, 165, 250, 0.12);
+  text-shadow: 0 2px 8px rgba(29,99,255,0.12);
 }
 }
 
@@ -172,14 +172,14 @@ const styles = `
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #4A9EFF;
-  color: #4A9EFF;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
+  color: #0B1F3B;
   border-radius: 12px;
   font-size: 13px;
   font-weight: 700;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.18);
+  box-shadow: 0 4px 12px rgba(29,99,255,0.18);
 }
 
 .profile-member-since {
@@ -205,19 +205,19 @@ const styles = `
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border-radius: 16px;
   padding: 24px;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   transition: all 0.3s ease;
-  border: 2px solid #2A4368;
+  border: 2px solid #0B1F3B;
 }
 
 .stat-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 16px 48px rgba(74, 158, 255, 0.1);
-  border-color: #4A9EFF;
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 16px 48px rgba(29,99,255,0.1);
+  border-color: #0B1F3B;
 }
 
 .stat-icon {
@@ -228,7 +228,7 @@ const styles = `
 .stat-value {
   font-size: 32px;
   font-weight: 900;
-  color: #60a5fa;
+  color: #0B1F3B;
   margin-bottom: 4px;
 }
 
@@ -252,12 +252,12 @@ const styles = `
   display: flex;
   gap: 8px;
   margin-bottom: 32px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   padding: 12px;
   border-radius: 16px;
-  border: 2px solid #2A4368;
+  border: 2px solid #0B1F3B;
   overflow-x: auto;
-  box-shadow: 0 6px 20px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
 .profile-tab {
@@ -279,17 +279,17 @@ const styles = `
 }
 
 .profile-tab.active {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  color: #0b1220;
-  border-color: #4A9EFF;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 6px 20px rgba(74, 158, 255, 0.22);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #0B1F3B;
+  border-color: #0B1F3B;
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 6px 20px rgba(29,99,255,0.22);
 }
 
 .profile-tab:hover:not(.active) {
-  background: #162844;
-  color: #E6EDF7;
-  border-color: #4A9EFF;
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.1);
+  background: #0B1F3B;
+  color: #FFFFFF;
+  border-color: #0B1F3B;
+  box-shadow: 0 4px 12px rgba(29,99,255,0.1);
 }
 
 /* ===== CARDS ===== */
@@ -300,17 +300,17 @@ const styles = `
 }
 
 .info-card {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
   border-radius: 16px;
   padding: 28px;
-  box-shadow: 0 8px 28px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
   transition: all 0.3s ease;
 }
 
 .info-card:hover {
-  border-color: #4A9EFF;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 12px 40px rgba(74, 158, 255, 0.1);
+  border-color: #0B1F3B;
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 12px 40px rgba(29,99,255,0.1);
   transform: translateY(-4px);
 }
 
@@ -320,7 +320,7 @@ const styles = `
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #4A9EFF;
+  border-bottom: 2px solid #0B1F3B;
 }
 
 .card-title {
@@ -329,7 +329,7 @@ const styles = `
   gap: 12px;
   font-size: 18px;
   font-weight: 800;
-  color: #E6EDF7;
+  color: #FFFFFF;
 }
 
 .card-title-icon {
@@ -338,23 +338,23 @@ const styles = `
 
 .card-edit-btn {
   padding: 10px 18px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #2A4368;
-  color: #4A9EFF;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
+  color: #0B1F3B;
   border-radius: 10px;
   font-size: 13px;
   cursor: pointer;
   font-weight: 700;
   transition: all 0.3s ease;
-  box-shadow: 0 3px 10px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
 }
 
 .card-edit-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  border-color: #4A9EFF;
-  color: #0b1220;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border-color: #0B1F3B;
+  color: #0B1F3B;
   transform: translateY(-2px);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 6px 16px rgba(74, 158, 255, 0.12);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 6px 16px rgba(29,99,255,0.12);
 }
 
 .info-rows {
@@ -368,7 +368,7 @@ const styles = `
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #3a4a6a;
+  border-bottom: 1px solid #0B1F3B;
 }
 
 .info-row:last-child {
@@ -385,13 +385,13 @@ const styles = `
 
 .info-value {
   font-size: 15px;
-  color: #E6EDF7;
+  color: #FFFFFF;
   font-weight: 600;
   text-align: right;
 }
 
 .info-value.highlight {
-  color: #4A9EFF;
+  color: #0B1F3B;
   font-weight: 800;
 }
 
@@ -405,17 +405,17 @@ const styles = `
 .item-card {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
   border-radius: 12px;
   padding: 16px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 .item-card:hover {
-  border-color: #4A9EFF;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 8px 24px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B;
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 8px 24px rgba(29,99,255,0.12);
   transform: translateY(-2px);
 }
 
@@ -432,12 +432,12 @@ const styles = `
   gap: 8px;
   font-size: 15px;
   font-weight: 700;
-  color: #E6EDF7;
+  color: #FFFFFF;
 }
 
 .item-badge {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  color: #0b1220;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  color: #0B1F3B;
   padding: 4px 10px;
   border-radius: 8px;
   font-size: 11px;
@@ -451,33 +451,33 @@ const styles = `
 
 .item-action-btn {
   padding: 8px 14px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 1px solid #2A4368;
-  color: #4A9EFF;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 1px solid #0B1F3B;
+  color: #0B1F3B;
   border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(8, 14, 24, 0.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .item-action-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  border-color: #4A9EFF;
-  color: #0b1220;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border-color: #0B1F3B;
+  color: #0B1F3B;
   transform: translateY(-1px);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 4px 12px rgba(74, 158, 255, 0.18);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 4px 12px rgba(29,99,255,0.18);
 }
 
 .item-action-btn.danger {
-  color: #ff6b6b;
-  border-color: #ff6b6b;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
 }
 
 .item-action-btn.danger:hover {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
-  border-color: #ff6b6b;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border-color: #FFFFFF;
   color: white;
 }
 
@@ -490,15 +490,15 @@ const styles = `
 .add-item-btn {
   margin-top: 16px;
   padding: 14px 24px;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  border: 2px solid #4A9EFF;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
   color: #ffffff;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 6px 20px rgba(74, 158, 255, 0.18);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 6px 20px rgba(29,99,255,0.18);
   width: 100%;
   display: flex;
   align-items: center;
@@ -508,7 +508,7 @@ const styles = `
 
 .add-item-btn:hover {
   transform: translateY(-4px);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 12px 32px rgba(74, 158, 255, 0.28);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 12px 32px rgba(29,99,255,0.28);
 }
 
 /* ===== EMPTY STATE ===== */
@@ -524,7 +524,7 @@ const styles = `
 
 .empty-text {
   font-size: 16px;
-  color: #E6EDF7;
+  color: #FFFFFF;
   font-weight: 700;
   margin-bottom: 8px;
 }
@@ -541,7 +541,7 @@ const styles = `
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0,0,0,0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -549,15 +549,15 @@ const styles = `
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #2A4368;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
   border-radius: 16px;
   padding: 28px;
   max-width: 500px;
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(8, 14, 24, 0.4);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
 }
 
 .modal-header {
@@ -566,19 +566,19 @@ const styles = `
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #4A9EFF;
+  border-bottom: 2px solid #0B1F3B;
 }
 
 .modal-title {
   font-size: 20px;
   font-weight: 800;
-  color: #E6EDF7;
+  color: #FFFFFF;
 }
 
 .modal-close {
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #ff6b6b;
-  color: #ff6b6b;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #FFFFFF;
+  color: #FFFFFF;
   width: 40px;
   height: 40px;
   border-radius: 8px;
@@ -591,8 +591,8 @@ const styles = `
 }
 
 .modal-close:hover {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
-  border-color: #ff6b6b;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border-color: #FFFFFF;
   color: white;
 }
 
@@ -614,9 +614,9 @@ const styles = `
 .form-input {
   width: 100%;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #2A4368;
-  color: #E6EDF7;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
+  color: #FFFFFF;
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
@@ -625,8 +625,8 @@ const styles = `
 
 .form-input:focus {
   outline: none;
-  border-color: #4A9EFF;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 0 0 3px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B;
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 0 0 3px rgba(29,99,255,0.12);
 }
 
 .form-actions {
@@ -638,9 +638,9 @@ const styles = `
 .btn-cancel {
   flex: 1;
   padding: 14px 20px;
-  background: linear-gradient(135deg, #0F1728 0%, #162844 100%);
-  border: 2px solid #2A4368;
-  color: #4A9EFF;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
+  color: #0B1F3B;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
@@ -649,28 +649,28 @@ const styles = `
 }
 
 .btn-cancel:hover {
-  background: #162844;
-  border-color: #4A9EFF;
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.1);
+  background: #0B1F3B;
+  border-color: #0B1F3B;
+  box-shadow: 0 4px 12px rgba(29,99,255,0.1);
 }
 
 .btn-save {
   flex: 1;
   padding: 14px 20px;
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
-  border: 2px solid #4A9EFF;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  border: 2px solid #0B1F3B;
   color: #ffffff;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 6px 20px rgba(74, 158, 255, 0.18);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 6px 20px rgba(29,99,255,0.18);
 }
 
 .btn-save:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.18), 0 10px 28px rgba(74, 158, 255, 0.1);
+  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 10px 28px rgba(29,99,255,0.1);
 }
 
 /* ===== RESPONSIVE ===== */
@@ -720,32 +720,32 @@ const styles = `
 
 /* ===== PREMIUM THEME WITH HIGHLIGHTS ===== */
 .profile-wrapper {
-  background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
+  background: linear-gradient(180deg, #0B1F3B 0%, #0B1F3B 100%) !important;
 }
 
 .profile-hero {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 100px rgba(74, 158, 255, 0.05) !important;
-  border-bottom: 1px solid rgba(74, 158, 255, 0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 100px rgba(29,99,255,0.05) !important;
+  border-bottom: 1px solid rgba(29,99,255,0.1);
 }
 
 .profile-name,
 .card-title,
 .modal-title {
-  color: #E6EDF7 !important;
-  text-shadow: 0 2px 8px rgba(74, 158, 255, 0.1);
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 8px rgba(29,99,255,0.1);
 }
 
 .stat-value {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 2px 8px rgba(74, 158, 255, 0.18));
+  filter: drop-shadow(0 2px 8px rgba(29,99,255,0.18));
 }
 
 .info-value {
-  color: #E6EDF7 !important;
+  color: #FFFFFF !important;
 }
 
 .profile-email,
@@ -753,45 +753,45 @@ const styles = `
 .stat-label,
 .info-label,
 .form-label {
-  color: rgba(230, 237, 247, 0.7) !important;
+  color: rgba(255,255,255,0.7) !important;
 }
 
 .profile-badge {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border: 2px solid #4A9EFF !important;
-  color: #4A9EFF !important;
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.1), inset 0 1px 2px rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #0B1F3B !important;
+  box-shadow: 0 4px 12px rgba(29,99,255,0.1), inset 0 1px 2px rgba(255,255,255,0.1);
 }
 
 .back-btn {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border-color: #2A4368 !important;
-  color: #E6EDF7 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .back-btn:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 8px 20px rgba(74, 158, 255, 0.18);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 8px 20px rgba(29,99,255,0.18);
 }
 
 .action-icon-btn {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border-color: #2A4368 !important;
-  color: #E6EDF7 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  color: #FFFFFF !important;
   transition: all 0.3s ease;
 }
 
 .action-icon-btn:hover {
-  border-color: #4A9EFF !important;
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  box-shadow: 0 8px 24px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  box-shadow: 0 8px 24px rgba(29,99,255,0.12);
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   position: relative;
   overflow: hidden;
 }
@@ -803,7 +803,7 @@ const styles = `
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #4A9EFF, transparent);
+  background: linear-gradient(90deg, transparent, #0B1F3B, transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -813,40 +813,40 @@ const styles = `
 }
 
 .stat-card:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 16px 48px rgba(74, 158, 255, 0.1);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 16px 48px rgba(29,99,255,0.1);
 }
 
 .profile-tabs {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border-color: #2A4368 !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
 }
 
 .profile-tab {
-  background: rgba(11, 18, 32, 0.5) !important;
-  border-color: #2A4368 !important;
-  color: rgba(230, 237, 247, 0.7) !important;
+  background: rgba(29,99,255,0.5) !important;
+  border-color: #0B1F3B !important;
+  color: rgba(255,255,255,0.7) !important;
   transition: all 0.3s ease;
 }
 
 .profile-tab:hover:not(.active) {
-  border-color: #4A9EFF !important;
-  color: #E6EDF7 !important;
-  background: rgba(26, 58, 92, 0.5) !important;
+  border-color: #0B1F3B !important;
+  color: #FFFFFF !important;
+  background: rgba(29,99,255,0.5) !important;
 }
 
 .profile-tab.active {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border-color: #4A9EFF !important;
-  color: #4A9EFF !important;
-  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.18), inset 0 1px 2px rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border-color: #0B1F3B !important;
+  color: #0B1F3B !important;
+  box-shadow: 0 6px 20px rgba(29,99,255,0.18), inset 0 1px 2px rgba(255,255,255,0.1);
 }
 
 .info-card {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
   position: relative;
 }
 
@@ -857,7 +857,7 @@ const styles = `
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(135deg, #4A9EFF, #60A5FF);
+  background: linear-gradient(135deg, #0B1F3B, #0B1F3B);
   border-radius: 16px;
   opacity: 0;
   z-index: -1;
@@ -869,142 +869,142 @@ const styles = `
 }
 
 .info-card:hover {
-  box-shadow: 0 12px 40px rgba(74, 158, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(29,99,255,0.12);
 }
 
 .service-item {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
 }
 
 .service-item:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 4px 16px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 4px 16px rgba(29,99,255,0.12);
 }
 
 .service-name {
-  color: #E6EDF7 !important;
+  color: #FFFFFF !important;
 }
 
 .service-rate {
-  color: #4A9EFF !important;
+  color: #0B1F3B !important;
   font-weight: 800;
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #4A9EFF !important;
-  box-shadow: 0 24px 64px rgba(74, 158, 255, 0.1);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 24px 64px rgba(29,99,255,0.1);
 }
 
 .form-input {
-  background: rgba(11, 18, 32, 0.8) !important;
-  border: 2px solid #2A4368 !important;
-  color: #E6EDF7 !important;
+  background: rgba(29,99,255,0.8) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
   transition: all 0.3s ease;
 }
 
 .form-input:focus {
-  border-color: #4A9EFF !important;
-  background: rgba(26, 58, 92, 0.5) !important;
-  box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.1);
+  border-color: #0B1F3B !important;
+  background: rgba(29,99,255,0.5) !important;
+  box-shadow: 0 0 0 4px rgba(29,99,255,0.1);
 }
 
 .btn-cancel {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  color: #E6EDF7 !important;
-  border: 2px solid #2A4368 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  color: #FFFFFF !important;
+  border: 2px solid #0B1F3B !important;
 }
 
 .btn-cancel:hover {
-  border-color: #4A9EFF !important;
-  box-shadow: 0 6px 16px rgba(74, 158, 255, 0.12);
+  border-color: #0B1F3B !important;
+  box-shadow: 0 6px 16px rgba(29,99,255,0.12);
 }
 
 .btn-save,
 .add-service-btn {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
-  border: 2px solid #4A9EFF !important;
-  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.22);
+  border: 2px solid #0B1F3B !important;
+  box-shadow: 0 6px 20px rgba(29,99,255,0.22);
   font-weight: 800;
 }
 
 .btn-save:hover,
 .add-service-btn:hover {
-  background: linear-gradient(135deg, #60A5FF 0%, #80B8FF 100%) !important;
-  box-shadow: 0 12px 32px rgba(74, 158, 255, 0.28);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  box-shadow: 0 12px 32px rgba(29,99,255,0.28);
   transform: translateY(-4px);
 }
 
 .service-actions .btn,
 .edit-pricing-btn {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border: 2px solid #4A9EFF !important;
-  color: #4A9EFF !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #0B1F3B !important;
   transition: all 0.2s;
 }
 
 .service-actions .btn:hover,
 .edit-pricing-btn:hover {
-  background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.22);
+  box-shadow: 0 6px 20px rgba(29,99,255,0.22);
   transform: translateY(-2px);
 }
 
 .service-actions .btn.danger {
-  background: linear-gradient(135deg, #3D1A1A 0%, #5C2A2A 100%) !important;
-  color: #FF6B6B !important;
-  border-color: #FF6B6B !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  color: #FFFFFF !important;
+  border-color: #FFFFFF !important;
 }
 
 .service-actions .btn.danger:hover {
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 6px 20px rgba(255,206,50,0.4);
 }
 
 .modal-close {
-  background: linear-gradient(135deg, #0B1220 0%, #162844 100%) !important;
-  border: 2px solid #2A4368 !important;
-  color: #E6EDF7 !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 2px solid #0B1F3B !important;
+  color: #FFFFFF !important;
 }
 
 .modal-close:hover {
-  border-color: #FF6B6B !important;
-  color: #FF6B6B !important;
-  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.3);
+  border-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 16px rgba(255,206,50,0.3);
 }
 
 .profile-status-badge {
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
-  border: 3px solid #0B1220 !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  border: 3px solid #0B1F3B !important;
+  box-shadow: 0 4px 12px rgba(255,206,50,0.4);
   font-weight: 800;
 }
 
 .profile-avatar-large {
-  background: linear-gradient(135deg, #1A3A5C 0%, #2A4368 100%) !important;
-  border: 4px solid #4A9EFF !important;
-  box-shadow: 0 12px 40px rgba(74, 158, 255, 0.12);
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+  border: 4px solid #0B1F3B !important;
+  box-shadow: 0 12px 40px rgba(29,99,255,0.12);
 }
 
 .card-header {
-  border-bottom-color: rgba(74, 158, 255, 0.12) !important;
+  border-bottom-color: rgba(29,99,255,0.12) !important;
 }
 
 .modal-header {
-  border-bottom: 2px solid rgba(74, 158, 255, 0.12) !important;
+  border-bottom: 2px solid rgba(29,99,255,0.12) !important;
 }
 
 .info-row {
-  border-bottom-color: rgba(42, 67, 104, 0.3) !important;
+  border-bottom-color: rgba(29,99,255,0.3) !important;
 }
 
 .modal-overlay {
-  background: rgba(11, 18, 32, 0.85) !important;
+  background: rgba(29,99,255,0.85) !important;
   backdrop-filter: blur(8px);
 }
 
@@ -1017,7 +1017,7 @@ const styles = `
 `
 
 export default function MechanicProfile() {
-  const { user, completeLogout } = useAuth()
+  const { user, updateUser, completeLogout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const [mechanic, setMechanic] = useState(null)
@@ -1067,9 +1067,8 @@ export default function MechanicProfile() {
     }
     
     const updated = { ...user, fullName: profileForm.fullName, phone: profileForm.phone, specialization: profileForm.specialization }
-    localStorage.setItem('repairwale_user', JSON.stringify(updated))
+    updateUser(updated)
     setShowProfileModal(false)
-    window.location.reload()
   }
 
   const addService = () => {
@@ -1081,9 +1080,9 @@ export default function MechanicProfile() {
     const service = { ...serviceForm, id: Date.now() }
     const updated = { ...mechanic, services: [...(mechanic?.services || []), service] }
     localStorage.setItem('repairwale_mechanic', JSON.stringify(updated))
+    setMechanic(updated)
     setServiceForm({ name: '', rate: '' })
     setShowServiceModal(false)
-    window.location.reload()
   }
 
   const removeService = (id) => {
@@ -1091,7 +1090,7 @@ export default function MechanicProfile() {
     
     const updated = { ...mechanic, services: mechanic.services.filter(s => s.id !== id) }
     localStorage.setItem('repairwale_mechanic', JSON.stringify(updated))
-    window.location.reload()
+    setMechanic(updated)
   }
 
   const saveAvailability = () => {
@@ -1102,29 +1101,23 @@ export default function MechanicProfile() {
 
     const updated = { ...mechanic, availability: availabilityForm }
     localStorage.setItem('repairwale_mechanic', JSON.stringify(updated))
+    setMechanic(updated)
     setShowAvailabilityModal(false)
-    window.location.reload()
   }
 
   return (
-    <div className="profile-wrapper">
+    <div className="profile-wrapper" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       <style>{styles}</style>
 
       {/* Hero Header */}
       <div className="profile-hero">
         <div className="profile-hero-content">
           <div className="profile-top-nav">
-            <button className="back-btn" onClick={() => navigate('/mechanic/home')}>
-              ← Back to Dashboard
+            <button className="back-btn" onClick={() => navigate('/mechanic/dashboard')}>
+              Back to Dashboard
             </button>
             <div className="profile-actions">
-              <button 
-                className="action-icon-btn" 
-                onClick={handleLogout}
-                title="Logout"
-              >
-                🚪
-              </button>
+              <button className="action-icon-btn" onClick={handleLogout} title="Logout" />
             </div>
           </div>
 
@@ -1137,8 +1130,8 @@ export default function MechanicProfile() {
               <h1 className="profile-name">{user?.fullName || 'Mechanic'}</h1>
               <p className="profile-email">{user?.email}</p>
               <div className="profile-badges">
-                <span className="profile-badge">⭐ {mechanic?.rating?.toFixed(1) || '4.5'} / 5.0</span>
-                <span className="profile-badge">✓ Verified</span>
+                <span className="profile-badge"> {mechanic?.rating?.toFixed(1) || '4.5'} / 5.0</span>
+                <span className="profile-badge"> Verified</span>
               </div>
               <p className="profile-member-since">
                 Member since {joinedDate?.toLocaleDateString()}
@@ -1152,23 +1145,23 @@ export default function MechanicProfile() {
       <div className="profile-stats-container">
         <div className="profile-stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">⭐</div>
+            <div className="stat-icon"></div>
             <div className="stat-value">{mechanic?.rating?.toFixed(1) || '4.5'}</div>
             <div className="stat-label">Rating</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">📋</div>
+            <div className="stat-icon"></div>
             <div className="stat-value">{mechanic?.servicesCompleted || 0}</div>
             <div className="stat-label">Services Done</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">🔧</div>
+            <div className="stat-icon"></div>
             <div className="stat-value">{mechanic?.services?.length || 0}</div>
             <div className="stat-label">Services Offered</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">💰</div>
-            <div className="stat-value">₹{mechanic?.totalEarnings || 0}</div>
+            <div className="stat-icon"></div>
+            <div className="stat-value">{mechanic?.totalEarnings || 0}</div>
             <div className="stat-label">Total Earnings</div>
           </div>
         </div>
@@ -1182,31 +1175,31 @@ export default function MechanicProfile() {
             className={`profile-tab ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveTab('overview')}
           >
-            <span>📊</span> Overview
+            Overview
           </button>
           <button 
             className={`profile-tab ${activeTab === 'services' ? 'active' : ''}`}
             onClick={() => setActiveTab('services')}
           >
-            <span>🔧</span> Services
+            Services
           </button>
           <button 
             className={`profile-tab ${activeTab === 'availability' ? 'active' : ''}`}
             onClick={() => setActiveTab('availability')}
           >
-            <span>📅</span> Availability
+            Availability
           </button>
           <button 
             className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
             onClick={() => setActiveTab('reviews')}
           >
-            <span>⭐</span> Reviews
+            Reviews
           </button>
           <button 
             className={`profile-tab ${activeTab === 'earnings' ? 'active' : ''}`}
             onClick={() => setActiveTab('earnings')}
           >
-            <span>💰</span> Earnings
+            Earnings
           </button>
         </div>
 
@@ -1216,7 +1209,6 @@ export default function MechanicProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">👤</span>
                   Personal Information
                 </div>
                 <button className="card-edit-btn" onClick={openProfileModal}>Edit</button>
@@ -1244,7 +1236,6 @@ export default function MechanicProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">📊</span>
                   Performance
                 </div>
               </div>
@@ -1255,15 +1246,15 @@ export default function MechanicProfile() {
                 </div>
                 <div className="info-row">
                   <span className="info-label">Average Rating</span>
-                  <span className="info-value highlight">⭐ {mechanic?.rating?.toFixed(1) || '4.5'} / 5.0</span>
+                  <span className="info-value highlight"> {mechanic?.rating?.toFixed(1) || '4.5'} / 5.0</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Account Status</span>
-                  <span className="info-value" style={{color: '#10b981'}}>🟢 Active</span>
+                  <span className="info-value" style={{color: '#FFFFFF'}}> Active</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Verification</span>
-                  <span className="info-value" style={{color: '#10b981'}}>✓ Verified</span>
+                  <span className="info-value" style={{color: '#FFFFFF'}}> Verified</span>
                 </div>
               </div>
             </div>
@@ -1276,14 +1267,13 @@ export default function MechanicProfile() {
             <div className="info-card" style={{gridColumn: '1 / -1'}}>
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">🔧</span>
                   My Services
                 </div>
               </div>
               
               {(!mechanic?.services || mechanic.services.length === 0) ? (
                 <div className="empty-state">
-                  <div className="empty-icon">🔧</div>
+                  <div className="empty-icon"></div>
                   <div className="empty-text">No services added yet</div>
                   <div className="empty-subtext">Add your services to start accepting requests</div>
                 </div>
@@ -1293,7 +1283,7 @@ export default function MechanicProfile() {
                     <div key={service.id} className="item-card">
                       <div className="item-header">
                         <div className="item-title">
-                          🔧 {service.name}
+                           {service.name}
                         </div>
                         <div className="item-actions">
                           <button className="item-action-btn" onClick={() => removeService(service.id)}>
@@ -1302,7 +1292,7 @@ export default function MechanicProfile() {
                         </div>
                       </div>
                       <div className="item-details">
-                        Rate: ₹{service.rate} per service
+                        Rate: {service.rate} per service
                       </div>
                     </div>
                   ))}
@@ -1322,7 +1312,6 @@ export default function MechanicProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">📅</span>
                   Working Hours
                 </div>
                 <button className="card-edit-btn" onClick={() => {
@@ -1351,7 +1340,6 @@ export default function MechanicProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">📍</span>
                   Service Coverage
                 </div>
               </div>
@@ -1379,14 +1367,13 @@ export default function MechanicProfile() {
             <div className="info-card" style={{gridColumn: '1 / -1'}}>
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">⭐</span>
                   Customer Reviews
                 </div>
               </div>
               
               {(!mechanic?.reviews || mechanic.reviews.length === 0) ? (
                 <div className="empty-state">
-                  <div className="empty-icon">⭐</div>
+                  <div className="empty-icon"></div>
                   <div className="empty-text">No reviews yet</div>
                   <div className="empty-subtext">Your reviews will appear here as customers rate your services</div>
                 </div>
@@ -1396,7 +1383,7 @@ export default function MechanicProfile() {
                     <div key={review.id} className="item-card">
                       <div className="item-header">
                         <div className="item-title">
-                          ⭐ {review.rating} / 5.0 - {review.customerName}
+                           {review.rating} / 5.0 - {review.customerName}
                         </div>
                       </div>
                       <div className="item-details">
@@ -1416,22 +1403,21 @@ export default function MechanicProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">💰</span>
                   Income Summary
                 </div>
               </div>
               <div className="info-rows">
                 <div className="info-row">
                   <span className="info-label">Total Earnings</span>
-                  <span className="info-value highlight">₹{mechanic?.totalEarnings || 0}</span>
+                  <span className="info-value highlight">{mechanic?.totalEarnings || 0}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">This Month</span>
-                  <span className="info-value">₹{mechanic?.monthlyEarnings || 0}</span>
+                  <span className="info-value">{mechanic?.monthlyEarnings || 0}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Pending Amount</span>
-                  <span className="info-value" style={{color: '#ffa726'}}>₹{mechanic?.pendingAmount || 0}</span>
+                  <span className="info-value" style={{color: '#FFFFFF'}}>{mechanic?.pendingAmount || 0}</span>
                 </div>
               </div>
             </div>
@@ -1439,7 +1425,6 @@ export default function MechanicProfile() {
             <div className="info-card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon">📈</span>
                   Statistics
                 </div>
               </div>
@@ -1450,11 +1435,11 @@ export default function MechanicProfile() {
                 </div>
                 <div className="info-row">
                   <span className="info-label">Average Per Service</span>
-                  <span className="info-value">₹{mechanic?.avgPerService || 0}</span>
+                  <span className="info-value">{mechanic?.avgPerService || 0}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Payment Status</span>
-                  <span className="info-value" style={{color: '#10b981'}}>Active</span>
+                  <span className="info-value" style={{color: '#FFFFFF'}}>Active</span>
                 </div>
               </div>
             </div>
@@ -1467,8 +1452,8 @@ export default function MechanicProfile() {
         <div className="modal-overlay" onClick={() => setShowProfileModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">👤 Edit Profile</div>
-              <button className="modal-close" onClick={() => setShowProfileModal(false)}>×</button>
+              <div className="modal-title"> Edit Profile</div>
+              <button className="modal-close" onClick={() => setShowProfileModal(false)}>Close</button>
             </div>
             
             <div className="form-group">
@@ -1528,8 +1513,8 @@ export default function MechanicProfile() {
         <div className="modal-overlay" onClick={() => setShowServiceModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">🔧 Add Service</div>
-              <button className="modal-close" onClick={() => setShowServiceModal(false)}>×</button>
+              <div className="modal-title"> Add Service</div>
+              <button className="modal-close" onClick={() => setShowServiceModal(false)}>Close</button>
             </div>
             
             <div className="form-group">
@@ -1544,7 +1529,7 @@ export default function MechanicProfile() {
             </div>
             
             <div className="form-group">
-              <label className="form-label">Service Rate (₹)</label>
+              <label className="form-label">Service Rate (INR)</label>
               <input 
                 type="number" 
                 className="form-input" 
@@ -1567,8 +1552,8 @@ export default function MechanicProfile() {
         <div className="modal-overlay" onClick={() => setShowAvailabilityModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">📅 Update Availability</div>
-              <button className="modal-close" onClick={() => setShowAvailabilityModal(false)}>×</button>
+              <div className="modal-title">Update Availability</div>
+              <button className="modal-close" onClick={() => setShowAvailabilityModal(false)}>Close</button>
             </div>
             
             <div className="form-group">
@@ -1612,3 +1597,5 @@ export default function MechanicProfile() {
     </div>
   )
 }
+
+

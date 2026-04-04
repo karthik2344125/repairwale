@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { ensureDefaults } from '../services/roleData'
+import BrandLogo from '../components/BrandLogo'
 
 const ROLES = [
   {
@@ -10,9 +12,9 @@ const ROLES = [
     subtitle: 'Need vehicle assistance?',
     description: 'Request roadside help, browse mechanics, track repairs, and manage your vehicle services in one place.',
     features: ['SOS dispatch in minutes', 'Live tracking updates', 'Digital payments & invoices', 'Full history & notes'],
-    accent: '#6dd5ed',
-    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    darkGradient: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+    accent: '#0B1F3B',
+    gradient: 'linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%)',
+    darkGradient: 'linear-gradient(135deg, #0B1F3B, #0B1F3B)',
   },
   {
     id: 'mechanic',
@@ -21,18 +23,52 @@ const ROLES = [
     subtitle: 'Offer your expertise?',
     description: 'Join our network of certified professionals. Receive customer requests, manage your schedule, and grow your business.',
     features: ['Instant leads near you', 'Smart scheduling', 'Transparent payouts', 'Build public reputation'],
-    accent: '#f093fb',
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    darkGradient: 'linear-gradient(135deg, #ec4899, #dc2626)',
+    accent: '#FFFFFF',
+    gradient: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 100%)',
+    darkGradient: 'linear-gradient(135deg, #FFFFFF, #FFFFFF)',
   }
 ]
 
 export default function RoleSelection() {
   const navigate = useNavigate()
-  const { isAuthenticated, selectRole } = useAuth()
+  const { isAuthenticated, login, selectRole } = useAuth()
   const isDistFileEntry = typeof window !== 'undefined' && window.location.protocol === 'file:'
   const [selectedRole, setSelectedRole] = useState(isDistFileEntry ? 'customer' : null)
   const [loading, setLoading] = useState(false)
+
+  const goToDashboard = (roleId) => {
+    if (roleId === 'mechanic') {
+      navigate('/mechanic/dashboard', { replace: true })
+    } else {
+      navigate('/customer', { replace: true })
+    }
+  }
+
+  const startDemoSession = async (roleId) => {
+    if (loading) return
+
+    setSelectedRole(roleId)
+    setLoading(true)
+
+    try {
+      localStorage.removeItem('repairwale_token')
+      localStorage.removeItem('repairwale_user')
+      localStorage.removeItem('rw_role_locked')
+      localStorage.setItem('rw_demo_mode', roleId)
+
+      const demoName = roleId === 'mechanic' ? 'Demo Mechanic' : 'Demo Customer'
+      const demoEmail = roleId === 'mechanic' ? 'mechanic@repairwale.demo' : 'customer@repairwale.demo'
+
+      login(demoEmail, 'demo123', demoName)
+      await selectRole(roleId)
+      ensureDefaults(roleId)
+      goToDashboard(roleId)
+    } catch (error) {
+      console.error('Demo session failed:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Check if user already selected role and is authenticated
   useEffect(() => {
@@ -52,7 +88,7 @@ export default function RoleSelection() {
   const handleRoleSelect = async (roleId) => {
     if (loading) return // Prevent double-clicks
     
-    console.log('🎯 Role selected:', roleId)
+    console.log('Role selected:', roleId)
     setSelectedRole(roleId)
     setLoading(true)
 
@@ -70,7 +106,7 @@ export default function RoleSelection() {
       }
     } else {
       // User not authenticated yet, send to login
-      console.log('✅ Role saved, redirecting to login')
+      console.log('Role saved, redirecting to login')
       navigate('/login', { replace: true })
     }
   }
@@ -78,7 +114,7 @@ export default function RoleSelection() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0f172a',
+      background: '#0B1F3B',
       padding: '48px 20px 80px',
       display: 'flex',
       alignItems: 'center',
@@ -120,9 +156,9 @@ export default function RoleSelection() {
         .role-title {
           font-size: 40px;
           font-weight: 800;
-          color: #f1f5f9;
+          color: #FFFFFF;
           margin-bottom: 12px;
-          background: linear-gradient(135deg, #60a5fa, #a78bfa);
+          background: linear-gradient(135deg, #0B1F3B, #0B1F3B);
           background-clip: text;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -130,7 +166,7 @@ export default function RoleSelection() {
 
         .role-subtitle {
           font-size: 16px;
-          color: #94a3b8;
+          color: #FFFFFF;
           max-width: 500px;
           margin: 0 auto;
         }
@@ -143,8 +179,8 @@ export default function RoleSelection() {
         }
 
         .role-card {
-          background: #1e293b;
-          border: 1px solid #334155;
+          background: #0B1F3B;
+          border: 1px solid #0B1F3B;
           border-radius: 12px;
           padding: 32px 24px;
           cursor: pointer;
@@ -160,15 +196,15 @@ export default function RoleSelection() {
           left: 0;
           right: 0;
           height: 3px;
-          background: var(--gradient, linear-gradient(135deg, #3b82f6, #8b5cf6));
+          background: var(--gradient, linear-gradient(135deg, #0B1F3B, #0B1F3B));
           opacity: 0;
           transition: opacity 0.3s ease;
         }
 
         .role-card:hover {
-          border-color: #475569;
+          border-color: #FFFFFF;
           transform: translateY(-4px);
-          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.3);
         }
 
         .role-card:hover::before {
@@ -176,34 +212,42 @@ export default function RoleSelection() {
         }
 
         .role-card.selected {
-          border-color: #3b82f6;
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.8));
-          box-shadow: 0 0 24px rgba(59, 130, 246, 0.2);
+          border-color: #0B1F3B;
+          background: linear-gradient(135deg, rgba(29,99,255,0.8), rgba(29,99,255,0.8));
+          box-shadow: 0 0 24px rgba(29,99,255,0.2);
         }
 
         .role-icon {
-          font-size: 48px;
+          width: 56px;
+          height: 56px;
+          border-radius: 14px;
+          border: 1px solid rgba(255,255,255,0.24);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 26px;
+          font-weight: 700;
           margin-bottom: 16px;
-          display: inline-block;
+          background: #0B1F3B;
         }
 
         .role-card-title {
           font-size: 22px;
           font-weight: 700;
-          color: #f1f5f9;
+          color: #FFFFFF;
           margin-bottom: 8px;
         }
 
         .role-card-subtitle {
           font-size: 13px;
-          color: #64748b;
+          color: #FFFFFF;
           margin-bottom: 12px;
           font-weight: 500;
         }
 
         .role-card-description {
           font-size: 14px;
-          color: #cbd5e1;
+          color: #FFFFFF;
           line-height: 1.6;
           margin-bottom: 20px;
         }
@@ -213,8 +257,8 @@ export default function RoleSelection() {
           flex-direction: column;
           gap: 8px;
           padding: 16px 0;
-          border-top: 1px solid #334155;
-          border-bottom: 1px solid #334155;
+          border-top: 1px solid #0B1F3B;
+          border-bottom: 1px solid #0B1F3B;
           margin-bottom: 20px;
         }
 
@@ -223,12 +267,12 @@ export default function RoleSelection() {
           align-items: center;
           gap: 8px;
           font-size: 13px;
-          color: #cbd5e1;
+          color: #FFFFFF;
         }
 
         .role-feature::before {
           content: '✓';
-          color: #10b981;
+          color: #FFFFFF;
           font-weight: bold;
           flex-shrink: 0;
         }
@@ -238,7 +282,7 @@ export default function RoleSelection() {
           padding: 12px 16px;
           border: none;
           border-radius: 8px;
-          background: var(--gradient, linear-gradient(135deg, #3b82f6, #8b5cf6));
+          background: var(--gradient, linear-gradient(135deg, #0B1F3B, #0B1F3B));
           color: white;
           font-size: 14px;
           font-weight: 600;
@@ -249,7 +293,7 @@ export default function RoleSelection() {
 
         .role-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         }
 
         .role-btn:disabled {
@@ -280,7 +324,10 @@ export default function RoleSelection() {
       <div className="role-container">
         {/* Header */}
         <div className="role-header">
-          <h1 className="role-title">Welcome to RepairWale</h1>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <BrandLogo size="md" />
+          </div>
+          <h1 className="role-title">Welcome to Repairwale</h1>
           <p className="role-subtitle">
             Choose your role to get started. You'll login or create an account in the next step.
           </p>
@@ -327,15 +374,15 @@ export default function RoleSelection() {
         <div style={{
           textAlign: 'center',
           padding: '24px',
-          background: '#1e293b',
+          background: '#0B1F3B',
           borderRadius: '8px',
-          border: '1px solid #334155'
+          border: '1px solid #0B1F3B'
         }}>
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 8px 0' }}>
+          <p style={{ fontSize: '13px', color: '#FFFFFF', margin: '0 0 8px 0' }}>
             Each role gets a personalized dashboard with features tailored for you.
           </p>
           <p style={{
-            color: '#64748b',
+            color: '#FFFFFF',
             textDecoration: 'none',
             fontSize: '12px',
             fontWeight: '500',
@@ -343,88 +390,45 @@ export default function RoleSelection() {
           }}>
             You can switch roles anytime from your account settings.
           </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
+            <button
+              type="button"
+              onClick={() => startDemoSession('customer')}
+              disabled={loading}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '999px',
+                border: '1px solid rgba(255, 206, 50, 0.6)',
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Launch Customer Demo
+            </button>
+            <button
+              type="button"
+              onClick={() => startDemoSession('mechanic')}
+              disabled={loading}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '999px',
+                border: '1px solid rgba(255, 206, 50, 0.6)',
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Launch Mechanic Demo
+            </button>
+          </div>
         </div>
       </div>
 
-      <style>{`
-        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
-        [style*="background: '#0f172a'"],
-        [style*="background:#0f172a"] {
-          background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
-        }
-
-        /* Role Cards */
-        [style*="borderRadius: 24"][style*="padding: 32"] {
-          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
-          border: 2px solid #2A4368 !important;
-          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.1) !important;
-          position: relative !important;
-          overflow: hidden !important;
-        }
-
-        [style*="borderRadius: 24"][style*="padding: 32"]::before {
-          content: '' !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          height: 4px !important;
-          background: linear-gradient(90deg, transparent, #4A9EFF, transparent) !important;
-          opacity: 0 !important;
-          transition: opacity 0.3s ease !important;
-        }
-
-        [style*="borderRadius: 24"][style*="padding: 32"]:hover::before {
-          opacity: 1 !important;
-        }
-
-        [style*="borderRadius: 24"][style*="padding: 32"]:hover {
-          border-color: #4A9EFF !important;
-          box-shadow: 0 12px 48px rgba(74, 158, 255, 0.1) !important;
-          transform: translateY(-8px) !important;
-        }
-
-        /* Role Buttons */
-        [style*="background: 'linear-gradient(135deg, #4facfe"],
-        [style*="background: 'linear-gradient(135deg, #f093fb"] {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.18) !important;
-        }
-
-        /* Title Heading */
-        [style*="fontSize: '48px'"] {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          background-clip: text !important;
-          filter: drop-shadow(0 4px 16px rgba(74, 158, 255, 0.18)) !important;
-        }
-
-        /* Feature Items */
-        [style*="fontSize: '14px'"][style*="color: '#cbd5e1'"] {
-          color: #E6EDF7 !important;
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
-        }
-      `}</style>
     </div>
   )
 }
+
+

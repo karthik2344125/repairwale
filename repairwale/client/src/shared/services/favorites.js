@@ -42,3 +42,5 @@ export function removeFavorite(id) {
 export function toggleFavorite(item) {
   return isFavorite(item.id) ? removeFavorite(item.id) : addFavorite(item)
 }
+
+

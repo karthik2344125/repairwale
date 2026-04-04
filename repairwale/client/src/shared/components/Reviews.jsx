@@ -119,7 +119,7 @@ export default function Reviews({ serviceId, serviceName }) {
         setShowForm(false)
         
         // Show success message
-        alert('✓ Review posted successfully! Thank you for your feedback.')
+        alert(' Review posted successfully! Thank you for your feedback.')
       } catch (error) {
         alert('Failed to post review. Please try again.')
       }
@@ -145,16 +145,16 @@ export default function Reviews({ serviceId, serviceName }) {
       {serviceName && (
         <div style={{ 
           padding: '8px 16px', 
-          background: 'rgba(96,165,250,0.15)',
-          borderBottom: '1px solid rgba(96,165,250,0.2)',
+          background: 'rgba(29,78,216,0.14)',
+          borderBottom: '1px solid rgba(29,78,216,0.2)',
           fontSize: 13,
           fontWeight: 600,
-          color: '#60a5fa',
+          color: '#FFFFFF',
           display: 'flex',
           alignItems: 'center',
           gap: 8
         }}>
-          <span>📋</span>
+          <span></span>
           <span>Reviews for: {serviceName}</span>
         </div>
       )}
@@ -162,22 +162,22 @@ export default function Reviews({ serviceId, serviceName }) {
       {/* Rating Summary */}
       <div style={{ 
         padding: 20, 
-        background: 'rgba(96,165,250,0.08)', 
-        border: '1px solid rgba(96,165,250,0.2)',
+        background: 'rgba(13,27,46,0.92)', 
+        border: '1px solid rgba(31,63,107,0.9)',
         marginBottom: 16
       }}>
-        <h4 style={{ margin: '0 0 16px 0' }}>⭐ Customer Reviews</h4>
+        <h4 style={{ margin: '0 0 16px 0' }}>Customer Reviews</h4>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
           {/* Rating Circle */}
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 48, fontWeight: 900, color: '#60a5fa' }}>
+            <div style={{ fontSize: 48, fontWeight: 900, color: '#FFFFFF' }}>
               {avgRating}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
               Based on {reviews.length} review{reviews.length !== 1 ? 's' : ''}
             </div>
-            <div style={{ fontSize: 12, color: '#fbbf24', marginTop: 8 }}>
+            <div style={{ fontSize: 12, color: '#FFFFFF', marginTop: 8, letterSpacing: '2px' }}>
               {'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function Reviews({ serviceId, serviceName }) {
                 <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{
                     height: '100%',
-                    background: '#fbbf24',
+                    background: '#FFFFFF',
                     width: `${reviews.length ? (ratingDistribution[stars] / reviews.length) * 100 : 0}%`,
                     transition: 'width 0.3s'
                   }} />
@@ -212,7 +212,7 @@ export default function Reviews({ serviceId, serviceName }) {
               padding: '12px',
               borderRadius: 8,
               border: 'none',
-              background: '#60a5fa',
+              background: '#0B1F3B',
               color: '#fff',
               fontWeight: 700,
               cursor: 'pointer',
@@ -251,7 +251,7 @@ export default function Reviews({ serviceId, serviceName }) {
                 padding: '12px',
                 borderRadius: 8,
                 border: '1px solid rgba(255,255,255,0.12)',
-                background: '#101010',
+                background: '#000000',
                 color: '#fff',
                 fontSize: 13,
                 fontFamily: 'inherit'
@@ -278,7 +278,7 @@ export default function Reviews({ serviceId, serviceName }) {
                     transition: 'opacity 0.2s'
                   }}
                 >
-                  ★
+                  ...
                 </button>
               ))}
             </div>
@@ -298,7 +298,7 @@ export default function Reviews({ serviceId, serviceName }) {
                 padding: '12px',
                 borderRadius: 8,
                 border: '1px solid rgba(255,255,255,0.12)',
-                background: '#101010',
+                background: '#000000',
                 color: '#fff',
                 fontSize: 13,
                 fontFamily: 'inherit',
@@ -321,7 +321,7 @@ export default function Reviews({ serviceId, serviceName }) {
                 padding: '12px',
                 borderRadius: 8,
                 border: 'none',
-                background: '#10b981',
+                background: '#FFFFFF',
                 color: '#fff',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -364,7 +364,7 @@ export default function Reviews({ serviceId, serviceName }) {
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 10
           }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>💭</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}></div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 8 }}>
               No reviews yet
             </div>
@@ -390,7 +390,7 @@ export default function Reviews({ serviceId, serviceName }) {
                   position: 'absolute',
                   top: 12,
                   right: 12,
-                  background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                  background: 'linear-gradient(135deg, #FFFFFF, #FFFFFF)',
                   color: '#000',
                   fontSize: 10,
                   fontWeight: 700,
@@ -399,7 +399,7 @@ export default function Reviews({ serviceId, serviceName }) {
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  👍 Most Helpful
+                   Most Helpful
                 </div>
               )}
 
@@ -407,13 +407,13 @@ export default function Reviews({ serviceId, serviceName }) {
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>
                     {review.author}
-                    {review.verified && <span style={{ fontSize: 11, color: '#10b981', marginLeft: 8 }}>✓ Verified</span>}
+                    {review.verified && <span style={{ fontSize: 11, color: '#FFFFFF', marginLeft: 8 }}> Verified</span>}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                     {review.date}
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: '#fbbf24' }}>
+                <div style={{ fontSize: 13, color: '#FFFFFF' }}>
                   {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
                 </div>
               </div>
@@ -444,9 +444,9 @@ export default function Reviews({ serviceId, serviceName }) {
                   alignItems: 'center',
                   gap: 4
                 }}>
-                  👍 Helpful ({Math.floor(Math.random() * 15) + 5})
+                   Helpful ({Math.floor(Math.random() * 15) + 5})
                 </button>
-                <span style={{ opacity: 0.5 }}>•</span>
+                <span style={{ opacity: 0.5 }}></span>
                 <span>{review.rating >= 4 ? 'Recommended' : 'Fair'}</span>
               </div>
             </div>
@@ -456,3 +456,5 @@ export default function Reviews({ serviceId, serviceName }) {
     </div>
   )
 }
+
+

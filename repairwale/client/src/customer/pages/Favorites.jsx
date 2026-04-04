@@ -36,21 +36,21 @@ export default function Favorites(){
   const remove = (id) => {
     removeFavorite(id)
     setFavorites(getFavorites())
-    showSuccess('Removed from favorites')
+    showSuccess('Removed from favourites')
   }
 
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1 className="page-title">♥ Favorites</h1>
-        <p className="page-subtitle">Your saved services • {favorites.length} items</p>
+        <h1 className="page-title"> Favorites</h1>
+        <p className="page-subtitle">Your saved services  {favorites.length} items</p>
       </div>
 
       <div className="card">
         {favorites.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">♥</div>
-            <p className="empty-text">No favorites yet. Tap ♥ on any service to save it here.</p>
+            <div className="empty-icon"></div>
+            <p className="empty-text">No favorites yet. Tap  on any service to save it here.</p>
           </div>
         ) : (
           <div className="item-list">
@@ -60,7 +60,7 @@ export default function Favorites(){
                   {fav.image ? (
                     <img className="item-thumb" src={fav.image} alt={fav.title} />
                   ) : (
-                    <div className="item-thumb" style={{display:'flex',alignItems:'center',justifyContent:'center',fontSize:32}}>★</div>
+                    <div className="item-thumb" style={{display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,color:'var(--muted)'}}>RW</div>
                   )}
                   <div className="item-content">
                     <h4 className="item-title">{fav.title}</h4>
@@ -71,7 +71,7 @@ export default function Favorites(){
                     </div>
                   </div>
                   <div className="item-actions">
-                    <div className="item-price">₹{fav.price}</div>
+                    <div className="item-price">{fav.price}</div>
                     <Button size="sm" variant="primary" onClick={() => addToCart(fav)}>Add to Cart</Button>
                     <button className="btn btn-sm btn-danger" onClick={() => remove(fav.id)}>Remove</button>
                   </div>
@@ -83,34 +83,34 @@ export default function Favorites(){
       </div>
 
       <style>{`
-        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
+        /* PREMIUM THEME WITH #0B1F3B BACKGROUND */
         .page-container {
-          background: linear-gradient(180deg, #070b14 0%, #0b1220 100%) !important;
+          background: linear-gradient(180deg, #000000 0%, #0B1F3B 100%) !important;
           min-height: 100vh !important;
         }
 
         .page-header {
-          background: linear-gradient(135deg, #070b14 0%, #0b1220 100%) !important;
-          border-bottom: 2px solid #243449 !important;
-          box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1) !important;
+          background: linear-gradient(135deg, #000000 0%, #0B1F3B 100%) !important;
+          border-bottom: 2px solid #0B1F3B !important;
+          box-shadow: 0 4px 20px rgba(29,99,255,0.1) !important;
         }
 
         .page-title {
-          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
           -webkit-background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
           background-clip: text !important;
         }
 
         .card {
-          background: linear-gradient(135deg, #0b1220 0%, #0f1d34 100%) !important;
-          border: 1px solid #243449 !important;
-          box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1) !important;
+          background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
+          border: 1px solid #0B1F3B !important;
+          box-shadow: 0 4px 20px rgba(29,99,255,0.1) !important;
         }
 
         .item {
-          background: rgba(11, 18, 32, 0.5) !important;
-          border: 1px solid #243449 !important;
+          background: rgba(29,99,255,0.5) !important;
+          border: 1px solid #0B1F3B !important;
           border-radius: 12px !important;
           padding: 16px !important;
           margin-bottom: 12px !important;
@@ -119,16 +119,16 @@ export default function Favorites(){
 
         .item:hover {
           transform: translateY(-2px) !important;
-          box-shadow: 0 8px 24px rgba(56, 189, 248, 0.12) !important;
-          border-color: #38bdf8 !important;
+          box-shadow: 0 8px 24px rgba(29,99,255,0.12) !important;
+          border-color: #0B1F3B !important;
         }
 
         .item-title {
-          color: #e6edf7 !important;
+          color: #FFFFFF !important;
         }
 
         .item-price {
-          background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%) !important;
+          background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
           -webkit-background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
           background-clip: text !important;
@@ -138,10 +138,12 @@ export default function Favorites(){
         .empty-icon {
           font-size: 64px !important;
           opacity: 0.3 !important;
-          filter: drop-shadow(0 4px 16px rgba(56, 189, 248, 0.18)) !important;
+          filter: drop-shadow(0 4px 16px rgba(29,99,255,0.18)) !important;
         }
       `}</style>
     </div>
   )
 }
+
+
 

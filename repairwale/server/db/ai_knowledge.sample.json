@@ -1,0 +1,14 @@
+[
+  {
+    "source": "faq-pricing",
+    "title": "Pricing FAQ",
+    "tags": ["pricing", "faq", "services"],
+    "content": "Emergency breakdown quick fix costs 549 INR. Flat tyre assist costs 399 INR. Battery jump-start costs 299 INR. Basic maintenance service starts from 1299 INR."
+  },
+  {
+    "source": "faq-booking",
+    "title": "Booking Flow",
+    "tags": ["booking", "checkout", "tracking"],
+    "content": "Users select service from service page, add to cart, continue to checkout, provide billing details, and complete payment. After booking they can track mechanic location from orders and tracking pages."
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "q1",
+    "question": "How can I book a service and track my mechanic?",
+    "expectedSources": ["faq-booking"],
+    "mustContain": ["book", "checkout", "track"]
+  },
+  {
+    "id": "q2",
+    "question": "What is the price for flat tyre assist?",
+    "expectedSources": ["faq-pricing"],
+    "mustContain": ["399", "flat", "tyre"]
+  },
+  {
+    "id": "q3",
+    "question": "Tell me emergency service pricing overview",
+    "expectedSources": ["faq-pricing"],
+    "mustContain": ["549", "299", "emergency"]
+  }
+]

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
 import Reviews from '../components/Reviews'
 import { getCart as loadCart, saveCart } from '../services/cart'
-import { showSuccess, showError } from '../services/toast'
 import { isFavorite, toggleFavorite } from '../services/favorites'
+import { showSuccess } from '../services/toast'
 import { useAuth } from '../context/AuthContext'
 
 // Service catalogue with numeric pricing
@@ -13,12 +13,12 @@ const catalog = [
     id: 'emergency',
     title: 'Emergency Roadside',
     subtitle: 'Quick dispatch within 30-45 mins',
-    color: '#ef4444',
+    color: '#FFFFFF',
     items: [
       { id: 'breakdown_fix', title: 'Breakdown Quick Fix', desc: 'Minor repairs on-spot (belts, fuses, hoses)', price: 549, sla: '30-60 mins', badge: 'Most booked' },
       { id: 'flat_tyre', title: 'Flat Tyre Assist', desc: 'Tyre change or puncture patching', price: 399, sla: '30 mins' },
       { id: 'jump_start', title: 'Battery Jump-Start', desc: 'Portable booster start with diagnostics', price: 299, sla: '20-30 mins' },
-      { id: 'fuel_topup', title: 'Emergency Fuel Delivery', desc: '2–5 litres delivered (fuel cost extra)', price: 249, sla: '40 mins' },
+      { id: 'fuel_topup', title: 'Emergency Fuel Delivery', desc: '25 litres delivered (fuel cost extra)', price: 249, sla: '40 mins' },
       { id: 'locked_keys', title: 'Locked Keys Support', desc: 'Non-destructive unlock for most models', price: 749, sla: '45-60 mins' },
       { id: 'winch_recovery', title: 'Winch & Pull-out', desc: 'Mud/sand recovery with trained crew', price: 1299, sla: '60-90 mins' },
     ],
@@ -27,7 +27,7 @@ const catalog = [
     id: 'maintenance',
     title: 'Scheduled Maintenance',
     subtitle: 'At-home service with OEM parts',
-    color: '#3b82f6',
+    color: '#0B1F3B',
     items: [
       { id: 'basic_service', title: 'Basic Service', desc: 'Engine oil, filters check, brake inspection', price: 1299, sla: 'Same-day' },
       { id: 'comprehensive_service', title: 'Comprehensive Service', desc: 'Full engine check, coolant & AC inspection', price: 2299, sla: 'Same-day', badge: 'Full check' },
@@ -41,7 +41,7 @@ const catalog = [
     id: 'repairs',
     title: 'Mechanical & Electrical',
     subtitle: 'Specialist diagnostics with warranty',
-    color: '#f59e0b',
+    color: '#FFFFFF',
     items: [
       { id: 'engine_tune', title: 'Engine Tune-up', desc: 'Diagnostics, plugs, throttle body clean', price: 1799, sla: 'Same-day' },
       { id: 'brake_service', title: 'Brake Service', desc: 'Pads/cleaning + fluid top-up (parts extra)', price: 999, sla: 'Same-day' },
@@ -59,9 +59,9 @@ const catalog = [
     id: 'towing',
     title: 'Towing & Transport',
     subtitle: 'Insured flatbed partners',
-    color: '#8b5cf6',
+    color: '#0B1F3B',
     items: [
-      { id: 'city_tow', title: 'City Tow (≤10 km)', desc: 'For breakdowns or accidents within city limits', price: 1199, sla: '45-90 mins', badge: 'Quick' },
+      { id: 'city_tow', title: 'City Tow (10 km)', desc: 'For breakdowns or accidents within city limits', price: 1199, sla: '45-90 mins', badge: 'Quick' },
       { id: 'flatbed', title: 'Flatbed Tow', desc: 'Low-floor flatbed for premium cars/bikes with full protection', price: 1899, sla: '60-120 mins', badge: 'Premium' },
       { id: 'long_haul', title: 'Long-Distance Towing', desc: 'Towing beyond 10 km, safe and insured', price: 45, sla: 'Per km', badge: 'Metered' },
       { id: 'crane_tow', title: 'Crane-Assisted Towing', desc: 'Heavy vehicles & recovery from difficult spots', price: 2999, sla: '90-120 mins' },
@@ -73,7 +73,7 @@ const catalog = [
     id: 'wheels',
     title: 'Tyres & Wheels',
     subtitle: 'Grip, balance, and alignment',
-    color: '#10b981',
+    color: '#FFFFFF',
     items: [
       { id: 'wheel_alignment', title: '4-Wheel Alignment', desc: '4-wheel alignment with detailed alignment report', price: 699, sla: '60 mins', badge: 'Popular' },
       { id: 'wheel_balancing', title: 'Wheel Balancing', desc: 'Dynamic wheel balancing for smooth ride', price: 599, sla: '60 mins' },
@@ -87,7 +87,7 @@ const catalog = [
     id: 'bodycare',
     title: 'Body & Care',
     subtitle: 'Protection and cosmetic refresh',
-    color: '#ec4899',
+    color: '#FFFFFF',
     items: [
       { id: 'ppf_partial', title: 'PPF Partial Coverage', desc: 'Paint protection film on front bumper, bonnet & hood', price: 4999, sla: '1-2 days', badge: 'Premium' },
       { id: 'ppf_full', title: 'PPF Full Coverage', desc: 'Complete paint protection film for full body', price: 12999, sla: '3 days', badge: 'Ultimate' },
@@ -135,7 +135,12 @@ const SERVICE_RATINGS = {
 }
 
 function formatINR(value){
-  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+  return `₹ ${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+}
+
+function getAccentColor(color){
+  if (!color) return '#0B1F3B'
+  return color.toUpperCase() === '#FFFFFF' ? '#0B1F3B' : color
 }
 
 export default function Service(){
@@ -158,6 +163,7 @@ export default function Service(){
   const [notes, setNotes] = useState('')
   const [query, setQuery] = useState('')
   const [reviewService, setReviewService] = useState(null)
+  const [recentlyAddedId, setRecentlyAddedId] = useState(null)
 
   useEffect(() => {
     saveCart({ items: cart, currency: 'INR' })
@@ -194,22 +200,26 @@ export default function Service(){
     setCart(prev => {
       const existing = prev.find(i => i.id === svc.id)
       if(existing){
-        showSuccess(`Updated quantity for ${svc.title}`)
         return prev.map(i => i.id === svc.id ? { ...i, qty: i.qty + 1 } : i)
       }
-      showSuccess(`✓ Added ${svc.title} to cart`)
       return [...prev, { id: svc.id, title: svc.title, price: svc.price, qty: 1, badge: svc.badge }]
     })
+
+    setRecentlyAddedId(svc.id)
+    setTimeout(() => {
+      setRecentlyAddedId(prev => (prev === svc.id ? null : prev))
+    }, 1200)
   }
 
   const updateQty = (id, delta) => {
-    setCart(prev => prev.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i))
+    setCart(prev => prev
+      .map(i => i.id === id ? { ...i, qty: i.qty + delta } : i)
+      .filter(i => i.qty > 0)
+    )
   }
 
   const removeItem = (id) => {
-    const item = cart.find(i => i.id === id)
     setCart(prev => prev.filter(i => i.id !== id))
-    if(item) showSuccess(`Removed ${item.title} from cart`)
   }
 
   const clearCart = () => setCart([])
@@ -266,6 +276,7 @@ export default function Service(){
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))',gap:12}}>
             {activeCatalog.map(cat => {
               const active = selectedCat === cat.id
+              const accentColor = getAccentColor(cat.color)
               return (
                 <button
                   key={cat.id}
@@ -274,17 +285,17 @@ export default function Service(){
                     textAlign:'left',
                     padding:'14px 14px 12px',
                     borderRadius:12,
-                    border:`1px solid ${active ? cat.color : 'var(--border)'}`,
-                    background: active ? `linear-gradient(135deg, ${cat.color}22, transparent)` : 'var(--bg)',
+                    border:`1px solid ${active ? accentColor : 'var(--border)'}`,
+                    background: active ? `linear-gradient(135deg, ${accentColor}22, transparent)` : 'var(--bg)',
                     color:'var(--text)',
                     cursor:'pointer',
                     transition:'all 0.2s ease'
                   }}
-                  onMouseEnter={(e) => { if(!active){ e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.transform = 'translateY(-2px)' } }}
+                  onMouseEnter={(e) => { if(!active){ e.currentTarget.style.borderColor = accentColor; e.currentTarget.style.transform = 'translateY(-2px)' } }}
                   onMouseLeave={(e) => { if(!active){ e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)' } }}
                 >
                   <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-                    <span style={{width:10,height:10,borderRadius:999,background:cat.color}} />
+                    <span style={{width:10,height:10,borderRadius:999,background:accentColor}} />
                     <div style={{fontSize:14,fontWeight:800}}>{cat.title}</div>
                   </div>
                   <div style={{fontSize:12,color:'var(--text-secondary)',lineHeight:1.4}}>{cat.subtitle}</div>
@@ -298,7 +309,10 @@ export default function Service(){
           {/* Services Boxes */}
           <div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))',gap:20}}>
-              {activeCategory?.items.map(item => (
+              {activeCategory?.items.map(item => {
+                const accentColor = getAccentColor(activeCategory?.color)
+                const qtyInCart = cart.find(i => i.id === item.id)?.qty || 0
+                return (
                 <div key={item.id} style={{
                   position:'relative',
                   border:'1px solid var(--border)',
@@ -308,11 +322,11 @@ export default function Service(){
                   overflow:'hidden',
                   display:'flex',
                   flexDirection:'column'
-                }} onMouseEnter={(e) => {e.currentTarget.style.borderColor=activeCategory?.color; e.currentTarget.style.boxShadow='0 18px 44px rgba(0,0,0,0.12)'; e.currentTarget.style.transform='translateY(-4px)'}} onMouseLeave={(e) => {e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.04)'; e.currentTarget.style.transform='translateY(0)'}}>
+                }} onMouseEnter={(e) => {e.currentTarget.style.borderColor=accentColor; e.currentTarget.style.boxShadow='0 18px 44px rgba(0,0,0,0.12)'; e.currentTarget.style.transform='translateY(-4px)'}} onMouseLeave={(e) => {e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.04)'; e.currentTarget.style.transform='translateY(0)'}}>
 
                   <div style={{
                     padding:'14px 18px',
-                    background:`linear-gradient(135deg, ${activeCategory?.color}1a, transparent)`
+                    background:`linear-gradient(135deg, ${accentColor}1a, transparent)`
                   }}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
                       <div style={{fontSize:13,fontWeight:800,color:'var(--text)'}}>{activeCategory?.title}</div>
@@ -322,7 +336,7 @@ export default function Service(){
                           borderRadius:999,
                           fontSize:11,
                           fontWeight:700,
-                          background:activeCategory?.color,
+                          background:accentColor,
                           color:'#fff'
                         }}>
                           {item.badge}
@@ -339,7 +353,7 @@ export default function Service(){
 
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                       <div style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:'var(--text-secondary)',fontWeight:700}}>
-                        <span style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:activeCategory?.color}}/>
+                        <span style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:accentColor}}/>
                         {item.sla}
                       </div>
                       <button
@@ -352,7 +366,7 @@ export default function Service(){
                           border:'none',
                           cursor:'pointer',
                           fontSize:11,
-                          color:'#fbbf24',
+                          color:'var(--text)',
                           fontWeight:700,
                           display:'flex',
                           alignItems:'center',
@@ -361,16 +375,25 @@ export default function Service(){
                           borderRadius:6,
                           transition:'all 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(251,191,36,0.1)'}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(11,31,59,0.08)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                       >
-                        <span>⭐</span>
+                        <span style={{fontSize:10,color:'var(--text-secondary)'}}>Rating</span>
                         <span>{SERVICE_RATINGS[item.id]?.rating || '4.7'}</span>
                         <span style={{color:'var(--text-secondary)'}}>({SERVICE_RATINGS[item.id]?.reviews || '50'})</span>
                       </button>
                     </div>
 
-                    <div style={{marginTop:'auto',paddingTop:12,borderTop:'1px solid var(--border)'}}>
+                    <div style={{
+                      marginTop:'auto',
+                      paddingTop:12,
+                      borderTop:'1px solid rgba(11,31,59,0.16)',
+                      marginInline:'-18px',
+                      marginBottom:'-18px',
+                      paddingInline:'18px',
+                      paddingBottom:'18px',
+                      background:'linear-gradient(160deg, rgba(11,31,59,0.08) 0%, rgba(11,31,59,0.03) 100%)'
+                    }}>
                       <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:12}}>
                         <div style={{fontSize:22,fontWeight:900,color:'var(--text)'}}>{formatINR(item.price)}</div>
                         {item.price > 0 && <div style={{fontSize:12,color:'var(--text-secondary)'}}>per service</div>}
@@ -384,9 +407,9 @@ export default function Service(){
                           padding:'8px 12px',
                           marginBottom:10,
                           borderRadius:8,
-                          border:'1px solid var(--border)',
-                          background:'transparent',
-                          color:'var(--text)',
+                          border:'1px solid rgba(11,31,59,0.32)',
+                          background:'rgba(11,31,59,0.06)',
+                          color:'#0B1F3B',
                           cursor:'pointer',
                           fontSize:13,
                           fontWeight:600,
@@ -397,53 +420,89 @@ export default function Service(){
                           transition:'all 0.2s'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(251,191,36,0.1)'
-                          e.currentTarget.style.borderColor = '#fbbf24'
+                          e.currentTarget.style.background = 'rgba(11,31,59,0.12)'
+                          e.currentTarget.style.borderColor = '#0B1F3B'
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent'
-                          e.currentTarget.style.borderColor = 'var(--border)'
+                          e.currentTarget.style.background = 'rgba(11,31,59,0.06)'
+                          e.currentTarget.style.borderColor = 'rgba(11,31,59,0.32)'
                         }}
                       >
-                        <span>⭐</span>
                         <span>View Reviews</span>
                       </button>
 
                       <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:8}}>
-                        <Button 
-                          variant="primary"
-                          onClick={() => addToCart(item)}
-                          style={{padding:'10px 12px',fontSize:14,fontWeight:700,borderRadius:10}}
-                        >
-                          Add to cart
-                        </Button>
+                        {qtyInCart > 0 ? (
+                          <div style={{
+                            display:'grid',
+                            gridTemplateColumns:'42px 1fr 42px',
+                            alignItems:'center',
+                            borderRadius:10,
+                            border:'1px solid rgba(11,31,59,0.35)',
+                            background:'rgba(11,31,59,0.08)',
+                            overflow:'hidden'
+                          }}>
+                            <button
+                              onClick={() => updateQty(item.id, -1)}
+                              style={{height:40,border:'none',background:'rgba(11,31,59,0.14)',color:'#0B1F3B',fontWeight:900,fontSize:20,cursor:'pointer'}}
+                            >
+                              -
+                            </button>
+                            <div style={{textAlign:'center',fontSize:14,fontWeight:800,color:'#0B1F3B'}}>{qtyInCart}</div>
+                            <button
+                              onClick={() => updateQty(item.id, 1)}
+                              style={{height:40,border:'none',background:'#0B1F3B',color:'#FFFFFF',fontWeight:900,fontSize:18,cursor:'pointer'}}
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="primary"
+                            onClick={() => addToCart(item)}
+                            style={{
+                              padding:'10px 12px',
+                              fontSize:14,
+                              fontWeight:800,
+                              borderRadius:10,
+                              background:'linear-gradient(160deg, #0B1F3B 0%, #18406F 100%)',
+                              color:'#FFFFFF',
+                              border:'1px solid #0B1F3B',
+                              boxShadow:'0 10px 24px rgba(11,31,59,0.3)'
+                            }}
+                          >
+                            {recentlyAddedId === item.id ? 'Added' : 'Add to Cart'}
+                          </Button>
+                        )}
                         <button
                           onClick={() => {
-                            const wasFav = isFavorite(item.id)
+                            const wasFavorite = isFavorite(item.id)
                             toggleFavorite({ ...item, category: activeCategory?.id })
-                            showSuccess(wasFav ? 'Removed' : 'Saved')
                             window.dispatchEvent(new Event('favoritesUpdated'))
+                            showSuccess(wasFavorite ? 'Removed from favourites' : 'Saved to favourites')
                           }}
                           style={{
                             padding:'10px 12px',
                             borderRadius:10,
-                            border:'1px solid var(--border)',
-                            background:'var(--bg)',
-                            color:isFavorite(item.id)?'#ef4444':'var(--muted)',
+                            border:'1px solid rgba(11,31,59,0.34)',
+                            background:isFavorite(item.id)?'#0B1F3B':'rgba(11,31,59,0.08)',
+                            color:isFavorite(item.id)?'#FFFFFF':'#0B1F3B',
                             cursor:'pointer',
-                            fontSize:16,
+                            fontSize:12,
+                            fontWeight:700,
+                            minWidth:72,
                             transition:'all 0.2s'
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg)'}
+                          onMouseEnter={(e) => e.currentTarget.style.background = isFavorite(item.id)?'#0B1F3B':'rgba(11,31,59,0.15)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = isFavorite(item.id)?'#0B1F3B':'rgba(11,31,59,0.08)'}
                         >
-                          {isFavorite(item.id) ? '❤️' : '🤍'}
+                          {isFavorite(item.id) ? 'Saved' : 'Save'}
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
 
@@ -452,23 +511,22 @@ export default function Service(){
             position:'sticky',
             top:40,
             height:'fit-content',
-            background:'var(--surface)',
-            border:'1px solid var(--border)',
+            background:'linear-gradient(165deg, #081a32 0%, #0B1F3B 55%, #12325B 100%)',
+            border:'1px solid rgba(255,255,255,0.18)',
             borderRadius:16,
             padding:24,
-            boxShadow:'0 8px 24px rgba(0,0,0,0.06)'
+            boxShadow:'0 20px 48px rgba(0,0,0,0.34)'
           }}>
-            <h3 style={{margin:0,fontSize:18,fontWeight:800,color:'var(--text)',marginBottom:16}}>Cart</h3>
+            <h3 style={{margin:0,fontSize:18,fontWeight:800,color:'#FFFFFF',marginBottom:16}}>Cart</h3>
 
             {cart.length === 0 ? (
-              <div style={{textAlign:'center',padding:'32px 12px',color:'var(--text-secondary)'}}>
-                <div style={{fontSize:44,marginBottom:12}}>🛒</div>
-                <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>Empty</div>
+              <div style={{textAlign:'center',padding:'32px 12px',color:'rgba(255,255,255,0.78)'}}>
+                <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>Cart is empty</div>
                 <div style={{fontSize:13}}>Select services to get started</div>
               </div>
             ) : (
               <>
-                <p style={{margin:'0 0 12px',fontSize:12,color:'var(--text-secondary)',fontWeight:600}}>{cart.length} service{cart.length !== 1 ? 's' : ''}</p>
+                <p style={{margin:'0 0 12px',fontSize:12,color:'rgba(255,255,255,0.8)',fontWeight:600}}>{cart.length} service{cart.length !== 1 ? 's' : ''}</p>
                 
                 <div style={{display:'grid',gap:10,marginBottom:16,maxHeight:'280px',overflowY:'auto'}}>
                   {cart.map(item => (
@@ -479,59 +537,59 @@ export default function Service(){
                       gap:8,
                       padding:10,
                       borderRadius:10,
-                      border:'1px solid var(--border)',
-                      background:'var(--bg)',
+                      border:'1px solid rgba(255,255,255,0.2)',
+                      background:'rgba(255,255,255,0.08)',
                       fontSize:13
                     }}>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:700,color:'var(--text)',marginBottom:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontSize:13}}>{item.title}</div>
-                        <div style={{display:'flex',alignItems:'center',gap:4}}>
-                          <button onClick={() => updateQty(item.id,-1)} style={{width:22,height:22,borderRadius:5,border:'1px solid var(--border)',background:'var(--surface)',color:'var(--text)',fontWeight:700,cursor:'pointer',fontSize:11,padding:0}}>-</button>
-                          <span style={{fontWeight:700,minWidth:16,textAlign:'center',fontSize:12}}>{item.qty}</span>
-                          <button onClick={() => updateQty(item.id,1)} style={{width:22,height:22,borderRadius:5,border:'1px solid var(--border)',background:'var(--surface)',color:'var(--text)',fontWeight:700,cursor:'pointer',fontSize:11,padding:0}}>+</button>
+                        <div style={{fontWeight:700,color:'#FFFFFF',marginBottom:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontSize:13}}>{item.title}</div>
+                        <div style={{display:'grid',gridTemplateColumns:'34px 1fr 34px',alignItems:'center',gap:6,maxWidth:120}}>
+                          <button onClick={() => updateQty(item.id,-1)} style={{height:34,borderRadius:8,border:'1px solid rgba(255,255,255,0.28)',background:'rgba(7,19,36,0.65)',color:'#FFFFFF',fontWeight:900,cursor:'pointer',fontSize:18,padding:0,lineHeight:1}}> - </button>
+                          <span style={{fontWeight:800,minWidth:20,textAlign:'center',fontSize:13,color:'#FFFFFF'}}>{item.qty}</span>
+                          <button onClick={() => updateQty(item.id,1)} style={{height:34,borderRadius:8,border:'1px solid rgba(255,255,255,0.28)',background:'#0B1F3B',color:'#FFFFFF',fontWeight:900,cursor:'pointer',fontSize:16,padding:0,lineHeight:1}}> + </button>
                         </div>
                       </div>
                       <div style={{textAlign:'right'}}>
-                        <div style={{fontWeight:800,color:'var(--accent)',fontSize:13,marginBottom:4}}>{formatINR(item.price * item.qty)}</div>
-                        <button onClick={() => removeItem(item.id)} style={{width:20,height:20,borderRadius:5,border:'1px solid #ef4444',background:'rgba(239,68,68,0.1)',color:'#ef4444',fontWeight:700,cursor:'pointer',fontSize:11,padding:0,transition:'all 0.2s'}} onMouseEnter={(e) => {e.currentTarget.style.background='#ef4444'; e.currentTarget.style.color='#fff'}} onMouseLeave={(e) => {e.currentTarget.style.background='rgba(239,68,68,0.1)'; e.currentTarget.style.color='#ef4444'}}>✕</button>
+                        <div style={{fontWeight:800,color:'#FFFFFF',fontSize:13,marginBottom:4}}>{formatINR(item.price * item.qty)}</div>
+                        <button onClick={() => removeItem(item.id)} style={{minWidth:78,height:34,borderRadius:8,border:'1px solid rgba(255,255,255,0.4)',background:'#FFFFFF',color:'#0B1F3B',fontWeight:700,cursor:'pointer',fontSize:11,padding:'0 8px',transition:'all 0.2s'}} onMouseEnter={(e) => {e.currentTarget.style.background='rgba(255,255,255,0.9)'}} onMouseLeave={(e) => {e.currentTarget.style.background='#FFFFFF'}}>Remove</button>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div style={{borderRadius:12,padding:14,background:'var(--bg)',display:'grid',gap:8,marginBottom:16,fontSize:13}}>
+                <div style={{borderRadius:12,padding:14,background:'rgba(6,16,30,0.58)',border:'1px solid rgba(255,255,255,0.16)',display:'grid',gap:8,marginBottom:16,fontSize:13}}>
                   <div style={{display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'var(--text-secondary)'}}>Subtotal</span>
-                    <strong style={{color:'var(--text)'}}>{formatINR(subtotal)}</strong>
+                    <span style={{color:'rgba(255,255,255,0.76)'}}>Subtotal</span>
+                    <strong style={{color:'#FFFFFF'}}>{formatINR(subtotal)}</strong>
                   </div>
                   <div style={{display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'var(--text-secondary)'}}>Fee</span>
-                    <strong style={{color:'var(--text)'}}>{formatINR(serviceFee)}</strong>
+                    <span style={{color:'rgba(255,255,255,0.76)'}}>Fee</span>
+                    <strong style={{color:'#FFFFFF'}}>{formatINR(serviceFee)}</strong>
                   </div>
                   <div style={{display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'var(--text-secondary)'}}>Tax (5%)</span>
-                    <strong style={{color:'var(--text)'}}>{formatINR(tax)}</strong>
+                    <span style={{color:'rgba(255,255,255,0.76)'}}>Tax (5%)</span>
+                    <strong style={{color:'#FFFFFF'}}>{formatINR(tax)}</strong>
                   </div>
-                  <div style={{display:'flex',justifyContent:'space-between',paddingTop:10,borderTop:'1px solid var(--border)',fontWeight:800,fontSize:15,color:'var(--text)'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.18)',fontWeight:800,fontSize:15,color:'#FFFFFF'}}>
                     <span>Total</span>
                     <span>{formatINR(total)}</span>
                   </div>
                 </div>
 
                 <div style={{marginBottom:12}}>
-                  <label style={{display:'block',fontSize:12,fontWeight:700,color:'var(--text)',marginBottom:6}}>Notes for mechanic</label>
+                  <label style={{display:'block',fontSize:12,fontWeight:700,color:'#FFFFFF',marginBottom:6}}>Notes for mechanic</label>
                   <textarea 
                     value={notes} 
                     onChange={e=>setNotes(e.target.value)}
                     placeholder="Special requests or location info" 
-                    style={{width:'100%',minHeight:56,padding:10,borderRadius:10,border:'1px solid var(--border)',background:'var(--bg)',color:'var(--text)',fontSize:12,resize:'vertical',fontFamily:'inherit'}}
+                    style={{width:'100%',minHeight:56,padding:10,borderRadius:10,border:'1px solid rgba(255,255,255,0.24)',background:'rgba(7,18,34,0.64)',color:'#FFFFFF',fontSize:12,resize:'vertical',fontFamily:'inherit'}}
                   />
                 </div>
 
-                <Button variant="primary" style={{width:'100%',padding:'12px 16px',fontSize:14,fontWeight:700,marginBottom:8,borderRadius:10}} onClick={proceedCheckout}>
-                  Proceed to checkout
+                <Button variant="primary" style={{width:'100%',padding:'12px 16px',fontSize:14,fontWeight:700,marginBottom:8,borderRadius:10,background:'#FFFFFF',color:'#0B1F3B',border:'1px solid #FFFFFF'}} onClick={proceedCheckout}>
+                  Proceed to Checkout
                 </Button>
-                <Button variant="ghost" style={{width:'100%',padding:'10px 16px',fontSize:13,fontWeight:600}} onClick={clearCart}>
+                <Button variant="ghost" style={{width:'100%',padding:'10px 16px',fontSize:13,fontWeight:600,color:'#FFFFFF',border:'1px solid rgba(255,255,255,0.24)',background:'rgba(255,255,255,0.05)'}} onClick={clearCart}>
                   Clear cart
                 </Button>
               </>
@@ -546,120 +604,15 @@ export default function Service(){
           <div style={{background:'var(--surface)',borderRadius:16,padding:28,maxWidth:520,maxHeight:'80vh',overflowY:'auto',boxShadow:'0 24px 64px rgba(0,0,0,0.2)'}} onClick={(e) => e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
               <h2 style={{margin:0,fontSize:22,fontWeight:800,color:'var(--text)'}}>Reviews</h2>
-              <button onClick={() => setReviewService(null)} style={{background:'none',border:'none',fontSize:24,cursor:'pointer',color:'var(--text)',padding:0}}>✕</button>
+              <button onClick={() => setReviewService(null)} style={{background:'none',border:'none',fontSize:14,cursor:'pointer',color:'var(--text)',padding:'4px 8px',borderRadius:8}}>Close</button>
             </div>
             <Reviews serviceId={reviewService.id} serviceName={reviewService.title} />
           </div>
         </div>
       )}
 
-      <style>{`
-        /* PREMIUM THEME WITH #0B1220 BACKGROUND */
-        :root {
-          --surface: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
-          --text: #E6EDF7 !important;
-        }
-
-        body {
-          background: linear-gradient(180deg, #0B1220 0%, #0F1728 100%) !important;
-        }
-
-        /* Service Category Cards */
-        .svc-card {
-          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
-          border: 1px solid #2A4368 !important;
-          box-shadow: 0 4px 20px rgba(74, 158, 255, 0.1) !important;
-          transition: all 0.3s ease !important;
-          position: relative !important;
-          overflow: hidden !important;
-        }
-
-        .svc-card::before {
-          content: '' !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          height: 3px !important;
-          background: linear-gradient(90deg, transparent, #4A9EFF, transparent) !important;
-          opacity: 0 !important;
-          transition: opacity 0.3s ease !important;
-        }
-
-        .svc-card:hover::before {
-          opacity: 1 !important;
-        }
-
-        .svc-card:hover {
-          transform: translateY(-4px) !important;
-          box-shadow: 0 8px 32px rgba(74, 158, 255, 0.12) !important;
-          border-color: #4A9EFF !important;
-        }
-
-        /* Service Items */
-        .svc-item {
-          background: rgba(15, 23, 40, 0.5) !important;
-          border: 1px solid #2A4368 !important;
-          border-radius: 12px !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .svc-item:hover {
-          border-color: #4A9EFF !important;
-          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.1) !important;
-          transform: translateX(4px) !important;
-        }
-
-        /* Titles */
-        .svc-title {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          background-clip: text !important;
-        }
-
-        /* Prices */
-        .svc-price {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          background-clip: text !important;
-          font-weight: 800 !important;
-        }
-
-        /* Badges */
-        .svc-badge {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          color: white !important;
-          padding: 4px 12px !important;
-          border-radius: 12px !important;
-          font-size: 11px !important;
-          font-weight: 700 !important;
-        }
-
-        /* Buttons */
-        button[style*="background: '#60a5fa'"],
-        button[style*="background:#60a5fa"] {
-          background: linear-gradient(135deg, #4A9EFF 0%, #60A5FF 100%) !important;
-          box-shadow: 0 4px 16px rgba(74, 158, 255, 0.18) !important;
-        }
-
-        /* Favorite Heart Icon */
-        .fav-icon {
-          transition: all 0.3s ease !important;
-          filter: drop-shadow(0 2px 8px rgba(74, 158, 255, 0.18)) !important;
-        }
-
-        .fav-icon:hover {
-          transform: scale(1.2) !important;
-        }
-
-        /* Modal */
-        [style*="background:'var(--surface)'"] {
-          background: linear-gradient(135deg, #0F1728 0%, #162844 100%) !important;
-          border: 1px solid #2A4368 !important;
-        }
-      `}</style>
     </div>
   )
 }
+
+

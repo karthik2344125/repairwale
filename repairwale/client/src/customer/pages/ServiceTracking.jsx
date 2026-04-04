@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import RealTimeChat from '../../shared/components/RealTimeChat'
 import LiveGPSTracker from '../components/LiveGPSTracker'
+import { getCustomerDispatchStatus } from '../../shared/services/api'
+import { connectRealtimeWithFallback } from '../../shared/services/realtime'
 
 function formatTime(date) {
   if (!date) return '--:--'
@@ -30,18 +32,72 @@ export default function ServiceTracking() {
 
   useEffect(() => {
     loadOrder()
-    // Simulate real-time updates
-    const interval = setInterval(loadOrder, 5000)
-    return () => clearInterval(interval)
+
+    const currentUser = JSON.parse(localStorage.getItem('repairwale_user') || '{}')
+    const realtime = connectRealtimeWithFallback({
+      onConnect: (socket) => {
+        socket.emit('dispatch:join', { role: 'customer', id: currentUser.id || 'guest-customer', requestId: orderId })
+
+        socket.on('dispatch:created', () => loadOrder())
+        socket.on('dispatch:accepted', (payload) => {
+          if (payload?.id === orderId) loadOrder()
+        })
+        socket.on('dispatch:rebroadcast', (payload) => {
+          if (payload?.id === orderId) loadOrder()
+        })
+        socket.on('dispatch:expired', (payload) => {
+          if (payload?.id === orderId) loadOrder()
+        })
+      }
+    })
+
+    return () => realtime.disconnect()
   }, [orderId])
 
-  const loadOrder = () => {
+  const loadOrder = async () => {
     try {
       const stored = JSON.parse(localStorage.getItem('rw_orders') || '[]')
       const found = stored.find(o => o.id === orderId)
       if (found) {
         setOrder(found)
         setTracking(found.tracking || {})
+        return
+      }
+
+      // Fallback to dispatch lifecycle request tracking
+      const dispatchResp = await getCustomerDispatchStatus(orderId)
+      if (dispatchResp?.ok && dispatchResp?.request) {
+        const req = dispatchResp.request
+        const mappedStatus = req.status === 'accepted' ? 'in_progress' : req.status === 'completed' ? 'completed' : 'pending'
+        const mappedOrder = {
+          id: req.id,
+          status: mappedStatus,
+          total: req.estimatedPrice || 0,
+          date: req.createdAt,
+          location: req.location?.text || 'Customer location',
+          customerId: req.customerId,
+          customerLocation: req.location || null,
+          customerName: req.customerName,
+          mechanicId: req.assignedMechanicId,
+          mechanicName: req.assignedMechanicName,
+          assignedMechanicName: req.assignedMechanicName,
+          items: req.serviceItems || []
+        }
+
+        const updates = (req.events || []).map((event) => ({
+          time: formatTime(event.at),
+          status: event.type === 'accepted' ? 'in_progress' : 'pending',
+          message: event.message,
+          icon: event.type === 'accepted' ? 'A' : 'P'
+        }))
+
+        setOrder(mappedOrder)
+        setTracking({
+          statusUpdates: updates,
+          estimatedTime: req.status === 'accepted' ? 'Mechanic en route' : 'Finding nearby mechanic',
+          eta: req.status === 'accepted' ? formatTime(Date.now() + 25 * 60000) : '--:--',
+          distance: req.status === 'accepted' ? 'Live' : 'Searching'
+        })
       }
     } catch {}
   }
@@ -50,7 +106,7 @@ export default function ServiceTracking() {
     return (
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '20px' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}></div>
           <h3>Order not found</h3>
           <p style={{ color: 'var(--text-secondary)' }}>The order you're looking for doesn't exist.</p>
           <button
@@ -60,8 +116,8 @@ export default function ServiceTracking() {
               padding: '10px 20px',
               borderRadius: 8,
               border: 'none',
-              background: '#60a5fa',
-              color: '#fff',
+              background: '#0B1F3B',
+              color: '#FFFFFF',
               cursor: 'pointer',
               fontWeight: 700
             }}
@@ -74,9 +130,9 @@ export default function ServiceTracking() {
   }
 
   const stages = [
-    { id: 'pending', label: 'Order Placed', icon: '📝', color: '#fbbf24' },
-    { id: 'in_progress', label: 'In Progress', icon: '⚙️', color: '#60a5fa' },
-    { id: 'completed', label: 'Completed', icon: '✅', color: '#10b981' }
+    { id: 'pending', label: 'Order Placed', icon: '📦', color: '#0B1F3B' },
+    { id: 'in_progress', label: 'In Progress', icon: '🛠️', color: '#FFFFFF' },
+    { id: 'completed', label: 'Completed', icon: '✅', color: '#FFFFFF' }
   ]
 
   const currentStageIndex = stages.findIndex(s => s.id === order.status)
@@ -88,13 +144,13 @@ export default function ServiceTracking() {
       time: '14:30',
       status: 'pending',
       message: 'Order placed',
-      icon: '📝'
+      icon: '🧾'
     },
     {
       time: '14:32',
       status: 'pending',
       message: 'Looking for nearby mechanics',
-      icon: '🔍'
+      icon: '🔎'
     }
   ]
 
@@ -106,16 +162,16 @@ export default function ServiceTracking() {
       max-width: 900px;
       margin: 0 auto;
       padding: 0;
-      background: linear-gradient(180deg, #0b1220 0%, #0f1728 50%, #0d1422 100%);
+      background: #0B1F3B;
       min-height: 100vh;
       position: relative;
     }
 
     /* ===== HERO SECTION ===== */
     .tracking-hero {
-      background: linear-gradient(140deg, #101f3a 0%, #0d1728 46%, #0a1321 100%);
-      border-bottom: 1px solid rgba(96, 165, 250, 0.14);
-      box-shadow: 0 12px 28px rgba(8, 14, 24, 0.45), 0 0 60px rgba(59, 130, 246, 0.08);
+      background: #0B1F3B;
+      border-bottom: 1px solid #0B1F3B;
+      box-shadow: none;
       padding: 44px 24px;
       position: relative;
       overflow: hidden;
@@ -153,7 +209,7 @@ export default function ServiceTracking() {
       border-radius: 8px;
       border: 1px solid rgba(96, 165, 250, 0.14);
       background: rgba(96, 165, 250, 0.08);
-      color: #60a5fa;
+      color: #FFFFFF;
       font-weight: 600;
       font-size: 13px;
       cursor: pointer;
@@ -178,17 +234,13 @@ export default function ServiceTracking() {
       font-size: 32px;
       font-weight: 900;
       letter-spacing: -0.8px;
-      color: #e6edf7;
+      color: #FFFFFF;
       margin: 0;
-      background: linear-gradient(135deg, #e6edf7 0%, #a5d6ff 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
     }
 
     .tracking-subtitle {
       font-size: 14px;
-      color: rgba(166, 173, 186, 0.8);
+      color: rgba(255,255,255,0.75);
       margin: 8px 0 0 0;
       font-weight: 500;
     }
@@ -218,7 +270,7 @@ export default function ServiceTracking() {
     .tracking-label {
       font-size: 11px;
       font-weight: 600;
-      color: rgba(166, 173, 186, 0.7);
+      color: rgba(255,255,255,0.7);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 6px;
@@ -227,20 +279,20 @@ export default function ServiceTracking() {
     .tracking-value {
       font-size: 16px;
       font-weight: 800;
-      color: #60a5fa;
+      color: #FFFFFF;
       letter-spacing: -0.3px;
     }
 
     .tracking-value-date {
       font-size: 15px;
       font-weight: 700;
-      color: #a5d6ff;
+      color: #FFFFFF;
     }
 
     .tracking-value-amount {
       font-size: 18px;
       font-weight: 900;
-      color: #7dd3fc;
+      color: #FFFFFF;
       letter-spacing: -0.3px;
     }
 
@@ -261,7 +313,7 @@ export default function ServiceTracking() {
     .section-title {
       font-size: 20px;
       font-weight: 900;
-      color: #e6edf7;
+      color: #FFFFFF;
       margin: 0 0 16px 0;
       letter-spacing: -0.4px;
     }
@@ -302,15 +354,15 @@ export default function ServiceTracking() {
 
     .tracking-completed .tracking-stage-circle {
       background: rgba(16, 185, 129, 0.15);
-      border-color: #10b981;
-      color: #10b981;
+      border-color: #FFFFFF;
+      color: #FFFFFF;
       box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
     }
 
     .tracking-current .tracking-stage-circle {
       background: rgba(96, 165, 250, 0.1);
-      border-color: #60a5fa;
-      color: #60a5fa;
+      border-color: #FFFFFF;
+      color: #FFFFFF;
       box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
       animation: tracking-pulse 2s ease-in-out infinite;
     }
@@ -355,11 +407,11 @@ export default function ServiceTracking() {
     }
 
     .tracking-completed .tracking-stage-label {
-      color: #10b981;
+      color: #FFFFFF;
     }
 
     .tracking-current .tracking-stage-label {
-      color: #60a5fa;
+      color: #FFFFFF;
     }
 
     .tracking-next .tracking-stage-label {
@@ -368,7 +420,7 @@ export default function ServiceTracking() {
 
     .tracking-stage-desc {
       font-size: 12px;
-      color: rgba(166, 173, 186, 0.7);
+      color: rgba(255,255,255,0.7);
       margin-top: 4px;
     }
 
@@ -383,7 +435,7 @@ export default function ServiceTracking() {
     }
 
     .tracking-connector-done {
-      background: linear-gradient(180deg, #10b981 0%, rgba(16, 185, 129, 0.3) 100%);
+      background: linear-gradient(180deg, #0B1F3B 0%, rgba(16, 185, 129, 0.3) 100%);
     }
 
     /* Metrics Cards */
@@ -428,7 +480,7 @@ export default function ServiceTracking() {
     .metric-label {
       font-size: 11px;
       font-weight: 600;
-      color: rgba(166, 173, 186, 0.7);
+      color: rgba(255,255,255,0.7);
       text-transform: uppercase;
       letter-spacing: 0.4px;
       margin-bottom: 6px;
@@ -437,7 +489,7 @@ export default function ServiceTracking() {
     .metric-value {
       font-size: 18px;
       font-weight: 800;
-      color: #60a5fa;
+      color: #FFFFFF;
       letter-spacing: -0.3px;
     }
 
@@ -495,16 +547,16 @@ export default function ServiceTracking() {
     }
 
     .mechanic-info-item {
-      background: rgba(16, 185, 129, 0.08);
+      background: rgba(30, 58, 138, 0.16);
       padding: 12px;
       border-radius: 8px;
-      border: 1px solid rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .mechanic-label {
       font-size: 11px;
       font-weight: 600;
-      color: rgba(16, 185, 129, 0.7);
+      color: rgba(255, 255, 255, 0.7);
       text-transform: uppercase;
       letter-spacing: 0.4px;
       margin-bottom: 4px;
@@ -513,13 +565,13 @@ export default function ServiceTracking() {
     .mechanic-value {
       font-size: 15px;
       font-weight: 700;
-      color: #10b981;
+      color: #FFFFFF;
     }
 
     .mechanic-value-rating {
       font-size: 14px;
       font-weight: 700;
-      color: #fbbf24;
+      color: #FFFFFF;
     }
 
     .mechanic-contact-buttons {
@@ -531,9 +583,9 @@ export default function ServiceTracking() {
     .mechanic-btn {
       padding: 10px;
       border-radius: 8px;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      background: rgba(16, 185, 129, 0.08);
-      color: #10b981;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: #FFFFFF;
       font-weight: 600;
       font-size: 13px;
       cursor: pointer;
@@ -541,8 +593,8 @@ export default function ServiceTracking() {
     }
 
     .mechanic-btn:hover {
-      background: rgba(16, 185, 129, 0.15);
-      border-color: rgba(16, 185, 129, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
       transform: translateY(-2px);
     }
 
@@ -563,8 +615,8 @@ export default function ServiceTracking() {
       gap: 12px;
       padding: 14px;
       border-radius: 10px;
-      background: rgba(96, 165, 250, 0.04);
-      border: 1px solid rgba(96, 165, 250, 0.12);
+      background: rgba(30, 58, 138, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       cursor: pointer;
       transition: all 0.3s ease;
       position: relative;
@@ -587,9 +639,9 @@ export default function ServiceTracking() {
     .tracking-update-card:nth-child(3) { animation-delay: 0.3s; }
 
     .tracking-update-selected {
-      background: linear-gradient(135deg, rgba(96, 165, 250, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
-      border-color: rgba(96, 165, 250, 0.16);
-      box-shadow: 0 4px 16px rgba(96, 165, 250, 0.1);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     }
 
     .update-icon {
@@ -607,21 +659,21 @@ export default function ServiceTracking() {
     .update-message {
       font-size: 13px;
       font-weight: 700;
-      color: #a5d6ff;
+      color: #FFFFFF;
     }
 
     .update-time {
       font-size: 11px;
-      color: rgba(166, 173, 186, 0.6);
+      color: rgba(255, 255, 255, 0.65);
       margin-top: 2px;
     }
 
     .tracking-live-indicator {
       padding: 12px;
       border-radius: 8px;
-      background: rgba(96, 165, 250, 0.08);
-      border: 1px dashed rgba(96, 165, 250, 0.24);
-      color: #60a5fa;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
       font-size: 12px;
       text-align: center;
       font-weight: 600;
@@ -639,13 +691,13 @@ export default function ServiceTracking() {
       padding: 12px;
       border-radius: 10px;
       border: none;
-      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-      color: #fff;
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      color: #FFFFFF;
       font-weight: 700;
       font-size: 14px;
       cursor: pointer;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 16px rgba(96, 165, 250, 0.18);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.28);
       position: relative;
       overflow: hidden;
     }
@@ -657,13 +709,13 @@ export default function ServiceTracking() {
       left: -100%;
       width: 100%;
       height: 100%;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.14);
       transition: left 0.5s ease;
     }
 
     .tracking-btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 24px rgba(96, 165, 250, 0.14);
+      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.34);
     }
 
     .tracking-btn-primary:hover::before {
@@ -673,9 +725,9 @@ export default function ServiceTracking() {
     .tracking-btn-secondary {
       padding: 12px;
       border-radius: 10px;
-      border: 1px solid rgba(96, 165, 250, 0.18);
-      background: rgba(96, 165, 250, 0.08);
-      color: #60a5fa;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.04);
+      color: #FFFFFF;
       font-weight: 700;
       font-size: 14px;
       cursor: pointer;
@@ -683,8 +735,8 @@ export default function ServiceTracking() {
     }
 
     .tracking-btn-secondary:hover {
-      background: rgba(96, 165, 250, 0.1);
-      border-color: rgba(96, 165, 250, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.24);
       transform: translateY(-2px);
     }
 
@@ -692,17 +744,17 @@ export default function ServiceTracking() {
     .tracking-gps-container,
     .tracking-chat-container {
       padding: 24px;
-      background: rgba(16, 32, 58, 0.2);
+      background: rgba(15, 23, 42, 0.18);
       margin: 0;
     }
 
     .tracking-gps-container {
-      border-top: 1px solid rgba(96, 165, 250, 0.08);
-      border-bottom: 1px solid rgba(96, 165, 250, 0.08);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .tracking-chat-container {
-      border-top: 1px solid rgba(96, 165, 250, 0.08);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       padding-bottom: 40px;
     }
 
@@ -711,6 +763,67 @@ export default function ServiceTracking() {
       0%, 100% { transform: translate(0, 0); }
       33% { transform: translate(20px, -10px); }
       66% { transform: translate(-10px, 20px); }
+    }
+
+    /* ===== FLOW LOCK: NAVY + WHITE, LOW MOTION ===== */
+    .tracking-container,
+    .tracking-content,
+    .tracking-section,
+    .tracking-card,
+    .tracking-panel,
+    .tracking-status-timeline,
+    .tracking-update,
+    .tracking-meta,
+    .tracking-gps-container,
+    .tracking-chat-container {
+      background: #0B1F3B !important;
+      color: #FFFFFF !important;
+      border-color: #0B1F3B !important;
+      box-shadow: none !important;
+    }
+
+    .tracking-hero,
+    .tracking-back-btn,
+    .tracking-btn-primary,
+    .tracking-stage.active,
+    .tracking-badge,
+    .tracking-pill,
+    .tracking-kpi-value {
+      background: #0B1F3B !important;
+      color: #FFFFFF !important;
+      border-color: #0B1F3B !important;
+      box-shadow: none !important;
+    }
+
+    .tracking-title,
+    .tracking-order-id,
+    .tracking-stage-label,
+    .tracking-label,
+    .tracking-value,
+    .tracking-subtitle,
+    .tracking-time,
+    .tracking-message,
+    .tracking-helper,
+    .tracking-btn-secondary {
+      color: #FFFFFF !important;
+      background: transparent !important;
+      border-color: #0B1F3B !important;
+      -webkit-text-fill-color: #FFFFFF !important;
+    }
+
+    .tracking-hero .tracking-title,
+    .tracking-hero .tracking-subtitle,
+    .tracking-hero .tracking-label,
+    .tracking-hero .tracking-value {
+      color: #FFFFFF !important;
+      -webkit-text-fill-color: #FFFFFF !important;
+    }
+
+    .tracking-container *,
+    .tracking-container *::before,
+    .tracking-container *::after {
+      animation: none !important;
+      transition: none !important;
     }
 
     /* ===== RESPONSIVE DESIGN ===== */
@@ -833,7 +946,7 @@ export default function ServiceTracking() {
           onClick={() => navigate('/orders')}
           className="tracking-back-btn"
         >
-          ← Back
+           Back
         </button>
         
         <div className="tracking-hero-content">
@@ -859,7 +972,7 @@ export default function ServiceTracking() {
           </div>
           <div className="tracking-header-item">
             <div className="tracking-label">Total</div>
-            <div className="tracking-value-amount">₹{order.total?.toLocaleString('en-IN') || '0'}</div>
+            <div className="tracking-value-amount">₹ {order.total?.toLocaleString('en-IN') || '0'}</div>
           </div>
         </div>
       </div>
@@ -878,7 +991,7 @@ export default function ServiceTracking() {
             return (
               <div key={stage.id} className={`tracking-stage ${isCompleted ? 'tracking-completed' : isCurrent ? 'tracking-current' : 'tracking-next'}`}>
                 <div className="tracking-stage-circle">
-                  {isCompleted ? '✓' : stage.icon}
+                  {isCompleted ? '' : stage.icon}
                 </div>
                 <div className="tracking-stage-content">
                   <div className="tracking-stage-label">{stage.label}</div>
@@ -917,8 +1030,8 @@ export default function ServiceTracking() {
         <div className="tracking-services-list">
           {order.items?.map((item, idx) => (
             <div key={idx} className="tracking-service-item">
-              <span className="service-name">{item.title} × {item.qty}</span>
-              <strong className="service-price">₹{(item.price * item.qty).toLocaleString('en-IN')}</strong>
+              <span className="service-name">{item.title} x {item.qty}</span>
+              <strong className="service-price">₹ {(item.price * item.qty).toLocaleString('en-IN')}</strong>
             </div>
           ))}
         </div>
@@ -931,11 +1044,11 @@ export default function ServiceTracking() {
           <div className="tracking-mechanic-grid">
             <div className="mechanic-info-item">
               <div className="mechanic-label">Name</div>
-              <div className="mechanic-value">Priya Sharma</div>
+              <div className="mechanic-value">{order.assignedMechanicName || order.mechanicName || 'Assigned Mechanic'}</div>
             </div>
             <div className="mechanic-info-item">
               <div className="mechanic-label">Rating</div>
-              <div className="mechanic-value-rating">⭐ 4.8 (245 reviews)</div>
+              <div className="mechanic-value-rating"> 4.8 (245 reviews)</div>
             </div>
             <div className="mechanic-contact-buttons">
               <button className="mechanic-btn mechanic-btn-call">📞 Call</button>
@@ -964,7 +1077,7 @@ export default function ServiceTracking() {
           ))}
         </div>
         <div className="tracking-live-indicator">
-          🔄 Live updates - Refreshes every 5 seconds
+           Live updates - Refreshes every 5 seconds
         </div>
       </div>
 
@@ -974,13 +1087,13 @@ export default function ServiceTracking() {
           onClick={() => navigate('/orders')}
           className="tracking-btn-secondary"
         >
-          ← Back to Orders
+           Back to Orders
         </button>
         <button
           onClick={loadOrder}
           className="tracking-btn-primary"
         >
-          🔄 Refresh Tracking
+           Refresh Tracking
         </button>
       </div>
 
@@ -989,6 +1102,8 @@ export default function ServiceTracking() {
         <LiveGPSTracker 
           orderId={orderId} 
           mechanicId={order.mechanicId || 'm1'}
+          customerId={order.customerId}
+          initialCustomerLocation={order.customerLocation}
         />
       </div>
 
@@ -997,7 +1112,7 @@ export default function ServiceTracking() {
         <RealTimeChat 
           orderId={orderId}
           userRole="customer"
-          mechanicName={order.mechanicName || 'Assigned Mechanic'}
+          mechanicName={order.assignedMechanicName || order.mechanicName || 'Assigned Mechanic'}
         />
       </div>
 

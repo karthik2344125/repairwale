@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './shared/context/AuthContext'
 import { initializeAPI } from './shared/services/apiConfig'
 import { ProtectedRoute, PublicRoute } from './shared/components/ProtectedRoute'
 import Layout from './shared/components/Layout'
+import ToastViewport from './shared/components/ToastViewport'
+import BackNavButton from './shared/components/BackNavButton'
 import Login from './shared/pages/Login'
 import RoleSelectionPage from './shared/pages/RoleSelectionPage'
 import PaymentTest from './PAYMENT_TEST'
@@ -32,7 +34,7 @@ const LoadingFallback = () => (
   <div style={{padding:'60px 20px',textAlign:'center',minHeight:'50vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
     <div>
       <div style={{width:48,height:48,border:'3px solid rgba(255,255,255,0.1)',borderTopColor:'rgba(255,255,255,0.6)',borderRadius:'50%',margin:'0 auto',animation:'spin 0.8s linear infinite'}}/>
-      <div style={{marginTop:16,color:'var(--muted)',fontSize:14}}>Loading…</div>
+      <div style={{marginTop:16,color:'var(--muted)',fontSize:14}}>Loading</div>
     </div>
   </div>
 )
@@ -59,13 +61,13 @@ class ErrorBoundary extends React.Component {
           maxWidth: '600px',
           margin: '0 auto',
           fontFamily: 'monospace',
-          color: '#ff6b6b',
-          backgroundColor: '#1a1a1a',
+          color: '#FFFFFF',
+          backgroundColor: '#000000',
           borderRadius: '8px',
           marginTop: '20px'
         }}>
-          <h2 style={{color: '#ff8787'}}>❌ App Error</h2>
-          <pre style={{overflow: 'auto', padding: '10px', backgroundColor: '#0a0a0a', borderRadius: '4px', fontSize: '12px'}}>
+          <h2 style={{color: '#FFFFFF'}}> App Error</h2>
+          <pre style={{overflow: 'auto', padding: '10px', backgroundColor: '#000000', borderRadius: '4px', fontSize: '12px'}}>
             {this.state.error?.toString()}
           </pre>
           <button
@@ -73,7 +75,7 @@ class ErrorBoundary extends React.Component {
             style={{
               marginTop: '20px',
               padding: '10px 20px',
-              backgroundColor: '#3b82f6',
+              backgroundColor: '#0B1F3B',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -98,14 +100,26 @@ function RoleBasedRedirect(){
   // If not authenticated, send to role selection first
   if (!isAuthenticated) return <Navigate to="/role-selection" replace />
   
-  // If authenticated but no role, send to role selection
-  if (!effectiveRole) return <Navigate to="/role-selection" replace />
+  // If authenticated but no role, continue onboarding flow
+  if (!effectiveRole) return <Navigate to="/onboarding" replace />
   
   // If authenticated with role, redirect based on role
   if (effectiveRole === 'mechanic') return <Navigate to="/mechanic/dashboard" replace />
   if (effectiveRole === 'customer') return <Navigate to="/customer" replace />
   
   return <Navigate to="/role-selection" replace />
+}
+
+function OnboardingRoute() {
+  const { role, isAuthenticated } = useAuth()
+  const effectiveRole = role || localStorage.getItem('rw_role_locked')
+
+  if (!isAuthenticated) return <Navigate to="/role-selection" replace />
+
+  // No dedicated mechanic onboarding screen currently, so mechanics go straight to dashboard.
+  if (effectiveRole === 'mechanic') return <Navigate to="/mechanic/dashboard" replace />
+
+  return <OnboardingCustomer />
 }
 
 export default function App(){
@@ -117,6 +131,7 @@ export default function App(){
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
+          <BackNavButton />
           <Suspense fallback={<LoadingFallback/>}>
             <Routes>
               {/* Entry routes */}
@@ -135,7 +150,7 @@ export default function App(){
               <Route path="/login" element={<PublicRoute requireRoleSelection={true}><Login/></PublicRoute>} />
               
               {/* Step 3: Onboarding (after auth, before role-based workflow) */}
-              <Route path="/onboarding" element={<ProtectedRoute allowWithoutRole={true}><OnboardingCustomer/></ProtectedRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute allowWithoutRole={true}><OnboardingRoute/></ProtectedRoute>} />
 
               {/* All other routes WITH LAYOUT */}
               <Route path="/*" element={
@@ -160,14 +175,20 @@ export default function App(){
                     
                     {/* Public Pages */}
                     <Route path="/terms" element={<TermsAndConditions/>} />
+
+                    {/* Safety fallback for unknown routes inside layout */}
+                    <Route path="*" element={<Navigate to="/home" replace />} />
                   </Routes>
                 </Layout>
               } />
             </Routes>
           </Suspense>
+          <ToastViewport />
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   )
 }
+
+
 

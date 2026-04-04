@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import MechanicsMap from '../components/MechanicsMap'
-
-const defaultCenter = { lat: 28.6139, lng: 77.209 } // Delhi
+import { IconCompass, IconList, IconMapPin, IconMoney, IconPhone, IconSpark, IconStar, IconUser, IconWrench } from '../../icons'
 
 export default function MechanicsMapPage() {
+  const navigate = useNavigate()
   const [mechanics, setMechanics] = useState([])
   const [userLoc, setUserLoc] = useState(null)
   const [radiusKm, setRadiusKm] = useState(10)
@@ -12,8 +13,37 @@ export default function MechanicsMapPage() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
   const [locationError, setLocationError] = useState(null)
   const [sortBy, setSortBy] = useState('distance')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isCompact, setIsCompact] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.innerWidth <= 860
+  })
+  const [mobileView, setMobileView] = useState('map')
+  const watchIdRef = useRef(null)
 
-  // Auto-detect user location on mount
+  const formatINR = (value) => `₹ ${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+
+  const estimateEtaMinutes = (distanceKm) => {
+    const trafficFactor = 3.4
+    return Math.max(10, Math.round(distanceKm * trafficFactor + 6))
+  }
+
+  const getMechanicPhone = (mechanic) => {
+    const source = String(mechanic?.id || mechanic?.name || 'repairwale')
+    let hash = 0
+    for (let i = 0; i < source.length; i += 1) {
+      hash = ((hash << 5) - hash) + source.charCodeAt(i)
+      hash |= 0
+    }
+    const localNumber = 9000000000 + (Math.abs(hash) % 1000000000)
+    const localText = String(localNumber)
+    return {
+      display: `+91 ${localText.slice(0, 5)} ${localText.slice(5)}`,
+      dial: `+91${localText}`
+    }
+  }
+
+  // Keep the user's location updated in real time while the page is open.
   useEffect(() => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation not supported by your browser')
@@ -21,7 +51,7 @@ export default function MechanicsMapPage() {
       return
     }
 
-    navigator.geolocation.getCurrentPosition(
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const loc = {
           lat: position.coords.latitude,
@@ -33,17 +63,23 @@ export default function MechanicsMapPage() {
       },
       (error) => {
         console.error('Geolocation error:', error)
-        setLocationError('Location access denied. Using default location.')
+        setLocationError('Location access denied. Enable location to load nearby mechanics.')
         setIsLoadingLocation(false)
-        // Use default location if denied
-        setUserLoc(defaultCenter)
+        setUserLoc(null)
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0
+        maximumAge: 5000
       }
     )
+
+    return () => {
+      if (watchIdRef.current !== null && navigator.geolocation?.clearWatch) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+      }
+      watchIdRef.current = null
+    }
   }, [])
 
   // Generate random mechanics near user location
@@ -68,11 +104,15 @@ export default function MechanicsMapPage() {
     if (!center) return []
     const out = []
     const services = ['Engine Repair', 'Brake Service', 'AC Repair', 'General Maintenance', 'Oil Change', 'Battery Replacement']
+    const pricePool = [299, 399, 499, 699, 899, 999, 1299]
     const fixedRatings = [4.8, 4.6, 4.9, 4.5, 4.7, 4.4, 4.8, 4.6, 4.5, 4.7]
     for (let i = 0; i < 10; i++) {
       const dist = 1 + Math.random() * (radiusKm - 1)
       const p = jitterAround(center, dist)
       const rating = fixedRatings[i]
+      const etaMinutes = estimateEtaMinutes(dist)
+      const startingPrice = pricePool[Math.floor(Math.random() * pricePool.length)]
+      const availability = etaMinutes <= 20 ? 'available now' : etaMinutes <= 35 ? 'arriving soon' : 'limited availability'
       out.push({ 
         id: `mech_${i}`, 
         name: randomName(), 
@@ -80,21 +120,41 @@ export default function MechanicsMapPage() {
         lng: p.lng, 
         rating,
         distance: Math.round(dist * 10) / 10,
-        services: [services[Math.floor(Math.random() * services.length)]]
+        etaMinutes,
+        startingPrice,
+        availability,
+        services: [services[Math.floor(Math.random() * services.length)], services[Math.floor(Math.random() * services.length)]]
       })
     }
     return out.sort((a, b) => a.distance - b.distance)
   }
 
   useEffect(() => {
-    const center = userLoc || defaultCenter
-    setRandomMechs(generateRandomMechanics(center))
+    if (!userLoc) {
+      setRandomMechs([])
+      return
+    }
+
+    setRandomMechs(generateRandomMechanics(userLoc))
   }, [userLoc, radiusKm])
+
+  useEffect(() => {
+    const onResize = () => {
+      const compact = window.innerWidth <= 860
+      setIsCompact(compact)
+      if (!compact) setMobileView('map')
+    }
+
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const displayMechanics = mechanics.length > 0 ? mechanics : randomMechs
 
   const sortedMechanics = [...displayMechanics].sort((a, b) => {
     if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
+    if (sortBy === 'eta') return (a.etaMinutes || 999) - (b.etaMinutes || 999)
+    if (sortBy === 'price') return (a.startingPrice || 99999) - (b.startingPrice || 99999)
     return (a.distance || 999) - (b.distance || 999)
   })
 
@@ -104,305 +164,220 @@ export default function MechanicsMapPage() {
     return ''
   }
 
+  const getPrimaryService = (serviceValue) => {
+    if (Array.isArray(serviceValue) && serviceValue.length > 0) return serviceValue[0]
+    if (typeof serviceValue === 'string') return serviceValue
+    return 'general service'
+  }
+
+  const filteredMechanics = sortedMechanics.filter((mechanic) => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return true
+
+    const name = String(mechanic.name || '').toLowerCase()
+    const servicesText = getServiceText(mechanic.services).toLowerCase()
+    return name.includes(query) || servicesText.includes(query)
+  })
+
+  const avgRating = filteredMechanics.length
+    ? (filteredMechanics.reduce((sum, m) => sum + (m.rating || 0), 0) / filteredMechanics.length).toFixed(1)
+    : '0.0'
+  const nearestDistance = filteredMechanics.length
+    ? Math.min(...filteredMechanics.map((m) => Number(m.distance || 999))).toFixed(1)
+    : '--'
+  const fastestEta = filteredMechanics.length
+    ? Math.min(...filteredMechanics.map((m) => Number(m.etaMinutes || 999)))
+    : '--'
+  const layoutClass = `rw-map-layout ${isCompact ? `mobile-${mobileView}` : ''}`
+
   return (
-    <div style={{ 
-      height: '100vh', 
-      width: '100%', 
-      display: 'flex', 
-      flexDirection: 'column',
-      background: '#1a2a4a',
-      overflow: 'hidden'
-    }}>
-      {/* Header */}
-      <div style={{ 
-        background: '#243a5a',
-        borderBottom: '1px solid #3a5a8a',
-        padding: '14px 18px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-        zIndex: 100
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: '24px',
-            fontWeight: '700',
-            color: '#fff'
-          }}>
-            Nearby Mechanics
-          </h1>
+    <section className="rw-map-shell">
+      <div className="rw-map-header">
+        <div>
+          <h1 className="rw-map-title">nearby mechanics</h1>
+        </div>
+        <div className="rw-map-stats">
+          <div className="rw-map-stat">
+            <span className="rw-map-stat-label"><IconWrench size={12} /> nearby</span>
+            <span className="rw-map-stat-value">{filteredMechanics.length}</span>
+          </div>
+          <div className="rw-map-stat">
+            <span className="rw-map-stat-label"><IconStar size={12} /> rating</span>
+            <span className="rw-map-stat-value">{avgRating}</span>
+          </div>
+          <div className="rw-map-stat">
+            <span className="rw-map-stat-label"><IconMapPin size={12} /> nearest</span>
+            <span className="rw-map-stat-value">{nearestDistance === '--' ? nearestDistance : `${nearestDistance} km`}</span>
+          </div>
+          <div className="rw-map-stat">
+            <span className="rw-map-stat-label"><IconSpark size={12} /> eta</span>
+            <span className="rw-map-stat-value">{fastestEta === '--' ? fastestEta : `${fastestEta} min`}</span>
+          </div>
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div style={{ 
-        flex: 1, 
-        display: 'flex',
-        overflow: 'hidden',
-        gap: 0,
-        flexDirection: 'row'
-      }}>
-        {/* Map */}
-        <div style={{ 
-          flex: 1,
-          position: 'relative',
-          overflow: 'hidden',
-          background: '#1a2a4a',
-          display: 'flex'
-        }}>
+      <div className="rw-map-controls">
+        <div className="rw-map-control-group">
+          <div className="rw-map-icon-input">
+            <IconWrench size={14} />
+            <input
+              id="rw-map-search"
+              type="text"
+              value={searchQuery}
+              aria-label="search mechanic or service"
+              placeholder="search mechanic or service"
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="rw-map-search"
+            />
+          </div>
+        </div>
+        <div className="rw-map-control-group">
+          <label htmlFor="rw-map-radius"><IconMapPin size={12} /> radius {radiusKm} km</label>
+          <input
+            id="rw-map-radius"
+            type="range"
+            min={3}
+            max={25}
+            step={1}
+            value={radiusKm}
+            onChange={(e) => setRadiusKm(Number(e.target.value))}
+          />
+        </div>
+        <div className="rw-map-control-group rw-map-sort">
+          <label htmlFor="rw-map-sort"><IconSpark size={12} /> sort</label>
+          <select id="rw-map-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="distance">Distance</option>
+            <option value="rating">Rating</option>
+            <option value="eta">ETA</option>
+            <option value="price">Price</option>
+          </select>
+        </div>
+        {isCompact && (
+          <div className="rw-map-control-group">
+            <label>Mobile View</label>
+            <div className="rw-map-view-toggle">
+              <button
+                type="button"
+                className={`rw-toggle-btn ${mobileView === 'map' ? 'active' : ''}`}
+                onClick={() => setMobileView('map')}
+              >
+                <IconCompass size={14} />
+                Map
+              </button>
+              <button
+                type="button"
+                className={`rw-toggle-btn ${mobileView === 'list' ? 'active' : ''}`}
+                onClick={() => setMobileView('list')}
+              >
+                <IconList size={14} />
+                List
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className={layoutClass}>
+        <div className="rw-map-canvas-wrap">
           <MechanicsMap
-            mechanics={sortedMechanics}
-            userLocation={userLoc || defaultCenter}
+            mechanics={filteredMechanics}
+            userLocation={userLoc}
             onMechanicSelect={(m) => setSelectedMechanic(m)}
             searchRadius={radiusKm}
-            enableRealTime={false}
+            enableRealTime={true}
             showRadius={true}
             height="100%"
+            className="rw-map-canvas"
           />
-
-          {isLoadingLocation && (
-            <div style={{
-              position: 'absolute',
-              bottom: '20px',
-              left: '20px',
-              background: 'rgba(33, 150, 243, 0.95)',
-              color: 'white',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: '600',
-              backdropFilter: 'blur(8px)',
-              zIndex: 500
-            }}>
-              📍 Getting location...
-            </div>
-          )}
-
-          {!isLoadingLocation && (
-            <div style={{
-              position: 'absolute',
-              bottom: '20px',
-              left: '20px',
-              background: locationError ? 'rgba(245, 158, 11, 0.95)' : 'rgba(76, 175, 80, 0.95)',
-              color: 'white',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: '600',
-              backdropFilter: 'blur(8px)',
-              zIndex: 500,
-              maxWidth: '260px'
-            }}>
-              {locationError ? '📍 Using default location' : '📍 Location active'}
-            </div>
-          )}
         </div>
 
-        {/* Mechanics Sidebar */}
-        <div style={{ 
-          width: '360px',
-          minWidth: '320px',
-          maxWidth: '40%',
-          height: '100%',
-          background: '#1a2a4a',
-          borderLeft: '1px solid #3a5a8a',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden'
-        }}>
-            {/* Header */}
-            <div style={{
-              padding: '14px',
-              borderBottom: '1px solid #3a5a8a',
-              background: '#162240',
-              flex: '0 0 auto',
-              minHeight: '70px'
-            }}>
-              <h2 style={{ 
-                margin: '0 0 10px 0', 
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#fff'
-              }}>
-                {sortedMechanics.length} Near You
-              </h2>
-              
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <label style={{ fontSize: '11px', fontWeight: '600', color: '#aaa', flex: '0 0 auto' }}>Sort:</label>
-                <select 
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  style={{
-                    padding: '5px 8px',
-                    border: '1px solid #3a5a8a',
-                    borderRadius: '5px',
-                    fontSize: '11px',
-                    background: '#243a5a',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    flex: 1
-                  }}
+        <aside className="rw-map-sidebar">
+          <div className="rw-map-sidebar-head">
+            <h2><IconWrench size={16} /> mechanics</h2>
+            <p>{filteredMechanics.length} results</p>
+          </div>
+
+          {selectedMechanic && (
+            <div className="rw-selected-panel">
+              <div className="rw-selected-head">
+                <h3>{selectedMechanic.name}</h3>
+                <span className="rw-mech-rating"><IconStar size={11} /> {selectedMechanic.rating}</span>
+              </div>
+              <div className="rw-selected-metrics">
+                <span className="rw-mech-chip"><IconMapPin size={10} /> {selectedMechanic.distance} km</span>
+                <span className="rw-mech-chip"><IconSpark size={10} /> {selectedMechanic.etaMinutes} min</span>
+                <span className="rw-mech-chip"><IconMoney size={10} /> {formatINR(selectedMechanic.startingPrice)}</span>
+              </div>
+              <p className="rw-selected-status">{selectedMechanic.availability}</p>
+              <div className="rw-selected-services"><IconWrench size={11} /> {getPrimaryService(selectedMechanic.services)}</div>
+              <div className="rw-selected-services"><IconPhone size={11} /> {getMechanicPhone(selectedMechanic).display}</div>
+              <div className="rw-mech-actions">
+                <button
+                  type="button"
+                  onClick={() => window.location.href = `tel:${getMechanicPhone(selectedMechanic).dial}`}
+                  className="rw-mech-btn rw-mech-btn-primary"
+                  aria-label="call mechanic"
+                  title="call"
                 >
-                  <option value="distance">📍 Distance</option>
-                  <option value="rating">⭐ Rating</option>
-                </select>
+                  <IconPhone size={14} />
+                </button>
               </div>
             </div>
+          )}
 
-            {/* List */}
-            <div style={{ 
-              flex: 1,
-              overflowY: 'auto',
-              padding: '10px',
-              background: '#1a2a4a'
-            }}>
-              {sortedMechanics.length === 0 ? (
-                <div style={{ 
-                  padding: '30px 16px',
-                  textAlign: 'center',
-                  color: '#888'
-                }}>
-                  <p style={{ margin: '0 0 6px 0', fontSize: '13px' }}>No mechanics found</p>
-                  <p style={{ margin: 0, fontSize: '11px' }}>Increase radius</p>
+          <div className="rw-map-list">
+              {filteredMechanics.length === 0 ? (
+                <div className="rw-map-empty">
+                  <p>No mechanics found in this area.</p>
+                  <span>Try adjusting search text or increasing radius.</span>
                 </div>
               ) : (
-                sortedMechanics.map((m) => (
+                filteredMechanics.map((m) => (
                   <div
                     key={m.id}
                     onClick={() => setSelectedMechanic(m)}
-                    style={{
-                      padding: '12px',
-                      marginBottom: '8px',
-                      borderRadius: '10px',
-                      background: selectedMechanic?.id === m.id ? '#2a5a9a' : '#223050',
-                      border: selectedMechanic?.id === m.id ? '2px solid #2196f3' : '1px solid #3a5a8a',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      minHeight: '110px',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedMechanic?.id !== m.id) {
-                        e.currentTarget.style.background = '#2a3a5a'
-                        e.currentTarget.style.borderColor = '#5a7aaa'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedMechanic?.id !== m.id) {
-                        e.currentTarget.style.background = '#223050'
-                        e.currentTarget.style.borderColor = '#3a5a8a'
-                      }
-                    }}
+                    className={`rw-mech-card ${selectedMechanic?.id === m.id ? 'is-active' : ''}`}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', gap: '8px' }}>
-                      <h3 style={{ 
-                        margin: 0,
-                        fontSize: '13px',
-                        fontWeight: '700',
-                        color: '#fff',
-                        flex: 1,
-                        wordBreak: 'break-word',
-                        lineHeight: '1.3'
-                      }}>
-                        {m.name}
-                      </h3>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        color: '#ffd700',
-                        background: 'rgba(255, 215, 0, 0.15)',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
-                        ⭐ {m.rating}
-                      </span>
+                    <div className="rw-mech-card-top">
+                      <h3>{m.name}</h3>
+                      <span className="rw-mech-rating"><IconStar size={11} /> {m.rating}</span>
                     </div>
-                    
-                    <p style={{ 
-                      margin: '0 0 6px 0',
-                      fontSize: '11px',
-                      color: '#aaa'
-                    }}>
-                      📍 {m.distance} km
-                    </p>
 
-                    {m.services && (
-                      <p style={{ 
-                        margin: '0 0 8px 0',
-                        fontSize: '10px',
-                        color: '#999',
-                        fontStyle: 'italic'
-                      }}>
-                        🔧 {getServiceText(m.services)}
-                      </p>
-                    )}
-                    
-                    <div style={{ 
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '6px',
-                      marginTop: 'auto'
-                    }}>
+                    <div className="rw-mech-chips">
+                      <span className="rw-mech-chip"><IconMapPin size={10} /> {m.distance} km</span>
+                      <span className="rw-mech-chip"><IconSpark size={10} /> {m.etaMinutes} min</span>
+                      <span className="rw-mech-chip"><IconMoney size={10} /> {formatINR(m.startingPrice)}</span>
+                    </div>
+
+                    <p className="rw-mech-status">{m.availability}</p>
+
+                    <p className="rw-mech-service"><IconWrench size={11} /> {getPrimaryService(m.services)}</p>
+                    <p className="rw-mech-service"><IconPhone size={11} /> {getMechanicPhone(m).display}</p>
+
+                    <div className="rw-mech-actions">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          alert(`Calling ${m.name}...`)
+                          window.location.href = `tel:${getMechanicPhone(m).dial}`
                         }}
-                        style={{
-                          padding: '6px 8px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          border: 'none',
-                          borderRadius: '5px',
-                          background: '#2196f3',
-                          color: 'white',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.background = '#1976d2'}
-                        onMouseLeave={(e) => e.target.style.background = '#2196f3'}
+                        className="rw-mech-btn rw-mech-btn-primary"
+                        aria-label="call mechanic"
+                        title="call"
                       >
-                        📞 Call
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          alert(`Chat with ${m.name}`)
-                        }}
-                        style={{
-                          padding: '6px 8px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          border: '1px solid #2196f3',
-                          borderRadius: '5px',
-                          background: 'transparent',
-                          color: '#2196f3',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = '#2196f3'
-                          e.target.style.color = 'white'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = 'transparent'
-                          e.target.style.color = '#2196f3'
-                        }}
-                      >
-                        💬 Chat
+                        <IconPhone size={14} />
                       </button>
                     </div>
                   </div>
                 ))
               )}
-            </div>
-        </div>
+          </div>
+        </aside>
       </div>
-    </div>
+    </section>
   )
 }
+
+
 
 
 

@@ -1,9 +1,88 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../shared/context/AuthContext'
 import Button from '../../shared/components/Button'
-import { showSuccess } from '../../shared/services/toast'
+import { IconChat, IconMapPin, IconMoney, IconPhone, IconUser } from '../../icons'
+import { showSuccess, showError } from '../../shared/services/toast'
 import { getMechanic } from '../../shared/services/roleData'
+import { acceptMechanicRequest, getMechanicRequests, rejectMechanicRequest, updateMechanicPresence } from '../../shared/services/api'
+import { connectRealtimeWithFallback } from '../../shared/services/realtime'
+import { startMechanicLiveTracking } from '../../shared/services/liveTracking'
+
+const DEMO_MODE_KEY = 'rw_demo_mode'
+const DEMO_REQUESTS_KEY = 'rw_demo_mechanic_requests'
+
+function buildDemoRequests(mechanicId) {
+  const now = Date.now()
+  return [
+    {
+      id: `DEMO-REQ-${mechanicId}-1`,
+      customerName: 'Rahul Sharma',
+      location: 'Kothrud, Pune',
+      distance: '1.2 km',
+      price: 549,
+      createdAt: now - 8 * 60000,
+      problem: 'Car stalled after engine warning light came on near home.',
+      status: 'pending',
+      customerPhone: '+91 98765 43210'
+    },
+    {
+      id: `DEMO-REQ-${mechanicId}-2`,
+      customerName: 'Priya Nair',
+      location: 'Baner, Pune',
+      distance: '2.8 km',
+      price: 399,
+      createdAt: now - 16 * 60000,
+      problem: 'Flat tyre on the way to office and needs quick roadside assist.',
+      status: 'pending',
+      customerPhone: '+91 99887 76655'
+    },
+    {
+      id: `DEMO-REQ-${mechanicId}-3`,
+      customerName: 'Amit Patil',
+      location: 'Wakad, Pune',
+      distance: '4.6 km',
+      price: 299,
+      createdAt: now - 24 * 60000,
+      problem: 'Battery died after the car sat parked overnight.',
+      status: 'pending',
+      customerPhone: '+91 91234 56789'
+    },
+    {
+      id: `DEMO-REQ-${mechanicId}-4`,
+      customerName: 'Sneha Kulkarni',
+      location: 'Hinjawadi, Pune',
+      distance: '6.1 km',
+      price: 1299,
+      createdAt: now - 31 * 60000,
+      problem: 'Needs a basic service slot today before a long drive tomorrow.',
+      status: 'pending',
+      customerPhone: '+91 90123 45678'
+    }
+  ]
+}
+
+function readDemoRequests(mechanicId) {
+  try {
+    const raw = localStorage.getItem(DEMO_REQUESTS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length) return parsed
+    }
+  } catch {}
+
+  const seeded = buildDemoRequests(mechanicId)
+  try {
+    localStorage.setItem(DEMO_REQUESTS_KEY, JSON.stringify(seeded))
+  } catch {}
+  return seeded
+}
+
+function writeDemoRequests(requests) {
+  try {
+    localStorage.setItem(DEMO_REQUESTS_KEY, JSON.stringify(requests))
+  } catch {}
+}
 
 const styles = `
 .mechanic-home {
@@ -87,7 +166,7 @@ const styles = `
 }
 
 .stat-change.negative {
-  color: #ef4444;
+  color: #FFFFFF;
 }
 
 .content-grid {
@@ -409,7 +488,7 @@ const styles = `
 }
 
 .chart-bar:hover {
-  background: linear-gradient(to top, #1e40af, #60a5fa);
+  background: linear-gradient(to top, #1e40af, #0B1F3B);
 }
 
 .chart-labels {
@@ -512,6 +591,124 @@ const styles = `
   font-weight: 600;
 }
 
+.dashboard-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0B1F3B;
+  color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.22);
+  flex-shrink: 0;
+}
+
+/* ===== MECHANIC HOME NAVY LOCK ===== */
+.mechanic-home {
+  background: linear-gradient(180deg, #0B1F3B 0%, #08162B 100%) !important;
+}
+
+.welcome-banner,
+.stat-card,
+.card,
+.request-item,
+.earnings-chart,
+.review-item,
+.action-btn {
+  background: #0B1F3B !important;
+  border-color: rgba(255,255,255,0.22) !important;
+}
+
+.welcome-banner {
+  box-shadow: 0 10px 28px rgba(0,0,0,0.28) !important;
+}
+
+.welcome-content h1,
+.card-title,
+.customer-info h4,
+.reviewer-name,
+.action-btn-label,
+.empty-state p,
+.request-details,
+.review-text,
+.review-date,
+.stat-value,
+.stat-label,
+.chart-labels,
+.customer-info p {
+  color: #FFFFFF !important;
+}
+
+.welcome-content p,
+.stat-change,
+.review-date,
+.chart-labels {
+  color: rgba(255,255,255,0.74) !important;
+}
+
+.stat-value {
+  background: none !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+}
+
+.stat-card:hover,
+.card:hover,
+.request-item:hover,
+.action-btn:hover {
+  border-color: rgba(255,255,255,0.34) !important;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.28) !important;
+}
+
+.status-badge.pending {
+  background: #0B1F3B;
+  color: #FFFFFF;
+}
+
+.status-badge.active,
+.status-badge.completed {
+  background: #0B1F3B;
+  color: #FFFFFF;
+}
+
+.earnings-chart,
+.review-item {
+  background: #0B1F3B !important;
+}
+
+.chart-bar {
+  background: linear-gradient(to top, #08162B, #0B1F3B) !important;
+}
+
+.action-btn {
+  background: #0B1F3B !important;
+  border: 1px solid rgba(255,255,255,0.22) !important;
+}
+
+.action-btn:hover {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+.action-btn-icon,
+.empty-state-icon,
+.stat-icon {
+  color: #FFFFFF;
+}
+
+.icon-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.request-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -578,7 +775,7 @@ const styles = `
 }
 
 .stat-change.positive {
-  color: #10B981 !important;
+  color: #FFFFFF !important;
 }
 
 .stat-change.negative {
@@ -645,7 +842,7 @@ const styles = `
 }
 
 .status-badge.active {
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
+  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%) !important;
   color: #FFFFFF !important;
   font-weight: 800;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
@@ -730,6 +927,8 @@ const styles = `
 export default function MechanicHome() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const trackingRef = useRef({ stop: () => {} })
+  const trackingOrderRef = useRef(null)
   const [mechData, setMechData] = useState(null)
   const [requests, setRequests] = useState([])
   const [stats, setStats] = useState({
@@ -740,17 +939,91 @@ export default function MechanicHome() {
     rating: 4.7,
     totalReviews: 0
   })
+  const [mechanicId, setMechanicId] = useState('m1')
+  const [isLiveTracking, setIsLiveTracking] = useState(false)
+  const [liveTrackingOrderId, setLiveTrackingOrderId] = useState(null)
+  const [lastTrackUpdateAt, setLastTrackUpdateAt] = useState(null)
 
   useEffect(() => {
     // Load mechanic data from localStorage
     const data = getMechanic()
     setMechData(data)
 
+    const storedId = localStorage.getItem('rw_mechanic_id')
+    const resolvedId = data?.id || storedId || 'm1'
+    setMechanicId(resolvedId)
+    localStorage.setItem('rw_mechanic_id', resolvedId)
+
+    const isDemoMode = localStorage.getItem(DEMO_MODE_KEY) === 'mechanic'
+
     // Generate mock data for demonstration
     generateMockData()
-    
-    // Load pending requests from localStorage
-    loadRequests()
+
+    loadRequests(resolvedId, isDemoMode)
+
+    if (isDemoMode) {
+      const seededRequests = readDemoRequests(resolvedId)
+      setRequests(seededRequests)
+    }
+
+    const realtime = connectRealtimeWithFallback({
+      onConnect: (socket) => {
+        socket.emit('dispatch:join', { role: 'mechanic', id: resolvedId })
+
+        socket.on('dispatch:new-request', (request) => {
+          setRequests((prev) => {
+            const exists = prev.find((item) => item.id === request.id)
+            if (exists) {
+              return prev.map((item) => item.id === request.id ? request : item)
+            }
+            return [request, ...prev]
+          })
+          showSuccess(' New nearby service request received')
+        })
+
+        socket.on('dispatch:accepted', (request) => {
+          setRequests((prev) => prev.map((item) => item.id === request.id ? { ...item, status: 'active' } : item))
+        })
+
+        socket.on('dispatch:expired', (request) => {
+          setRequests((prev) => prev.filter((item) => item.id !== request.id))
+        })
+      }
+    })
+
+    const publishPresence = async (lat, lng) => {
+      try {
+        await updateMechanicPresence({
+          mechanicId: resolvedId,
+          name: user?.fullName || mechData?.businessName || 'Mechanic',
+          lat,
+          lng,
+          rating: Number(stats.rating) || 4.5,
+          isAvailable: true,
+          serviceAreaKm: 15
+        })
+      } catch (e) {
+        console.error('Presence update failed:', e)
+      }
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          publishPresence(position.coords.latitude, position.coords.longitude)
+        },
+        () => {
+          publishPresence(28.6139, 77.2090)
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      )
+    } else {
+      publishPresence(28.6139, 77.2090)
+    }
+
+    return () => {
+      realtime.disconnect()
+    }
   }, [])
 
   const generateMockData = () => {
@@ -766,54 +1039,117 @@ export default function MechanicHome() {
     setStats(mockStats)
   }
 
-  const loadRequests = () => {
-    // Load from localStorage or use mock data
-    const storedRequests = localStorage.getItem('rw_mechanic_requests')
-    if (storedRequests) {
-      setRequests(JSON.parse(storedRequests))
-    } else {
-      // Mock pending requests
-      const mockRequests = [
-        {
-          id: 'REQ-' + Date.now(),
-          customerName: 'Rahul Sharma',
-          problem: 'Engine overheating',
-          location: 'Koregaon Park, Pune',
-          distance: '2.5 km',
-          status: 'pending',
-          price: 800,
-          createdAt: Date.now() - 1800000
-        },
-        {
-          id: 'REQ-' + (Date.now() + 1),
-          customerName: 'Priya Patel',
-          problem: 'Flat tire replacement',
-          location: 'Hinjewadi, Pune',
-          distance: '5.2 km',
-          status: 'pending',
-          price: 500,
-          createdAt: Date.now() - 3600000
+  const loadRequests = async (id = mechanicId, allowDemoFallback = false) => {
+    try {
+      const response = await getMechanicRequests(id)
+      if (response?.ok && Array.isArray(response.requests)) {
+        if (response.requests.length > 0) {
+          setRequests(response.requests)
+          if (allowDemoFallback) {
+            writeDemoRequests(response.requests)
+          }
+          return
         }
-      ]
-      setRequests(mockRequests)
-      localStorage.setItem('rw_mechanic_requests', JSON.stringify(mockRequests))
+      }
+
+      if (allowDemoFallback) {
+        setRequests(readDemoRequests(id))
+      }
+    } catch (e) {
+      console.error('Failed to load mechanic requests:', e)
+      if (allowDemoFallback) {
+        setRequests(readDemoRequests(id))
+      }
     }
   }
 
-  const handleAcceptRequest = (requestId) => {
-    const updatedRequests = requests.map(req => 
-      req.id === requestId ? { ...req, status: 'active' } : req
-    )
-    setRequests(updatedRequests)
-    localStorage.setItem('rw_mechanic_requests', JSON.stringify(updatedRequests))
-    showSuccess('✓ Request accepted! Navigate to the job.')
+  useEffect(() => {
+    const activeRequest = requests.find((r) => ['active', 'accepted'].includes(r.status))
+    const nextOrderId = activeRequest?.id || null
+
+    if (trackingOrderRef.current === nextOrderId) return
+
+    trackingRef.current.stop()
+    trackingOrderRef.current = nextOrderId
+    setIsLiveTracking(false)
+    setLiveTrackingOrderId(nextOrderId)
+
+    if (!nextOrderId || !mechanicId) {
+      return
+    }
+
+    trackingRef.current = startMechanicLiveTracking({
+      mechanicId,
+      orderId: nextOrderId,
+      onConnect: () => {
+        setIsLiveTracking(true)
+      },
+      onDisconnect: () => {
+        setIsLiveTracking(false)
+      },
+      onLocation: () => {
+        setLastTrackUpdateAt(Date.now())
+      },
+      onError: () => {
+        setIsLiveTracking(false)
+      }
+    })
+
+    return () => {
+      trackingRef.current.stop()
+    }
+  }, [requests, mechanicId])
+
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      const isDemoMode = localStorage.getItem(DEMO_MODE_KEY) === 'mechanic'
+      if (isDemoMode) {
+        const nextRequests = readDemoRequests(mechanicId).map((request) => (
+          request.id === requestId
+            ? { ...request, status: 'active', acceptedAt: Date.now(), assignedMechanicName: user?.fullName || 'Demo Mechanic' }
+            : request.status === 'active'
+              ? request
+              : request
+        ))
+        writeDemoRequests(nextRequests)
+        setRequests(nextRequests)
+        showSuccess(' Request accepted! Customer has been notified.')
+        return
+      }
+
+      const response = await acceptMechanicRequest(mechanicId, requestId)
+      if (!response?.ok) {
+        showError(response?.error || 'Could not accept request')
+        return
+      }
+      showSuccess(' Request accepted! Customer has been notified.')
+      await loadRequests(mechanicId)
+    } catch (e) {
+      showError(e.message || 'Could not accept request')
+    }
   }
 
-  const handleRejectRequest = (requestId) => {
-    const updatedRequests = requests.filter(req => req.id !== requestId)
-    setRequests(updatedRequests)
-    localStorage.setItem('rw_mechanic_requests', JSON.stringify(updatedRequests))
-    showSuccess('Request declined')
+  const handleRejectRequest = async (requestId) => {
+    try {
+      const isDemoMode = localStorage.getItem(DEMO_MODE_KEY) === 'mechanic'
+      if (isDemoMode) {
+        const nextRequests = readDemoRequests(mechanicId).filter((request) => request.id !== requestId)
+        writeDemoRequests(nextRequests)
+        setRequests(nextRequests)
+        showSuccess('Request declined')
+        return
+      }
+
+      const response = await rejectMechanicRequest(mechanicId, requestId)
+      if (!response?.ok) {
+        showError(response?.error || 'Could not reject request')
+        return
+      }
+      showSuccess('Request declined')
+      await loadRequests(mechanicId)
+    } catch (e) {
+      showError(e.message || 'Could not reject request')
+    }
   }
 
   const weeklyEarnings = [2800, 3200, 2500, 3800, 3100, 2900, 3500]
@@ -844,53 +1180,60 @@ export default function MechanicHome() {
         {/* Welcome Banner */}
         <div className="welcome-banner">
           <div className="welcome-content">
-            <h1>👋 Welcome back, {user?.fullName || 'Mechanic'}!</h1>
+            <h1> Welcome back, {user?.fullName || 'Mechanic'}!</h1>
             <p>You have {requests.filter(r => r.status === 'pending').length} pending requests today</p>
+            {liveTrackingOrderId && (
+              <p style={{ marginTop: 8, color: isLiveTracking ? '#FFFFFF' : '#FFFFFF' }}>
+                {isLiveTracking
+                  ? `Live tracking ON for ${liveTrackingOrderId}${lastTrackUpdateAt ? ` - updated ${getTimeAgo(lastTrackUpdateAt)}` : ''}`
+                  : `Live tracking reconnecting for ${liveTrackingOrderId}`}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">📊</div>
+            <div className="stat-icon"><IconUser size={22} /></div>
             <div className="stat-value">{stats.todayJobs}</div>
             <div className="stat-label">Jobs Today</div>
-            <div className="stat-change positive">↑ +2 from yesterday</div>
+            <div className="stat-change positive"> +2 from yesterday</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">💰</div>
+            <div className="stat-icon"><IconMoney size={22} /></div>
             <div className="stat-value">{formatCurrency(stats.todayEarnings)}</div>
             <div className="stat-label">Today's Earnings</div>
-            <div className="stat-change positive">↑ +15% from average</div>
+            <div className="stat-change positive"> +15% from average</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">📅</div>
+            <div className="stat-icon"><IconMapPin size={22} /></div>
             <div className="stat-value">{stats.monthlyJobs}</div>
             <div className="stat-label">Monthly Jobs</div>
-            <div className="stat-change positive">↑ +18% from last month</div>
+            <div className="stat-change positive"> +18% from last month</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">💵</div>
+            <div className="stat-icon"><IconMoney size={22} /></div>
             <div className="stat-value">{formatCurrency(stats.monthlyEarnings)}</div>
             <div className="stat-label">Monthly Earnings</div>
-            <div className="stat-change positive">↑ +22% from last month</div>
+            <div className="stat-change positive"> +22% from last month</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">⭐</div>
+            <div className="stat-icon">★</div>
             <div className="stat-value">{stats.rating}</div>
             <div className="stat-label">Average Rating</div>
             <div className="stat-change positive">Based on {stats.totalReviews} reviews</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">✅</div>
+            <div className="stat-icon">✓</div>
             <div className="stat-value">98%</div>
             <div className="stat-label">Completion Rate</div>
-            <div className="stat-change positive">↑ Excellent performance</div>
+            <div className="stat-change positive"> Excellent performance</div>
           </div>
         </div>
 
@@ -899,16 +1242,13 @@ export default function MechanicHome() {
           {/* Pending Requests */}
           <div className="card">
             <div className="card-header">
-              <div className="card-title">
-                <span>📬</span>
-                Pending Service Requests
-              </div>
-              <Button size="sm" variant="ghost" onClick={loadRequests}>🔄 Refresh</Button>
+              <div className="card-title icon-row"><IconMapPin size={18} /> Pending Service Requests</div>
+              <Button size="sm" variant="ghost" onClick={() => loadRequests(mechanicId)}>Refresh</Button>
             </div>
 
             {requests.filter(r => r.status === 'pending').length === 0 ? (
               <div className="empty-state">
-                <div className="empty-state-icon">📭</div>
+                <div className="empty-state-icon"><IconMapPin size={44} /></div>
                 <p>No pending requests</p>
                 <p style={{fontSize: 12, marginTop: 8}}>New requests will appear here</p>
               </div>
@@ -918,7 +1258,7 @@ export default function MechanicHome() {
                   <div className="request-header">
                     <div className="customer-info">
                       <h4>{request.customerName}</h4>
-                      <p>📍 {request.location} • {request.distance} away</p>
+                      <p className="request-location"><IconMapPin size={14} /> {request.location} - {request.distance} away</p>
                     </div>
                     <div className="status-badge pending">PENDING</div>
                   </div>
@@ -926,7 +1266,7 @@ export default function MechanicHome() {
                   <div className="request-details">
                     <strong>Problem:</strong> {request.problem}
                     <div style={{marginTop: 4}}>
-                      <strong>Estimated:</strong> {formatCurrency(request.price)} • {getTimeAgo(request.createdAt)}
+                      <strong>Estimated:</strong> {formatCurrency(request.price)} - {getTimeAgo(request.createdAt)}
                     </div>
                   </div>
 
@@ -935,13 +1275,13 @@ export default function MechanicHome() {
                       onClick={() => handleAcceptRequest(request.id)}
                       style={{flex: 1}}
                     >
-                      ✓ Accept Job
+                      Accept Job
                     </Button>
                     <Button 
                       variant="ghost" 
                       onClick={() => handleRejectRequest(request.id)}
                     >
-                      ✕ Decline
+                      Decline
                     </Button>
                   </div>
                 </div>
@@ -952,10 +1292,7 @@ export default function MechanicHome() {
             {requests.filter(r => r.status === 'active').length > 0 && (
               <>
                 <div style={{marginTop: 32, marginBottom: 16}}>
-                  <div className="card-title" style={{fontSize: 18}}>
-                    <span>🔧</span>
-                    Active Jobs
-                  </div>
+                  <div className="card-title" style={{fontSize: 18}}>Active Jobs</div>
                 </div>
                 
                 {requests.filter(r => r.status === 'active').map(request => (
@@ -963,7 +1300,7 @@ export default function MechanicHome() {
                     <div className="request-header">
                       <div className="customer-info">
                         <h4>{request.customerName}</h4>
-                        <p>📍 {request.location}</p>
+                        <p className="request-location"><IconMapPin size={14} /> {request.location}</p>
                       </div>
                       <div className="status-badge active">IN PROGRESS</div>
                     </div>
@@ -986,10 +1323,7 @@ export default function MechanicHome() {
           <div>
             {/* Weekly Earnings Chart */}
             <div className="card" style={{marginBottom: 24}}>
-              <div className="card-title">
-                <span>📈</span>
-                Weekly Earnings
-              </div>
+              <div className="card-title">Weekly Earnings</div>
               
               <div className="earnings-chart">
                 <div className="chart-bars">
@@ -1016,8 +1350,8 @@ export default function MechanicHome() {
 
             {/* Recent Reviews */}
             <div className="card">
-              <div className="card-title">
-                <span>💬</span>
+              <div className="card-title icon-row">
+                <IconChat size={18} />
                 Recent Reviews
               </div>
 
@@ -1026,7 +1360,7 @@ export default function MechanicHome() {
                   <div key={review.id} className="review-item">
                     <div className="review-header">
                       <span className="reviewer-name">{review.name}</span>
-                      <span className="rating-stars">{'⭐'.repeat(review.rating)}</span>
+                      <span className="rating-stars">{'★'.repeat(review.rating)}</span>
                     </div>
                     <div className="review-text">{review.text}</div>
                     <div className="review-date">{review.date}</div>
@@ -1039,29 +1373,29 @@ export default function MechanicHome() {
 
         {/* Quick Actions */}
         <div className="card">
-          <div className="card-title">
-            <span>⚡</span>
+          <div className="card-title icon-row">
+            <IconPhone size={18} />
             Quick Actions
           </div>
           
           <div className="quick-actions">
             <div className="action-btn" onClick={() => navigate('/mechanic/services')}>
-              <div className="action-btn-icon">🧰</div>
+              <div className="action-btn-icon"><IconMapPin size={20} /></div>
               <div className="action-btn-label">My Services</div>
             </div>
 
-            <div className="action-btn" onClick={() => navigate('/user')}>
-              <div className="action-btn-icon">👤</div>
+            <div className="action-btn" onClick={() => navigate('/mechanic/profile')}>
+              <div className="action-btn-icon"><IconUser size={20} /></div>
               <div className="action-btn-label">My Profile</div>
             </div>
 
             <div className="action-btn" onClick={() => showSuccess('Analytics coming soon')}> 
-              <div className="action-btn-icon">📊</div>
+              <div className="action-btn-icon"><IconMoney size={20} /></div>
               <div className="action-btn-label">Analytics</div>
             </div>
 
             <div className="action-btn" onClick={() => showSuccess('Settings coming soon')}> 
-              <div className="action-btn-icon">⚙️</div>
+              <div className="action-btn-icon">⚙</div>
               <div className="action-btn-label">Settings</div>
             </div>
           </div>

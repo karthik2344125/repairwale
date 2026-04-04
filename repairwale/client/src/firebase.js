@@ -32,3 +32,5 @@ try {
 }
 
 export { app, auth, db, hasFirebase }
+
+

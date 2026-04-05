@@ -231,6 +231,14 @@ export default function Checkout(){
     return null
   }
 
+  function goToTrackingAfterPayment(dispatchId) {
+    if (dispatchId) {
+      navigate(`/tracking/${dispatchId}`, { state: { autoDemo: true, justPaid: true } })
+      return
+    }
+    navigate('/map')
+  }
+
   async function handleRazorpayPayment({ total, subtotal, discount, tax }){
     try {
       console.log(' Starting Razorpay payment...')
@@ -269,8 +277,7 @@ export default function Checkout(){
         const dispatchId = await createPostPaymentDispatch(order.amount)
         showSuccess('... Payment successful! Request sent to nearby mechanics')
         try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
-        if (dispatchId) navigate(`/tracking/${dispatchId}`)
-        else navigate('/map')
+        goToTrackingAfterPayment(dispatchId)
         return
       }
 
@@ -302,11 +309,7 @@ export default function Checkout(){
               const dispatchId = await createPostPaymentDispatch(order.amount)
               showSuccess('... Payment successful! Request sent to nearby mechanics')
               try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
-              if (dispatchId) {
-                navigate(`/tracking/${dispatchId}`)
-              } else {
-                navigate('/map')
-              }
+              goToTrackingAfterPayment(dispatchId)
             } else {
               throw new Error('Payment verification failed')
             }
@@ -373,11 +376,7 @@ export default function Checkout(){
     const dispatchId = await createPostPaymentDispatch(total)
     showSuccess('... UPI payment successful! Request sent to nearby mechanics')
     try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
-    if (dispatchId) {
-      navigate(`/tracking/${dispatchId}`)
-    } else {
-      navigate('/map')
-    }
+    goToTrackingAfterPayment(dispatchId)
   }
 
   async function handleWalletPayment({ total, subtotal, discount, tax }){
@@ -410,11 +409,7 @@ export default function Checkout(){
     const dispatchId = await createPostPaymentDispatch(total)
     showSuccess('... Wallet payment successful! Request sent to nearby mechanics')
     try { localStorage.removeItem('rw_cart'); sessionStorage.removeItem('rw_checkout') } catch {}
-    if (dispatchId) {
-      navigate(`/tracking/${dispatchId}`)
-    } else {
-      navigate('/map')
-    }
+    goToTrackingAfterPayment(dispatchId)
   }
 
   if(!payload){

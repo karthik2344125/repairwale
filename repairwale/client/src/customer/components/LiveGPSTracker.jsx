@@ -12,32 +12,70 @@ L.Icon.Default.mergeOptions({
 })
 
 const mechanicIcon = L.divIcon({
-  html: `<div style="width:32px;height:32px;background:#1e3a8a;color:#FFFFFF;border:2px solid #FFFFFF;border-radius:50%;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(15,23,42,0.35)">M</div>`,
-  iconSize: [32, 32],
+  html: `<div style="width:28px;height:28px;background:#1e3a8a;color:#FFFFFF;border:2px solid #FFFFFF;border-radius:50%;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3)"><span>🚗</span></div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  popupAnchor: [0, -14],
   className: 'mechanic-marker'
 })
 
 const customerIcon = L.divIcon({
-  html: `<div style="width:32px;height:32px;background:#0f172a;color:#FFFFFF;border:2px solid #FFFFFF;border-radius:50%;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(15,23,42,0.35)">You</div>`,
+  html: `<div style="width:32px;height:32px;background:#f59e0b;color:#FFFFFF;border:2px solid #FFFFFF;border-radius:50%;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #d97706,0 2px 6px rgba(0,0,0,0.3)"><span>📍</span></div>`,
   iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
   className: 'customer-marker'
 })
 
-export default function LiveGPSTracker({ orderId, mechanicId, customerId, initialCustomerLocation = null }) {
+function calculateDistanceKm(pointA, pointB) {
+  if (!pointA || !pointB) return null
+  const toRadians = (value) => (value * Math.PI) / 180
+  const earthRadius = 6371
+  const dLat = toRadians(pointB.lat - pointA.lat)
+  const dLng = toRadians(pointB.lng - pointA.lng)
+  const lat1 = toRadians(pointA.lat)
+  const lat2 = toRadians(pointB.lat)
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return earthRadius * c
+}
+
+export default function LiveGPSTracker({
+  orderId,
+  mechanicId,
+  customerId,
+  initialCustomerLocation = null,
+  simulatedMechanicLocation = null,
+  demoStatusText = '',
+  nearbyMechanics = [],
+  acceptedMechanicId = null,
+  routePoints = [],
+  mechanicStartLocation = null,
+  userLiveLocation = null
+}) {
   const [mechanicLocation, setMechanicLocation] = useState(null)
   const [customerLocation, setCustomerLocation] = useState(null)
   const [eta, setEta] = useState(null)
   const [distance, setDistance] = useState(null)
   const [isTracking, setIsTracking] = useState(false)
-  const [route, setRoute] = useState([])
   const socketRef = useRef(null)
   const leafletMapRef = useRef(null)
   const mapContainerRef = useRef(null)
   const mechanicMarkerRef = useRef(null)
   const customerMarkerRef = useRef(null)
-  const routeLineRef = useRef(null)
+  const routePolylineRef = useRef(null)
+  const nearbyMechanicMarkersRef = useRef(new Map())
   const hasInitialFitRef = useRef(false)
   const lastLocationRef = useRef(null)
+
+  const createNearbyMechanicIcon = (isAccepted = false) => L.divIcon({
+    html: `<div style="width:30px;height:30px;background:${isAccepted ? '#1e3a8a' : '#0f172a'};color:#FFFFFF;border:2px solid #FFFFFF;border-radius:50%;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center"><span>🔧</span></div>`,
+    iconSize: [34, 34],
+    className: isAccepted ? 'mechanic-marker accepted-mechanic' : 'mechanic-marker nearby-mechanic'
+  })
 
   useEffect(() => {
     if (initialCustomerLocation?.lat && initialCustomerLocation?.lng) {
@@ -61,9 +99,6 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
         },
         (error) => {
           console.error('Location error:', error)
-          if (!initialCustomerLocation) {
-            updateCustomerLocation({ lat: 28.6139, lng: 77.2090, timestamp: Date.now() })
-          }
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
       )
@@ -90,7 +125,6 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
           setMechanicLocation(data.location)
           setEta(data.eta)
           setDistance(data.distance)
-          if (data.route) setRoute(data.route)
         })
 
         socket.on('mechanic:location-update', (data) => {
@@ -132,13 +166,44 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
     }
   }, [orderId, mechanicId, customerId, initialCustomerLocation])
 
-  // Initialize Leaflet map
+  // Sync userLiveLocation prop to customerLocation
   useEffect(() => {
-    if (!customerLocation || !mapContainerRef.current || leafletMapRef.current) return
+    if (userLiveLocation?.lat && userLiveLocation?.lng) {
+      setCustomerLocation(userLiveLocation)
+      lastLocationRef.current = userLiveLocation
+    }
+  }, [userLiveLocation])
 
-    // Create map centered on customer location
+  useEffect(() => {
+    if (!simulatedMechanicLocation?.lat || !simulatedMechanicLocation?.lng) return
+
+    setMechanicLocation({
+      lat: simulatedMechanicLocation.lat,
+      lng: simulatedMechanicLocation.lng,
+      timestamp: Date.now()
+    })
+    setIsTracking(true)
+
+    if (customerLocation?.lat && customerLocation?.lng) {
+      const liveDistance = calculateDistanceKm(simulatedMechanicLocation, customerLocation)
+      setDistance(liveDistance)
+
+      if (liveDistance !== null) {
+        const etaMinutes = Math.max(1, Math.round((liveDistance / 35) * 60))
+        setEta(etaMinutes)
+      }
+    }
+  }, [simulatedMechanicLocation, customerLocation])
+
+  // Initialize Leaflet map - only once
+  useEffect(() => {
+    if (!mapContainerRef.current || leafletMapRef.current) return
+    
+    // Initialize map with default center
+    const initialLoc = customerLocation || initialCustomerLocation || { lat: 28.6139, lng: 77.2090 }
+    
     leafletMapRef.current = L.map(mapContainerRef.current).setView(
-      [customerLocation.lat, customerLocation.lng],
+      [initialLoc.lat, initialLoc.lng],
       15
     )
 
@@ -148,83 +213,129 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
       maxZoom: 19
     }).addTo(leafletMapRef.current)
 
-    // Add customer marker
-    customerMarkerRef.current = L.marker([customerLocation.lat, customerLocation.lng], {
-      icon: customerIcon,
-      title: 'Your Location'
-    }).addTo(leafletMapRef.current)
-
     return () => {
       if (leafletMapRef.current) {
         leafletMapRef.current.remove()
         leafletMapRef.current = null
       }
     }
-  }, [customerLocation])
+  }, []) // Empty dependency array - only run once
 
-  // Update mechanic marker and route
+  // Update mechanic marker position and customer marker
   useEffect(() => {
-    if (!leafletMapRef.current || !mechanicLocation) return
+    if (!leafletMapRef.current) return
 
-    // Create once, then update position for smoother tracking.
-    if (!mechanicMarkerRef.current) {
-      mechanicMarkerRef.current = L.marker([mechanicLocation.lat, mechanicLocation.lng], {
-        icon: mechanicIcon,
-        title: 'Mechanic Location'
-      }).addTo(leafletMapRef.current)
-    } else {
-      mechanicMarkerRef.current.setLatLng([mechanicLocation.lat, mechanicLocation.lng])
-    }
-
-    // Remove old route
-    if (routeLineRef.current) {
-      leafletMapRef.current.removeLayer(routeLineRef.current)
-    }
-
-    // Draw route line (use server route when available)
+    // Update or create customer marker (always visible on top)
     if (customerLocation) {
-      const routePoints = Array.isArray(route) && route.length > 1
-        ? route
-            .map((point) => {
-              if (Array.isArray(point) && point.length >= 2) {
-                return [point[0], point[1]]
-              }
-              if (point && typeof point === 'object') {
-                if (typeof point.lat === 'number' && typeof point.lng === 'number') {
-                  return [point.lat, point.lng]
-                }
-                if (typeof point.latitude === 'number' && typeof point.longitude === 'number') {
-                  return [point.latitude, point.longitude]
-                }
-              }
-              return null
-            })
-            .filter(Boolean)
-        : [
-            [customerLocation.lat, customerLocation.lng],
-            [mechanicLocation.lat, mechanicLocation.lng]
-          ]
-
-      routeLineRef.current = L.polyline(
-        routePoints,
-        {
-          color: '#3b82f6',
-          weight: 3,
-          opacity: 0.8,
-          dashArray: '8, 4'
-        }
-      ).addTo(leafletMapRef.current)
-
-      // Fit bounds only once, then preserve current zoom/interaction while panning softly.
-      const bounds = L.latLngBounds(routePoints)
-      if (!hasInitialFitRef.current) {
-        leafletMapRef.current.fitBounds(bounds, { padding: [80, 80] })
-        hasInitialFitRef.current = true
-      } else if (!leafletMapRef.current.getBounds().contains([mechanicLocation.lat, mechanicLocation.lng])) {
-        leafletMapRef.current.panTo([mechanicLocation.lat, mechanicLocation.lng], { animate: true })
+      if (!customerMarkerRef.current) {
+        customerMarkerRef.current = L.marker([customerLocation.lat, customerLocation.lng], {
+          icon: customerIcon,
+          title: 'Your Location',
+          zIndexOffset: 1000
+        }).addTo(leafletMapRef.current)
+        customerMarkerRef.current.bindPopup('📍 Your Location')
+      } else {
+        customerMarkerRef.current.setLatLng([customerLocation.lat, customerLocation.lng])
       }
     }
-  }, [mechanicLocation, customerLocation, route])
+
+    // Update or create mechanic marker
+    if (mechanicLocation) {
+      if (!mechanicMarkerRef.current) {
+        mechanicMarkerRef.current = L.marker([mechanicLocation.lat, mechanicLocation.lng], {
+          icon: mechanicIcon,
+          title: 'Mechanic Location',
+          zIndexOffset: 999
+        }).addTo(leafletMapRef.current)
+        mechanicMarkerRef.current.bindPopup('🚗 Mechanic')
+      } else {
+        mechanicMarkerRef.current.setLatLng([mechanicLocation.lat, mechanicLocation.lng])
+      }
+
+      // Only fit bounds once on initial mechanic appearance
+      if (customerLocation && !hasInitialFitRef.current) {
+        const bounds = L.latLngBounds([
+          [mechanicLocation.lat, mechanicLocation.lng],
+          [customerLocation.lat, customerLocation.lng]
+        ])
+        leafletMapRef.current.fitBounds(bounds, { padding: [80, 80], animate: true, duration: 0.8 })
+        hasInitialFitRef.current = true
+      }
+    } else if (customerLocation && !hasInitialFitRef.current) {
+      // When only customer location available, set center once
+      leafletMapRef.current.setView([customerLocation.lat, customerLocation.lng], 15, { animate: false })
+      hasInitialFitRef.current = true
+    }
+  }, [mechanicLocation, customerLocation])
+
+  // Draw route polyline when route points are available
+  useEffect(() => {
+    if (!leafletMapRef.current || !Array.isArray(routePoints) || routePoints.length === 0) {
+      // Remove polyline if no route points
+      if (routePolylineRef.current) {
+        try {
+          leafletMapRef.current.removeLayer(routePolylineRef.current)
+        } catch {}
+        routePolylineRef.current = null
+      }
+      return
+    }
+
+    // Create or update polyline
+    const latLngs = routePoints.map((point) => [point[0], point[1]])
+    
+    if (!routePolylineRef.current) {
+      routePolylineRef.current = L.polyline(latLngs, {
+        color: '#22c55e',
+        weight: 6,
+        opacity: 0.95,
+        dashArray: null,
+        lineCap: 'round',
+        lineJoin: 'round',
+        className: 'route-polyline'
+      }).addTo(leafletMapRef.current)
+    } else {
+      routePolylineRef.current.setLatLngs(latLngs)
+    }
+  }, [routePoints])
+
+  useEffect(() => {
+    if (!leafletMapRef.current) return
+
+    const validNearby = (Array.isArray(nearbyMechanics) ? nearbyMechanics : []).filter(
+      (item) => item?.id && item?.currentLocation?.lat && item?.currentLocation?.lng
+    )
+
+    const activeIds = new Set(validNearby.map((item) => item.id))
+
+    nearbyMechanicMarkersRef.current.forEach((marker, markerId) => {
+      if (!activeIds.has(markerId)) {
+        try {
+          leafletMapRef.current.removeLayer(marker)
+        } catch {}
+        nearbyMechanicMarkersRef.current.delete(markerId)
+      }
+    })
+
+    validNearby.forEach((item) => {
+      const isAccepted = item.id === acceptedMechanicId
+      const existing = nearbyMechanicMarkersRef.current.get(item.id)
+      const latLng = [item.currentLocation.lat, item.currentLocation.lng]
+
+      if (!existing) {
+        const marker = L.marker(latLng, {
+          icon: createNearbyMechanicIcon(isAccepted),
+          title: item.name || 'Mechanic'
+        })
+        marker.addTo(leafletMapRef.current)
+        marker.bindTooltip(`${item.name || 'Mechanic'}${typeof item.etaMinutes === 'number' ? ` • ${item.etaMinutes} min` : ''}`)
+        nearbyMechanicMarkersRef.current.set(item.id, marker)
+      } else {
+        existing.setLatLng(latLng)
+        existing.setIcon(createNearbyMechanicIcon(isAccepted))
+      }
+    })
+  }, [nearbyMechanics, acceptedMechanicId])
 
   const calculateETA = () => {
     if (!distance) return 'Calculating...'
@@ -238,41 +349,42 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
       background: 'var(--surface)',
       border: '1px solid var(--border)',
       borderRadius: 16,
-      overflow: 'hidden',
-      boxShadow: 'var(--shadow-md)'
+      overflow: 'hidden'
     }}>
       {/* Status Bar */}
       <div style={{
-        padding: '16px 20px',
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)',
+        padding: '18px 20px',
+        background: '#0f172a',
         color: '#ffffff',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(255,255,255,0.05)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
-            width: 10,
-            height: 10,
+            width: 12,
+            height: 12,
             borderRadius: '50%',
-            background: isTracking ? '#FFFFFF' : 'rgba(255,255,255,0.65)',
-            boxShadow: isTracking ? '0 0 8px rgba(255,255,255,0.8)' : 'none',
-            animation: isTracking ? 'pulse 2s infinite' : 'none'
+            background: isTracking ? '#10b981' : 'rgba(255,255,255,0.3)',
+            border: '1px solid rgba(255,255,255,0.35)'
           }} />
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700 }}> Live GPS Tracking</div>
-            <div style={{ fontSize: 11, opacity: 0.9 }}>
-              {isTracking ? 'Tracking in real-time' : 'Waiting for location...'}
+            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-0.3px' }}>📍 Live GPS Tracking</div>
+            <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>
+              {isTracking ? '✓ Real-time tracking active' : '⏳ Connecting...'}
             </div>
           </div>
         </div>
         {eta && (
           <div style={{
-            background: 'rgba(255,255,255,0.12)',
-            padding: '8px 16px',
-            borderRadius: 12,
-            fontSize: 13,
-            fontWeight: 700
+            background: '#11233f',
+            border: '1px solid #1f3f6b',
+            padding: '10px 16px',
+            borderRadius: 10,
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: '-0.2px'
           }}>
             ETA: {eta || calculateETA()}
           </div>
@@ -283,38 +395,40 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 1,
+        gap: 0,
         background: 'var(--border)',
         borderBottom: '1px solid var(--border)'
       }}>
         <div style={{
-          padding: '12px 16px',
+          padding: '14px 16px',
           background: 'var(--surface)',
-          textAlign: 'center'
+          textAlign: 'center',
+          borderRight: '1px solid var(--border)'
         }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Distance</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-light)' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Distance</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--accent-light)', letterSpacing: '-0.5px' }}>
             {distance ? `${distance.toFixed(1)} km` : '--'}
           </div>
         </div>
         <div style={{
-          padding: '12px 16px',
+          padding: '14px 16px',
           background: 'var(--surface)',
-          textAlign: 'center'
+          textAlign: 'center',
+          borderRight: '1px solid var(--border)'
         }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>ETA</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-light)' }}>
-            {eta || calculateETA()}
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>ETA</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--accent-light)', letterSpacing: '-0.5px' }}>
+            {eta ? `${eta} min` : calculateETA()}
           </div>
         </div>
         <div style={{
-          padding: '12px 16px',
+          padding: '14px 16px',
           background: 'var(--surface)',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF' }}>
-            {mechanicLocation ? ' En Route' : ' Pending'}
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: '#10b981', letterSpacing: '-0.5px' }}>
+            {mechanicLocation ? '🚗' : '🔍'}
           </div>
         </div>
       </div>
@@ -323,7 +437,7 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
       <div style={{
         position: 'relative',
         height: 400,
-        background: 'linear-gradient(135deg, rgba(30,58,138,0.05) 0%, rgba(30,58,138,0.1) 100%)',
+        background: '#0b1f3b',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -365,87 +479,158 @@ export default function LiveGPSTracker({ orderId, mechanicId, customerId, initia
             </div>
           )}
         </div>
+
+        {/* Center on Me Button */}
+        {leafletMapRef.current && customerLocation && (
+          <button
+            onClick={() => {
+              if (leafletMapRef.current && customerLocation) {
+                leafletMapRef.current.setView([customerLocation.lat, customerLocation.lng], 15, { animate: true })
+              }
+            }}
+            style={{
+              position: 'absolute',
+              bottom: 16,
+              right: 16,
+              zIndex: 1000,
+              background: '#1e3a8a',
+              border: '2px solid #ffffff',
+              borderRadius: '50%',
+              width: 44,
+              height: 44,
+              fontSize: 20,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.2s ease',
+              hover: { background: '#2d5aa3' }
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2d5aa3'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#1e3a8a'
+            }}
+            title="Center on your location"
+          >
+            📍
+          </button>
+        )}
       </div>
 
       {/* Live Updates */}
       <div style={{
-        padding: '16px 20px',
+        padding: '18px 20px',
         background: 'var(--bg)',
         borderTop: '1px solid var(--border)'
       }}>
         <div style={{
-          fontSize: 13,
-          fontWeight: 700,
-          marginBottom: 12,
-          color: 'var(--text)'
+          fontSize: 12,
+          fontWeight: 800,
+          marginBottom: 14,
+          color: 'var(--text)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
         }}>
-           Live Updates
+          <span style={{ animation: 'pulse 2s ease-in-out infinite' }}>●</span>
+          Live Updates
         </div>
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 8
+          gap: 10
         }}>
+          {demoStatusText ? (
+            <div style={{
+              padding: '12px 14px',
+              background: '#0f172a',
+              border: '1px solid #1f3f6b',
+              borderRadius: 10,
+              fontSize: 12,
+              color: '#dbeafe',
+              fontWeight: 600
+            }}>
+              {demoStatusText}
+            </div>
+          ) : null}
           {isTracking ? (
             <>
               <div style={{
-                padding: '8px 12px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 8,
+                padding: '12px 14px',
+                background: '#0f172a',
+                border: '1px solid #1f3f6b',
+                borderRadius: 10,
                 fontSize: 12,
-                color: '#FFFFFF',
+                color: '#10b981',
+                fontWeight: 600,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8
+                gap: 10
               }}>
-                <span></span>
-                <span>GPS tracking active</span>
+                <span>🛰️</span>
+                <span>GPS signal acquired & tracking active</span>
               </div>
               {mechanicLocation && (
                 <div style={{
-                  padding: '8px 12px',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 8,
+                  padding: '12px 14px',
+                  background: '#0f172a',
+                  border: '1px solid #1f3f6b',
+                  borderRadius: 10,
                   fontSize: 12,
-                  color: '#FFFFFF',
+                  color: '#3b82f6',
+                  fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8
+                  gap: 10
                 }}>
-                  <span></span>
-                  <span>Mechanic location updated {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>🚗</span>
+                  <span>Mechanic location updated {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                 </div>
               )}
+              <div style={{
+                padding: '12px 14px',
+                background: '#0f172a',
+                border: '1px solid #1f3f6b',
+                borderRadius: 10,
+                fontSize: 12,
+                color: '#d1d5db',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10
+              }}>
+                <span>✓</span>
+                <span>Real-time connection stable</span>
+              </div>
             </>
           ) : (
             <div style={{
-              padding: '8px 12px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 8,
+              padding: '12px 14px',
+              background: '#0f172a',
+              border: '1px solid #1f3f6b',
+              borderRadius: 10,
               fontSize: 12,
-              color: '#FFFFFF',
+              color: '#6b7280',
+              fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
-              gap: 8
+              gap: 10
             }}>
-              <span></span>
-              <span>Connecting to GPS...</span>
+              <span>⏳</span>
+              <span>Establishing connection...</span>
             </div>
           )}
         </div>
       </div>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(0.95); }
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-          50% { transform: translate(-50%, -50%) translateY(-10px); }
+        .mechanic-marker {
+          filter: none;
         }
       `}</style>
     </div>

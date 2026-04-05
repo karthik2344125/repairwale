@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import RealTimeChat from '../../shared/components/RealTimeChat'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import LiveGPSTracker from '../components/LiveGPSTracker'
+import TrackingSimulator from '../../shared/components/TrackingSimulator'
 import { getCustomerDispatchStatus } from '../../shared/services/api'
 import { connectRealtimeWithFallback } from '../../shared/services/realtime'
 
@@ -23,12 +23,70 @@ function formatDate(date) {
   }
 }
 
+function formatCoords(location) {
+  if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') return 'Location unavailable'
+  return `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
+}
+
 export default function ServiceTracking() {
   const { orderId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+
   const [order, setOrder] = useState(null)
   const [tracking, setTracking] = useState(null)
-  const [selectedUpdate, setSelectedUpdate] = useState(null)
+  const [demoStatus, setDemoStatus] = useState('')
+  const [demoLocation, setDemoLocation] = useState(null)
+  const [demoMechanic, setDemoMechanic] = useState(null)
+  const [demoAcceptedAt, setDemoAcceptedAt] = useState(null)
+  const [demoFlowStatus, setDemoFlowStatus] = useState('')
+  const [userLiveLocation, setUserLiveLocation] = useState(null)
+  const [nearbyMechanics, setNearbyMechanics] = useState([])
+  const [acceptedMechanicId, setAcceptedMechanicId] = useState(null)
+  const [routePoints, setRoutePoints] = useState([])
+  const [mechanicStartLocation, setMechanicStartLocation] = useState(null)
+  const [workProgress, setWorkProgress] = useState(0)
+
+  const [autoStart, setAutoStart] = useState(Boolean(location.state?.autoDemo))
+  const [forceDemoRunning, setForceDemoRunning] = useState(null)
+
+  useEffect(() => {
+    const fallback = order?.customerLocation?.lat && order?.customerLocation?.lng
+      ? { lat: order.customerLocation.lat, lng: order.customerLocation.lng }
+      : null
+
+    setUserLiveLocation(fallback)
+
+    if (!navigator.geolocation) return undefined
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLiveLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        })
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    )
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setUserLiveLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        })
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+    )
+
+    return () => {
+      try {
+        navigator.geolocation.clearWatch(watchId)
+      } catch {}
+    }
+  }, [order?.customerLocation?.lat, order?.customerLocation?.lng])
 
   useEffect(() => {
     loadOrder()
@@ -36,7 +94,11 @@ export default function ServiceTracking() {
     const currentUser = JSON.parse(localStorage.getItem('repairwale_user') || '{}')
     const realtime = connectRealtimeWithFallback({
       onConnect: (socket) => {
-        socket.emit('dispatch:join', { role: 'customer', id: currentUser.id || 'guest-customer', requestId: orderId })
+        socket.emit('dispatch:join', {
+          role: 'customer',
+          id: currentUser.id || 'guest-customer',
+          requestId: orderId
+        })
 
         socket.on('dispatch:created', () => loadOrder())
         socket.on('dispatch:accepted', (payload) => {
@@ -57,43 +119,31 @@ export default function ServiceTracking() {
   const loadOrder = async () => {
     try {
       const stored = JSON.parse(localStorage.getItem('rw_orders') || '[]')
-      const found = stored.find(o => o.id === orderId)
+      const found = stored.find((o) => o.id === orderId)
       if (found) {
         setOrder(found)
         setTracking(found.tracking || {})
         return
       }
 
-      // Fallback to dispatch lifecycle request tracking
       const dispatchResp = await getCustomerDispatchStatus(orderId)
       if (dispatchResp?.ok && dispatchResp?.request) {
         const req = dispatchResp.request
         const mappedStatus = req.status === 'accepted' ? 'in_progress' : req.status === 'completed' ? 'completed' : 'pending'
-        const mappedOrder = {
+        setOrder({
           id: req.id,
           status: mappedStatus,
           total: req.estimatedPrice || 0,
           date: req.createdAt,
-          location: req.location?.text || 'Customer location',
           customerId: req.customerId,
           customerLocation: req.location || null,
-          customerName: req.customerName,
           mechanicId: req.assignedMechanicId,
           mechanicName: req.assignedMechanicName,
           assignedMechanicName: req.assignedMechanicName,
           items: req.serviceItems || []
-        }
+        })
 
-        const updates = (req.events || []).map((event) => ({
-          time: formatTime(event.at),
-          status: event.type === 'accepted' ? 'in_progress' : 'pending',
-          message: event.message,
-          icon: event.type === 'accepted' ? 'A' : 'P'
-        }))
-
-        setOrder(mappedOrder)
         setTracking({
-          statusUpdates: updates,
           estimatedTime: req.status === 'accepted' ? 'Mechanic en route' : 'Finding nearby mechanic',
           eta: req.status === 'accepted' ? formatTime(Date.now() + 25 * 60000) : '--:--',
           distance: req.status === 'accepted' ? 'Live' : 'Searching'
@@ -102,1021 +152,644 @@ export default function ServiceTracking() {
     } catch {}
   }
 
+  const stages = useMemo(
+    () => [
+      { id: 'pending', label: 'Order Placed', detail: 'Request received and being matched' },
+      { id: 'in_progress', label: 'Mechanic En Route', detail: 'Mechanic accepted and is on the way' },
+      { id: 'working', label: 'Service In Progress', detail: 'Mechanic is working on your service' },
+      { id: 'completed', label: 'Service Completed', detail: 'Mechanic completed and service ended' }
+    ],
+    []
+  )
+
+  const resolvedStatus =
+    demoFlowStatus === 'completed'
+      ? 'completed'
+      : demoFlowStatus === 'working'
+        ? 'working'
+        : demoFlowStatus === 'arrived'
+          ? 'working'
+          : demoFlowStatus === 'accepted' || demoFlowStatus === 'en_route'
+            ? 'in_progress'
+            : order?.status
+
+  const currentStageIndex = stages.findIndex((s) => s.id === resolvedStatus)
+  const currentStage = stages[currentStageIndex]
+
+  const handleStartDemo = () => {
+    setAutoStart(false)
+    setForceDemoRunning(true)
+  }
+
+  const handleStopDemo = () => {
+    setAutoStart(false)
+    setForceDemoRunning(false)
+    setDemoFlowStatus('')
+    setDemoStatus('Demo stopped')
+    setDemoLocation(null)
+    setDemoMechanic(null)
+    setDemoAcceptedAt(null)
+    setNearbyMechanics([])
+    setAcceptedMechanicId(null)
+    setRoutePoints([])
+    setMechanicStartLocation(null)
+    setWorkProgress(0)
+    setTracking((prev) => ({
+      ...(prev || {}),
+      eta: '--:--',
+      distance: 'Stopped',
+      estimatedTime: 'Demo stopped'
+    }))
+  }
+
   if (!order) {
     return (
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '20px' }}>
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}></div>
+      <div className="tracking-page">
+        <div className="panel">
           <h3>Order not found</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>The order you're looking for doesn't exist.</p>
-          <button
-            onClick={() => navigate('/orders')}
-            style={{
-              marginTop: 20,
-              padding: '10px 20px',
-              borderRadius: 8,
-              border: 'none',
-              background: '#0B1F3B',
-              color: '#FFFFFF',
-              cursor: 'pointer',
-              fontWeight: 700
-            }}
-          >
-            Back to Orders
-          </button>
+          <p className="muted">The tracking request is not available.</p>
+          <button onClick={() => navigate('/orders')} className="btn btn-primary">Back to Orders</button>
         </div>
+        <style>{styles}</style>
       </div>
     )
   }
 
-  const stages = [
-    { id: 'pending', label: 'Order Placed', icon: '📦', color: '#0B1F3B' },
-    { id: 'in_progress', label: 'In Progress', icon: '🛠️', color: '#FFFFFF' },
-    { id: 'completed', label: 'Completed', icon: '✅', color: '#FFFFFF' }
-  ]
-
-  const currentStageIndex = stages.findIndex(s => s.id === order.status)
-  const currentStage = stages[currentStageIndex]
-
-  // Sample status updates (in real app, this would come from backend)
-  const statusUpdates = tracking?.statusUpdates || [
-    {
-      time: '14:30',
-      status: 'pending',
-      message: 'Order placed',
-      icon: '🧾'
-    },
-    {
-      time: '14:32',
-      status: 'pending',
-      message: 'Looking for nearby mechanics',
-      icon: '🔎'
-    }
-  ]
-
-  const premiumStyles = `
-    /* ===== TRACKING PREMIUM THEME ===== */
-    
-    /* Container */
-    .tracking-container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0;
-      background: #0B1F3B;
-      min-height: 100vh;
-      position: relative;
-    }
-
-    /* ===== HERO SECTION ===== */
-    .tracking-hero {
-      background: #0B1F3B;
-      border-bottom: 1px solid #0B1F3B;
-      box-shadow: none;
-      padding: 44px 24px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .tracking-hero::before {
-      content: '';
-      position: absolute;
-      top: -40%;
-      right: -20%;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(96, 165, 250, 0.24) 0%, rgba(96, 165, 250, 0) 72%);
-      filter: blur(18px);
-      animation: tracking-float 20s ease-in-out infinite;
-    }
-
-    .tracking-hero::after {
-      content: '';
-      position: absolute;
-      bottom: -30%;
-      left: -15%;
-      width: 420px;
-      height: 420px;
-      background: radial-gradient(circle, rgba(139, 92, 246, 0.28) 0%, rgba(139, 92, 246, 0) 68%);
-      filter: blur(24px);
-      animation: tracking-float 22s ease-in-out infinite reverse;
-    }
-
-    .tracking-back-btn {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 1px solid rgba(96, 165, 250, 0.14);
-      background: rgba(96, 165, 250, 0.08);
-      color: #FFFFFF;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      z-index: 10;
-    }
-
-    .tracking-back-btn:hover {
-      background: rgba(96, 165, 250, 0.1);
-      border-color: rgba(96, 165, 250, 0.6);
-      transform: translateX(-2px);
-    }
-
-    .tracking-hero-content {
-      position: relative;
-      z-index: 2;
-      margin-bottom: 32px;
-      text-align: center;
-    }
-
-    .tracking-title {
-      font-size: 32px;
-      font-weight: 900;
-      letter-spacing: -0.8px;
-      color: #FFFFFF;
-      margin: 0;
-    }
-
-    .tracking-subtitle {
-      font-size: 14px;
-      color: rgba(255,255,255,0.75);
-      margin: 8px 0 0 0;
-      font-weight: 500;
-    }
-
-    .tracking-header-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 16px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .tracking-header-item {
-      background: rgba(16, 32, 58, 0.4);
-      backdrop-filter: blur(12px);
-      padding: 14px 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(96, 165, 250, 0.16);
-      transition: all 0.3s ease;
-    }
-
-    .tracking-header-item:hover {
-      border-color: rgba(96, 165, 250, 0.16);
-      background: rgba(16, 32, 58, 0.6);
-    }
-
-    .tracking-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.7);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-
-    .tracking-value {
-      font-size: 16px;
-      font-weight: 800;
-      color: #FFFFFF;
-      letter-spacing: -0.3px;
-    }
-
-    .tracking-value-date {
-      font-size: 15px;
-      font-weight: 700;
-      color: #FFFFFF;
-    }
-
-    .tracking-value-amount {
-      font-size: 18px;
-      font-weight: 900;
-      color: #FFFFFF;
-      letter-spacing: -0.3px;
-    }
-
-    .tracking-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    /* ===== PROGRESS SECTION ===== */
-    .tracking-progress-section {
-      padding: 32px 24px;
-      position: relative;
-    }
-
-    .section-title {
-      font-size: 20px;
-      font-weight: 900;
-      color: #FFFFFF;
-      margin: 0 0 16px 0;
-      letter-spacing: -0.4px;
-    }
-
-    .tracking-timeline {
-      display: grid;
-      gap: 24px;
-      margin-bottom: 32px;
-      background: rgba(16, 32, 58, 0.25);
-      backdrop-filter: blur(8px);
-      padding: 24px;
-      border-radius: 14px;
-      border: 1px solid rgba(96, 165, 250, 0.12);
-    }
-
-    .tracking-stage {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      position: relative;
-      animation: tracking-slide-up 0.6s var(--delay, 0s) ease-out both;
-    }
-
-    @keyframes tracking-slide-up {
-      from {
-        opacity: 0;
-        transform: translateY(12px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .tracking-stage:nth-child(1) { --delay: 0.1s; }
-    .tracking-stage:nth-child(2) { --delay: 0.2s; }
-    .tracking-stage:nth-child(3) { --delay: 0.3s; }
-
-    .tracking-completed .tracking-stage-circle {
-      background: rgba(16, 185, 129, 0.15);
-      border-color: #FFFFFF;
-      color: #FFFFFF;
-      box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
-    }
-
-    .tracking-current .tracking-stage-circle {
-      background: rgba(96, 165, 250, 0.1);
-      border-color: #FFFFFF;
-      color: #FFFFFF;
-      box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
-      animation: tracking-pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes tracking-pulse {
-      0%, 100% { box-shadow: 0 0 12px rgba(96, 165, 250, 0.18); }
-      50% { box-shadow: 0 0 16px rgba(96, 165, 250, 0.1); }
-    }
-
-    .tracking-next .tracking-stage-circle {
-      background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(255, 255, 255, 0.16);
-      color: rgba(166, 173, 186, 0.6);
-    }
-
-    .tracking-stage-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 700;
-      border: 2px solid;
-      flex-shrink: 0;
-      position: relative;
-      z-index: 2;
-      transition: all 0.3s ease;
-    }
-
-    .tracking-stage-content {
-      flex: 1;
-      padding-top: 2px;
-    }
-
-    .tracking-stage-label {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 4px;
-      transition: color 0.3s ease;
-    }
-
-    .tracking-completed .tracking-stage-label {
-      color: #FFFFFF;
-    }
-
-    .tracking-current .tracking-stage-label {
-      color: #FFFFFF;
-    }
-
-    .tracking-next .tracking-stage-label {
-      color: rgba(166, 173, 186, 0.6);
-    }
-
-    .tracking-stage-desc {
-      font-size: 12px;
-      color: rgba(255,255,255,0.7);
-      margin-top: 4px;
-    }
-
-    .tracking-connector {
-      position: absolute;
-      left: 21px;
-      top: 44px;
-      width: 2px;
-      height: 60px;
-      background: rgba(255, 255, 255, 0.1);
-      z-index: 1;
-    }
-
-    .tracking-connector-done {
-      background: linear-gradient(180deg, #0B1F3B 0%, rgba(16, 185, 129, 0.3) 100%);
-    }
-
-    /* Metrics Cards */
-    .tracking-metrics {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 14px;
-    }
-
-    .tracking-metric-card {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.04) 100%);
-      padding: 16px;
-      border-radius: 12px;
-      border: 1px solid rgba(96, 165, 250, 0.14);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .tracking-metric-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
-      transition: left 0.6s ease;
-    }
-
-    .tracking-metric-card:hover {
-      border-color: rgba(96, 165, 250, 0.16);
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
-      box-shadow: 0 4px 16px rgba(96, 165, 250, 0.1);
-    }
-
-    .tracking-metric-card:hover::before {
-      left: 100%;
-    }
-
-    .metric-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.7);
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      margin-bottom: 6px;
-    }
-
-    .metric-value {
-      font-size: 18px;
-      font-weight: 800;
-      color: #FFFFFF;
-      letter-spacing: -0.3px;
-    }
-
-    /* ===== SERVICES SECTION ===== */
-    .tracking-services-section {
-      padding: 28px 24px;
-      background: rgba(16, 32, 58, 0.2);
-      border-top: 1px solid rgba(96, 165, 250, 0.08);
-      border-bottom: 1px solid rgba(96, 165, 250, 0.08);
-    }
-
-    .tracking-services-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .tracking-service-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      background: rgba(16, 32, 58, 0.3);
-      border-radius: 8px;
-      border: 1px solid rgba(96, 165, 250, 0.1);
-      font-size: 13px;
-      transition: all 0.2s ease;
-    }
-
-    .tracking-service-item:hover {
-      border-color: rgba(96, 165, 250, 0.12);
-      background: rgba(16, 32, 58, 0.45);
-    }
-
-    .service-name {
-      color: #a5d6ff;
-      font-weight: 600;
-    }
-
-    .service-price {
-      color: #7dd3fc;
-      font-weight: 700;
-    }
-
-    /* ===== MECHANIC SECTION ===== */
-    .tracking-mechanic-section {
-      padding: 28px 24px;
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
-      border-top: 1px solid rgba(16, 185, 129, 0.12);
-      border-bottom: 1px solid rgba(16, 185, 129, 0.08);
-    }
-
-    .tracking-mechanic-grid {
-      display: grid;
-      gap: 14px;
-    }
-
-    .mechanic-info-item {
-      background: rgba(30, 58, 138, 0.16);
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .mechanic-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.7);
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      margin-bottom: 4px;
-    }
-
-    .mechanic-value {
-      font-size: 15px;
-      font-weight: 700;
-      color: #FFFFFF;
-    }
-
-    .mechanic-value-rating {
-      font-size: 14px;
-      font-weight: 700;
-      color: #FFFFFF;
-    }
-
-    .mechanic-contact-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .mechanic-btn {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: rgba(255, 255, 255, 0.04);
-      color: #FFFFFF;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .mechanic-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-2px);
-    }
-
-    /* ===== UPDATES SECTION ===== */
-    .tracking-updates-section {
-      padding: 28px 24px;
-    }
-
-    .tracking-updates-list {
-      display: grid;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .tracking-update-card {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 12px;
-      padding: 14px;
-      border-radius: 10px;
-      background: rgba(30, 58, 138, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      animation: tracking-update-enter 0.5s ease-out backwards;
-    }
-
-    @keyframes tracking-update-enter {
-      from {
-        opacity: 0;
-        transform: translateX(-8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .tracking-update-card:nth-child(1) { animation-delay: 0.1s; }
-    .tracking-update-card:nth-child(2) { animation-delay: 0.2s; }
-    .tracking-update-card:nth-child(3) { animation-delay: 0.3s; }
-
-    .tracking-update-selected {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.18);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    }
-
-    .update-icon {
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-    }
-
-    .update-content {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .update-message {
-      font-size: 13px;
-      font-weight: 700;
-      color: #FFFFFF;
-    }
-
-    .update-time {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.65);
-      margin-top: 2px;
-    }
-
-    .tracking-live-indicator {
-      padding: 12px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px dashed rgba(255, 255, 255, 0.18);
-      color: #FFFFFF;
-      font-size: 12px;
-      text-align: center;
-      font-weight: 600;
-    }
-
-    /* ===== ACTION BUTTONS ===== */
-    .tracking-action-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      padding: 24px;
-    }
-
-    .tracking-btn-primary {
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-      color: #FFFFFF;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.28);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .tracking-btn-primary::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.14);
-      transition: left 0.5s ease;
-    }
-
-    .tracking-btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.34);
-    }
-
-    .tracking-btn-primary:hover::before {
-      left: 100%;
-    }
-
-    .tracking-btn-secondary {
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: rgba(255, 255, 255, 0.04);
-      color: #FFFFFF;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .tracking-btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.24);
-      transform: translateY(-2px);
-    }
-
-    /* ===== GPS & CHAT CONTAINERS ===== */
-    .tracking-gps-container,
-    .tracking-chat-container {
-      padding: 24px;
-      background: rgba(15, 23, 42, 0.18);
-      margin: 0;
-    }
-
-    .tracking-gps-container {
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .tracking-chat-container {
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 40px;
-    }
-
-    /* ===== ANIMATIONS ===== */
-    @keyframes tracking-float {
-      0%, 100% { transform: translate(0, 0); }
-      33% { transform: translate(20px, -10px); }
-      66% { transform: translate(-10px, 20px); }
-    }
-
-    /* ===== FLOW LOCK: NAVY + WHITE, LOW MOTION ===== */
-    .tracking-container,
-    .tracking-content,
-    .tracking-section,
-    .tracking-card,
-    .tracking-panel,
-    .tracking-status-timeline,
-    .tracking-update,
-    .tracking-meta,
-    .tracking-gps-container,
-    .tracking-chat-container {
-      background: #0B1F3B !important;
-      color: #FFFFFF !important;
-      border-color: #0B1F3B !important;
-      box-shadow: none !important;
-    }
-
-    .tracking-hero,
-    .tracking-back-btn,
-    .tracking-btn-primary,
-    .tracking-stage.active,
-    .tracking-badge,
-    .tracking-pill,
-    .tracking-kpi-value {
-      background: #0B1F3B !important;
-      color: #FFFFFF !important;
-      border-color: #0B1F3B !important;
-      box-shadow: none !important;
-    }
-
-    .tracking-title,
-    .tracking-order-id,
-    .tracking-stage-label,
-    .tracking-label,
-    .tracking-value,
-    .tracking-subtitle,
-    .tracking-time,
-    .tracking-message,
-    .tracking-helper,
-    .tracking-btn-secondary {
-      color: #FFFFFF !important;
-      background: transparent !important;
-      border-color: #0B1F3B !important;
-      -webkit-text-fill-color: #FFFFFF !important;
-    }
-
-    .tracking-hero .tracking-title,
-    .tracking-hero .tracking-subtitle,
-    .tracking-hero .tracking-label,
-    .tracking-hero .tracking-value {
-      color: #FFFFFF !important;
-      -webkit-text-fill-color: #FFFFFF !important;
-    }
-
-    .tracking-container *,
-    .tracking-container *::before,
-    .tracking-container *::after {
-      animation: none !important;
-      transition: none !important;
-    }
-
-    /* ===== RESPONSIVE DESIGN ===== */
-    @media (max-width: 768px) {
-      .tracking-hero {
-        padding: 32px 16px;
-      }
-
-      .tracking-title {
-        font-size: 24px;
-      }
-
-      .tracking-header-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-      }
-
-      .tracking-back-btn {
-        font-size: 12px;
-        padding: 6px 12px;
-      }
-
-      .section-title {
-        font-size: 18px;
-        margin-bottom: 20px;
-      }
-
-      .tracking-metrics {
-        grid-template-columns: 1fr;
-      }
-
-      .tracking-action-buttons {
-        padding: 16px;
-      }
-
-      .mechanic-contact-buttons {
-        grid-template-columns: 1fr;
-      }
-
-      .tracking-timeline {
-        padding: 16px;
-        gap: 20px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .tracking-container {
-        padding: 0;
-      }
-
-      .tracking-hero {
-        padding: 24px 12px;
-      }
-
-      .tracking-progress-section,
-      .tracking-services-section,
-      .tracking-mechanic-section,
-      .tracking-updates-section,
-      .tracking-action-buttons,
-      .tracking-gps-container,
-      .tracking-chat-container {
-        padding: 16px 12px;
-      }
-
-      .tracking-back-btn {
-        top: 12px;
-        left: 12px;
-        font-size: 11px;
-      }
-
-      .tracking-title {
-        font-size: 20px;
-      }
-
-      .tracking-subtitle {
-        font-size: 12px;
-      }
-
-      .tracking-header-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
-
-      .section-title {
-        font-size: 16px;
-      }
-
-      .tracking-stage-circle {
-        width: 36px;
-        height: 36px;
-        font-size: 16px;
-      }
-
-      .tracking-connector {
-        left: 17px;
-        height: 50px;
-        top: 36px;
-      }
-
-      .tracking-action-buttons {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
-
-      .metric-value {
-        font-size: 16px;
-      }
-
-      .update-message {
-        font-size: 12px;
-      }
-    }
-  `
-
   return (
-    <div className="tracking-container">
-      {/* Premium Hero Section */}
-      <div className="tracking-hero">
-        <button 
-          onClick={() => navigate('/orders')}
-          className="tracking-back-btn"
-        >
-           Back
-        </button>
-        
-        <div className="tracking-hero-content">
-          <h1 className="tracking-title">Tracking Your Service</h1>
-          <p className="tracking-subtitle">Real-time updates for order #{order.id?.slice(-8).toUpperCase()}</p>
-        </div>
-
-        <div className="tracking-header-grid">
-          <div className="tracking-header-item">
-            <div className="tracking-label">Order #</div>
-            <div className="tracking-value">{order.id?.slice(-8).toUpperCase()}</div>
-          </div>
-          <div className="tracking-header-item">
-            <div className="tracking-label">Status</div>
-            <div className="tracking-status" style={{ color: currentStage?.color }}>
-              <span>{currentStage?.icon}</span>
-              {currentStage?.label}
-            </div>
-          </div>
-          <div className="tracking-header-item">
-            <div className="tracking-label">Date</div>
-            <div className="tracking-value-date">{formatDate(order.date)}</div>
-          </div>
-          <div className="tracking-header-item">
-            <div className="tracking-label">Total</div>
-            <div className="tracking-value-amount">₹ {order.total?.toLocaleString('en-IN') || '0'}</div>
-          </div>
-        </div>
+    <div className="tracking-page">
+      <div className="top-bar">
+        <button onClick={() => navigate('/orders')} className="btn btn-secondary">Back</button>
+        <h1>Service Tracking</h1>
       </div>
 
-      {/* Progress Timeline */}
-      <div className="tracking-progress-section">
-        <h2 className="section-title">Service Progress</h2>
+      <section className="tracking-grid">
+        <article className="panel panel-map">
+          <TrackingSimulator
+            autoStart={autoStart}
+            forceRunning={forceDemoRunning}
+            userLocation={userLiveLocation}
+            showControls={false}
+            onDemoStop={() => {
+              setForceDemoRunning(false)
+            }}
+            onStatusChange={(message, state, data) => {
+              setDemoFlowStatus(state)
+              setDemoStatus(message)
+              if (data?.location) setDemoLocation(data.location)
+              if (data?.mechanic) setDemoMechanic(data.mechanic)
+              if (data?.acceptedAt) setDemoAcceptedAt(data.acceptedAt)
+              if (Array.isArray(data?.nearbyMechanics)) setNearbyMechanics(data.nearbyMechanics)
+              if (data?.acceptedMechanicId) setAcceptedMechanicId(data.acceptedMechanicId)
+              if (Array.isArray(data?.routePoints)) setRoutePoints(data.routePoints)
+              if (data?.mechanicStartLocation) setMechanicStartLocation(data.mechanicStartLocation)
+              if (typeof data?.workProgress === 'number') setWorkProgress(data.workProgress)
 
-        {/* Stages Timeline */}
-        <div className="tracking-timeline">
-          {stages.map((stage, idx) => {
-            const isCompleted = idx < currentStageIndex
-            const isCurrent = idx === currentStageIndex
-            const isNext = idx > currentStageIndex
+              if (typeof data?.eta === 'number' || typeof data?.distance === 'number') {
+                setTracking((prev) => ({
+                  ...(prev || {}),
+                  eta: typeof data?.eta === 'number' ? `${data.eta} min` : prev?.eta,
+                  distance: typeof data?.distance === 'number' ? `${data.distance.toFixed(1)} km` : prev?.distance,
+                  estimatedTime: message || prev?.estimatedTime
+                }))
+              }
+            }}
+            onLocationUpdate={(nextLocation) => setDemoLocation(nextLocation)}
+            onDemoStart={(payload) => {
+              setAutoStart(false)
+              setForceDemoRunning(true)
+              if (Array.isArray(payload?.nearbyMechanics)) setNearbyMechanics(payload.nearbyMechanics)
+              if (payload?.acceptedMechanicId) setAcceptedMechanicId(payload.acceptedMechanicId)
+              if (payload?.mechanic) setDemoMechanic(payload.mechanic)
+            }}
+          />
+          <LiveGPSTracker
+            orderId={orderId}
+            mechanicId={order.mechanicId || 'm1'}
+            customerId={order.customerId}
+            initialCustomerLocation={userLiveLocation || order.customerLocation}
+            simulatedMechanicLocation={demoLocation}
+            demoStatusText={demoStatus}
+            nearbyMechanics={nearbyMechanics}
+            acceptedMechanicId={acceptedMechanicId}
+            routePoints={routePoints}
+            mechanicStartLocation={mechanicStartLocation}
+            userLiveLocation={userLiveLocation}
+          />
+        </article>
 
-            return (
-              <div key={stage.id} className={`tracking-stage ${isCompleted ? 'tracking-completed' : isCurrent ? 'tracking-current' : 'tracking-next'}`}>
-                <div className="tracking-stage-circle">
-                  {isCompleted ? '' : stage.icon}
+        <article className="panel panel-realtime-tracker">
+          <div className="tracker-header">
+            <h2>Live Tracking</h2>
+            <div className="demo-controls">
+              <button onClick={handleStartDemo} className="btn btn-sm btn-primary">Start</button>
+              <button onClick={handleStopDemo} className="btn btn-sm btn-secondary">Stop</button>
+            </div>
+          </div>
+
+          {/* Searching Mechanics Phase */}
+          {demoFlowStatus === 'searching' && (
+            <div className="phase-card">
+              <div className="phase-icon">🔍</div>
+              <div className="phase-title">Searching Mechanics</div>
+              <div className="phase-desc">Finding nearby mechanics in your area</div>
+              <div className="phase-status">
+                <div className="spinner"></div>
+                <span>Searching...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Mechanic Found Phase */}
+          {demoFlowStatus === 'accepted' && demoMechanic && (
+            <div className="phase-card">
+              <div className="phase-icon">✓</div>
+              <div className="phase-title">Mechanic Found</div>
+              <div className="phase-desc">Mechanic accepted your request</div>
+              <div className="mechanic-card">
+                <div className="mechanic-info">
+                  <div className="mechanic-name">{demoMechanic.name}</div>
+                  <div className="mechanic-vehicle">{demoMechanic.vehicle}</div>
+                  <div className="mechanic-rating">⭐ {demoMechanic.rating} • {demoMechanic.jobs} jobs</div>
+                  <div className="mechanic-phone">📞 {demoMechanic.phone}</div>
                 </div>
-                <div className="tracking-stage-content">
-                  <div className="tracking-stage-label">{stage.label}</div>
-                  <div className="tracking-stage-desc">
-                    {stage.id === 'pending' && 'Waiting for mechanic assignment'}
-                    {stage.id === 'in_progress' && 'Mechanic is on the way or working on your service'}
-                    {stage.id === 'completed' && 'Service finished and ready for pickup'}
+              </div>
+            </div>
+          )}
+
+          {/* On the Way Phase */}
+          {demoFlowStatus === 'en_route' && demoMechanic && (
+            <div className="phase-card">
+              <div className="phase-icon">🚗</div>
+              <div className="phase-title">Mechanic on the Way</div>
+              <div className="phase-desc">Heading to your location</div>
+              <div className="mechanic-card">
+                <div className="mechanic-info">
+                  <div className="mechanic-name">{demoMechanic.name}</div>
+                  <div className="mechanic-vehicle">{demoMechanic.vehicle}</div>
+                </div>
+              </div>
+              <div className="time-tracking">
+                <div className="time-item">
+                  <span className="time-label">ETA</span>
+                  <span className="time-value">{tracking?.eta || '--:--'}</span>
+                </div>
+                <div className="time-item">
+                  <span className="time-label">Distance</span>
+                  <span className="time-value">{tracking?.distance || '--'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Service In Progress Phase */}
+          {(demoFlowStatus === 'arrived' || demoFlowStatus === 'working') && demoMechanic && (
+            <div className="phase-card">
+              <div className="phase-icon">🔧</div>
+              <div className="phase-title">Service In Progress</div>
+              <div className="phase-desc">Mechanic is working on your vehicle</div>
+              <div className="mechanic-card">
+                <div className="mechanic-info">
+                  <div className="mechanic-name">{demoMechanic.name}</div>
+                  <div className="mechanic-vehicle">{demoMechanic.vehicle}</div>
+                </div>
+              </div>
+              {workProgress > 0 && (
+                <div className="progress-container">
+                  <div className="progress-label">Work Progress</div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: `${workProgress}%` }}></div>
                   </div>
+                  <div className="progress-text">{Math.round(workProgress)}%</div>
                 </div>
-                {idx < stages.length - 1 && <div className={`tracking-connector ${isCompleted ? 'tracking-connector-done' : ''}`} />}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Key Metrics */}
-        <div className="tracking-metrics">
-          <div className="tracking-metric-card">
-            <div className="metric-label">Est. Time</div>
-            <div className="metric-value">{tracking?.estimatedTime || '45 mins'}</div>
-          </div>
-          <div className="tracking-metric-card">
-            <div className="metric-label">Distance</div>
-            <div className="metric-value">{tracking?.distance || '8.5 km'}</div>
-          </div>
-          <div className="tracking-metric-card">
-            <div className="metric-label">ETA</div>
-            <div className="metric-value">{tracking?.eta || '15:15'}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Services Summary */}
-      <div className="tracking-services-section">
-        <h2 className="section-title">Services</h2>
-        <div className="tracking-services-list">
-          {order.items?.map((item, idx) => (
-            <div key={idx} className="tracking-service-item">
-              <span className="service-name">{item.title} x {item.qty}</span>
-              <strong className="service-price">₹ {(item.price * item.qty).toLocaleString('en-IN')}</strong>
+              )}
             </div>
-          ))}
-        </div>
-      </div>
+          )}
 
-      {/* Mechanic Info */}
-      {order.status !== 'pending' && (
-        <div className="tracking-mechanic-section">
-          <h2 className="section-title">Assigned Mechanic</h2>
-          <div className="tracking-mechanic-grid">
-            <div className="mechanic-info-item">
-              <div className="mechanic-label">Name</div>
-              <div className="mechanic-value">{order.assignedMechanicName || order.mechanicName || 'Assigned Mechanic'}</div>
+          {/* Completed Phase */}
+          {demoFlowStatus === 'completed' && (
+            <div className="phase-card completed">
+              <div className="phase-icon">✅</div>
+              <div className="phase-title">Task Completed</div>
+              <div className="phase-desc">Your service has been completed</div>
+              <div className="completion-message">Thank you for using RepairWale!</div>
             </div>
-            <div className="mechanic-info-item">
-              <div className="mechanic-label">Rating</div>
-              <div className="mechanic-value-rating"> 4.8 (245 reviews)</div>
+          )}
+
+          {/* Order Details */}
+          <div className="order-summary">
+            <div className="summary-row">
+              <span>Order ID</span>
+              <strong>{order.id?.slice(-8).toUpperCase()}</strong>
             </div>
-            <div className="mechanic-contact-buttons">
-              <button className="mechanic-btn mechanic-btn-call">📞 Call</button>
-              <button className="mechanic-btn mechanic-btn-chat">💬 Chat</button>
+            <div className="summary-row">
+              <span>Total</span>
+              <strong>₹ {order.total?.toLocaleString('en-IN') || '0'}</strong>
+            </div>
+            <div className="summary-row">
+              <span>Status</span>
+              <strong>{currentStage?.label || 'Pending'}</strong>
             </div>
           </div>
-        </div>
-      )}
+        </article>
+      </section>
 
-      {/* Status Updates */}
-      <div className="tracking-updates-section">
-        <h2 className="section-title">Status Updates</h2>
-        <div className="tracking-updates-list">
-          {statusUpdates.map((update, idx) => (
-            <div
-              key={idx}
-              onClick={() => setSelectedUpdate(selectedUpdate === idx ? null : idx)}
-              className={`tracking-update-card ${selectedUpdate === idx ? 'tracking-update-selected' : ''}`}
-            >
-              <div className="update-icon">{update.icon}</div>
-              <div className="update-content">
-                <div className="update-message">{update.message}</div>
-                <div className="update-time">{update.time}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="tracking-live-indicator">
-           Live updates - Refreshes every 5 seconds
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="tracking-action-buttons">
-        <button
-          onClick={() => navigate('/orders')}
-          className="tracking-btn-secondary"
-        >
-           Back to Orders
-        </button>
-        <button
-          onClick={loadOrder}
-          className="tracking-btn-primary"
-        >
-           Refresh Tracking
-        </button>
-      </div>
-
-      {/* Live GPS Tracker */}
-      <div className="tracking-gps-container">
-        <LiveGPSTracker 
-          orderId={orderId} 
-          mechanicId={order.mechanicId || 'm1'}
-          customerId={order.customerId}
-          initialCustomerLocation={order.customerLocation}
-        />
-      </div>
-
-      {/* Real-Time Chat */}
-      <div className="tracking-chat-container">
-        <RealTimeChat 
-          orderId={orderId}
-          userRole="customer"
-          mechanicName={order.assignedMechanicName || order.mechanicName || 'Assigned Mechanic'}
-        />
-      </div>
-
-      <style>{premiumStyles}</style>
+      <style>{styles}</style>
     </div>
   )
 }
+
+const styles = `
+  .tracking-page {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 16px;
+    background: #0B1F3B;
+    min-height: 100vh;
+    color: #ffffff;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .top-bar h1 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  .tracking-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+
+  .panel {
+    border: 1px solid #1f3f6b;
+    border-radius: 12px;
+    background: #0f172a;
+    padding: 0;
+  }
+
+  .panel-map {
+    grid-column: span 1;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .panel-map > * {
+    height: 600px;
+    border-radius: 12px;
+  }
+
+  .panel-realtime-tracker {
+    grid-column: span 1;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .tracker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .tracker-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .demo-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn {
+    border-radius: 8px;
+    border: 1px solid #1f3f6b;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .btn-primary {
+    background: #0B1F3B;
+    color: #ffffff;
+    border-color: #315b94;
+  }
+
+  .btn-primary:hover {
+    background: #1a2a50;
+  }
+
+  .btn-secondary {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #1f3f6b;
+  }
+
+  .btn-secondary:hover {
+    background: #1a2a50;
+  }
+
+  .phase-card {
+    border: 1px solid #1f3f6b;
+    border-radius: 12px;
+    background: #0B1F3B;
+    padding: 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .phase-card.completed {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .phase-icon {
+    font-size: 32px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .phase-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .phase-desc {
+    font-size: 12px;
+    color: #9ec1e8;
+  }
+
+  .phase-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #9ec1e8;
+    font-size: 13px;
+  }
+
+  .spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #1f3f6b;
+    border-top-color: #9ec1e8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .mechanic-card {
+    border: 1px solid #1f3f6b;
+    border-radius: 10px;
+    background: #0f172a;
+    padding: 10px;
+    text-align: left;
+  }
+
+  .mechanic-info {
+    display: grid;
+    gap: 4px;
+  }
+
+  .mechanic-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .mechanic-vehicle {
+    font-size: 12px;
+    color: #9ec1e8;
+  }
+
+  .mechanic-rating {
+    font-size: 12px;
+    color: #b5c8e3;
+  }
+
+  .mechanic-phone {
+    font-size: 12px;
+    color: #b5c8e3;
+  }
+
+  .time-tracking {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .time-item {
+    border: 1px solid #1f3f6b;
+    border-radius: 8px;
+    background: #0f172a;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .time-label {
+    font-size: 11px;
+    color: #9ec1e8;
+    font-weight: 600;
+  }
+
+  .time-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .progress-container {
+    display: grid;
+    gap: 6px;
+  }
+
+  .progress-label {
+    font-size: 12px;
+    color: #9ec1e8;
+    font-weight: 600;
+  }
+
+  .progress-bar {
+    position: relative;
+    width: 100%;
+    height: 20px;
+    background: #0f172a;
+    border-radius: 6px;
+    border: 1px solid #1f3f6b;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #06b6d4);
+    border-radius: 5px;
+    transition: width 0.3s ease;
+  }
+
+  .progress-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .completion-message {
+    font-size: 14px;
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .order-summary {
+    border-top: 1px solid #1f3f6b;
+    padding-top: 12px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .summary-row span {
+    color: #9ec1e8;
+  }
+
+  .summary-row strong {
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .muted {
+    color: #b5c8e3;
+    font-size: 12px;
+    margin: 0;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid #1f3f6b;
+    border-radius: 8px;
+    background: #0B1F3B;
+    padding: 10px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .timeline {
+    display: grid;
+    gap: 10px;
+  }
+
+  .timeline-row {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
+    border: 1px solid #1f3f6b;
+    border-radius: 8px;
+    background: #0B1F3B;
+    padding: 10px;
+  }
+
+  .dot {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #315b94;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: #b5c8e3;
+  }
+
+  .is-done .dot,
+  .is-current .dot {
+    border-color: #ffffff;
+  }
+
+  .tracking-page * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+  }
+
+  @media (max-width: 1200px) {
+    .tracking-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .panel-map > * {
+      height: 400px;
+    }
+
+    .panel-realtime-tracker {
+      max-height: 400px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .tracking-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .panel-map > * {
+      height: 300px;
+    }
+
+    .panel-realtime-tracker {
+      max-height: none;
+    }
+
+    .top-bar h1 {
+      font-size: 22px;
+    }
+  }
+`

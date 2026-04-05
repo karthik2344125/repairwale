@@ -13,7 +13,7 @@
     <meta property="og:title" content="RepairWale - On-Demand Mechanic Services" />
     <meta property="og:description" content="Connect with trusted mechanics and get your vehicle repaired quickly" />
     
-    <title>RepairWale - On-Demand Mechanic & Vehicle Repair Services</title>
+    <title>RepairWale Live - On-Demand Mechanic & Vehicle Repair Services</title>
     
     <!-- Leaflet CSS for Maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -51,30 +51,14 @@
         z-index: -1;
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-cRdoZFY1.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CWmCqvbK.css">
+    <script type="module" crossorigin src="./assets/index-ZyPuoY5_.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CfATirSK.css">
   </head>
   <body>
     <div id="root"></div>
     <script>
-      (function () {
-        const isFileProtocol = window.location.protocol === 'file:'
-        const isClientIndex = /\/client\/index\.html$/i.test(window.location.pathname) || /\/index\.html$/i.test(window.location.pathname)
-        if (isFileProtocol && isClientIndex && !/\/dist\//i.test(window.location.pathname)) {
-          window.location.replace('./dist/index.html')
-          return
-        }
-
-        const liveServerPorts = new Set(['5500', '5501', '5502', '5503'])
-        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        const isLiveServer = isLocalHost && liveServerPorts.has(window.location.port)
-        const isDistPage = /\/dist(\/|$)/.test(window.location.pathname)
-
-        if (isLiveServer && !isDistPage) {
-          const target = new URL('./dist/index.html', window.location.href)
-          window.location.replace(target.href)
-        }
-      })()
+      // Keep index.html on the live Vite entry so local edits show up immediately.
+      window.__REPAIRWALE_CLIENT_ENTRY__ = 'live-src'
     </script>
   </body>
 </html>

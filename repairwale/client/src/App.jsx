@@ -20,6 +20,7 @@ const TermsAndConditions = lazy(() => import('./shared/pages/TermsAndConditions'
 const CustomerHome = lazy(() => import('./customer/pages/CustomerHome'))
 const OrderHistory = lazy(() => import('./customer/pages/OrderHistory'))
 const ServiceTracking = lazy(() => import('./customer/pages/ServiceTracking'))
+const TrackingDemoPage = lazy(() => import('./customer/pages/TrackingDemoPage'))
 const Checkout = lazy(() => import('./customer/pages/Checkout'))
 const Favorites = lazy(() => import('./customer/pages/Favorites'))
 const OnboardingCustomer = lazy(() => import('./customer/pages/OnboardingCustomer'))
@@ -162,6 +163,7 @@ export default function App(){
                     <Route path="/checkout" element={<ProtectedRoute><Checkout/></ProtectedRoute>} />
                     <Route path="/favorites" element={<ProtectedRoute><Favorites/></ProtectedRoute>} />
                     <Route path="/tracking/:orderId" element={<ProtectedRoute><ServiceTracking/></ProtectedRoute>} />
+                    <Route path="/tracking-demo" element={<ProtectedRoute><TrackingDemoPage/></ProtectedRoute>} />
                     <Route path="/orders" element={<ProtectedRoute><OrderHistory/></ProtectedRoute>} />
                     
                     {/* Customer Routes */}

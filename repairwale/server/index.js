@@ -252,13 +252,28 @@ app.post('/api/ai/knowledge/search', (req, res) => {
 
 app.post('/api/ai/chat', (req, res) => {
   try {
-    const { message, topK = 4 } = req.body || {};
+    const { message, topK = 4, role = 'customer' } = req.body || {};
     if (!message || !String(message).trim()) {
       return res.status(400).json({ ok: false, error: 'message is required' });
     }
 
-    const response = aiKnowledgeEngine.answerQuestion(String(message), Number(topK) || 4);
-    res.json({ ok: true, ...response });
+    const normalizedRole = ['customer', 'mechanic'].includes(String(role).toLowerCase())
+      ? String(role).toLowerCase()
+      : 'customer';
+
+    const roleContext = normalizedRole === 'mechanic'
+      ? 'You are assisting a mechanic using RepairWale. Focus on order handling, ETA communication, service execution quality, and earnings best practices.'
+      : 'You are assisting a customer using RepairWale. Focus on booking flow, pricing, emergency support, order tracking, and payments.';
+
+    const enrichedQuestion = `${roleContext}\nUser question: ${String(message)}`;
+    const response = aiKnowledgeEngine.answerQuestion(enrichedQuestion, Number(topK) || 4);
+
+    const roleGuidance = normalizedRole === 'mechanic'
+      ? '\n\nMechanic assistant tips:\n- Accept nearby jobs first to improve turnaround\n- Send ETA and progress updates to customer\n- Close jobs with clear notes and final summary'
+      : '\n\nCustomer assistant tips:\n- Compare service options and pricing before booking\n- Use live tracking once mechanic is assigned\n- Keep order details and payment method ready at checkout';
+
+    const roleScopedAnswer = `${response.answer}${roleGuidance}`;
+    res.json({ ok: true, role: normalizedRole, ...response, answer: roleScopedAnswer });
   } catch (error) {
     console.error('[AI] Chat failed:', error);
     res.status(500).json({ ok: false, error: 'AI chat failed' });
@@ -1295,7 +1310,7 @@ io.on('connection', (socket) => {
 
 function startListening(port){
   try {
-    server.listen(port, () => console.log(`RepairWale server running on http://localhost:${port}`));
+    server.listen(port, '0.0.0.0', () => console.log(`RepairWale server running on http://localhost:${port}`));
   } catch(e){
     console.error('[START ERROR]', e);
   }

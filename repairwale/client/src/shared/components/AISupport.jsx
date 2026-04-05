@@ -5,6 +5,7 @@ import { IconBot, IconChat, IconMapPin, IconMoney, IconPhone, IconSpark, IconWre
 
 export default function AISupport() {
   const navigate = useNavigate()
+  const [activeRole, setActiveRole] = useState(localStorage.getItem('rw_role_locked') || 'customer')
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
     { id: 1, role: 'ai', text: 'hello! i\'m the RepairWale support assistant. how can i help you today?', timestamp: new Date() }
@@ -16,12 +17,53 @@ export default function AISupport() {
   const [followUpSuggestions, setFollowUpSuggestions] = useState([])
   const messagesEndRef = useRef(null)
 
-  const quickSuggestions = [
-    { icon: IconMoney, text: 'pricing', query: 'What are your service prices?' },
-    { icon: IconPhone, text: 'emergency', query: 'I need emergency help now!' },
-    { icon: IconWrench, text: 'book service', query: 'How do I book a service?' },
-    { icon: IconMapPin, text: 'track order', query: 'How to track my mechanic?' }
-  ]
+  const quickSuggestions = activeRole === 'mechanic'
+    ? [
+        { icon: IconMoney, text: 'today earnings', query: 'Show my earnings tips for today' },
+        { icon: IconWrench, text: 'job handling', query: 'How should I handle a new service request?' },
+        { icon: IconMapPin, text: 'route support', query: 'How can I reach customer faster?' },
+        { icon: IconChat, text: 'customer chat', query: 'Best way to chat with customer professionally' }
+      ]
+    : [
+        { icon: IconMoney, text: 'pricing', query: 'What are your service prices?' },
+        { icon: IconPhone, text: 'emergency', query: 'I need emergency help now!' },
+        { icon: IconWrench, text: 'book service', query: 'How do I book a service?' },
+        { icon: IconMapPin, text: 'track order', query: 'How to track my mechanic?' }
+      ]
+
+  useEffect(() => {
+    const syncRole = () => {
+      const nextRole = localStorage.getItem('rw_role_locked') || 'customer'
+      setActiveRole(nextRole)
+    }
+
+    syncRole()
+    window.addEventListener('storage', syncRole)
+    window.addEventListener('repairwale:sync', syncRole)
+
+    return () => {
+      window.removeEventListener('storage', syncRole)
+      window.removeEventListener('repairwale:sync', syncRole)
+    }
+  }, [])
+
+  useEffect(() => {
+    const roleGreeting = activeRole === 'mechanic'
+      ? "hello! i'm the RepairWale mechanic assistant. i can help with jobs, routing, customer chat, and earnings."
+      : "hello! i'm the RepairWale customer assistant. i can help with booking, pricing, tracking, and support."
+
+    setMessages((prev) => {
+      if (!prev.length) {
+        return [{ id: 1, role: 'ai', text: roleGreeting, timestamp: new Date() }]
+      }
+
+      if (prev.length === 1 && prev[0].role === 'ai') {
+        return [{ ...prev[0], text: roleGreeting }]
+      }
+
+      return prev
+    })
+  }, [activeRole])
 
   const getActionIcon = (value = '') => {
     const source = value.toLowerCase()
@@ -192,6 +234,46 @@ export default function AISupport() {
     // Context-aware responses
     let response = ''
     let actionButtons = []
+
+    if (activeRole === 'mechanic') {
+      switch (intent) {
+        case 'pricing':
+          response = "**Mechanic Earnings Guide**\n\nYour earning potential depends on:\n- Fast response time\n- Strong customer ratings\n- Completing jobs cleanly\n- Keeping availability updated\n\nTips: pick nearby jobs first, confirm scope early, and close jobs with proper notes."
+          actionButtons = [
+            { text: 'Open Orders', action: () => navigate('/mechanic/orders') },
+            { text: 'View Profile', action: () => navigate('/mechanic/profile') }
+          ]
+          break
+        case 'tracking':
+          response = "**Mechanic Live Workflow**\n\n1. Accept the request quickly\n2. Update your movement/location\n3. Confirm arrival in chat\n4. Share progress updates\n5. Mark completion with final summary\n\nThis improves trust and ratings."
+          actionButtons = [
+            { text: 'Open Orders', action: () => navigate('/mechanic/orders') },
+            { text: 'Live Queue', action: () => navigate('/mechanic/live-orders') }
+          ]
+          break
+        case 'contact':
+          response = "**Professional Customer Communication**\n\nUse short and clear updates:\n- 'On the way, ETA 12 min'\n- 'Reached location'\n- 'Diagnosis done, starting fix'\n- 'Service complete'\n\nAlways confirm before extra chargeable work."
+          actionButtons = [
+            { text: 'Open Orders', action: () => navigate('/mechanic/orders') }
+          ]
+          break
+        case 'services':
+          response = "**Mechanic Service Execution Tips**\n\n- Verify issue before starting\n- Explain the fix in simple words\n- Keep transparent pricing\n- Capture completion details\n- Request review politely at the end"
+          actionButtons = [
+            { text: 'Open Profile', action: () => navigate('/mechanic/profile') },
+            { text: 'Orders', action: () => navigate('/mechanic/orders') }
+          ]
+          break
+        default:
+          response = "**Mechanic Assistant Ready**\n\nI can help you with:\n- handling new orders\n- routing and ETA updates\n- customer communication\n- improving completion quality and ratings\n\nAsk anything about your mechanic workflow."
+          actionButtons = [
+            { text: 'Open Orders', action: () => navigate('/mechanic/orders') },
+            { text: 'Dashboard', action: () => navigate('/mechanic/dashboard') }
+          ]
+      }
+
+      return { text: response, buttons: actionButtons }
+    }
     
     switch(intent) {
       case 'pricing':
@@ -346,7 +428,7 @@ export default function AISupport() {
         const response = await fetch(`${base}/ai/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message, topK: 4 })
+          body: JSON.stringify({ message, topK: 4, role: activeRole })
         })
 
         if (!response.ok) continue

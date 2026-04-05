@@ -407,11 +407,7 @@ export default function MechanicHome() {
         <div className="welcome-banner">
           <div className="welcome-content">
             <h1>Welcome back, {user?.fullName || 'Mechanic'}</h1>
-            <p>This dashboard focuses on weekly performance and customer feedback. The live request queue is available on the Orders page.</p>
-            <div className="welcome-actions">
-              <Button size="sm" onClick={() => navigate('/mechanic/orders')}>Open Orders</Button>
-              <Button size="sm" variant="ghost" onClick={() => navigate('/mechanic/order-history')}>Order History</Button>
-            </div>
+            <p>This dashboard focuses on weekly performance and customer feedback.</p>
           </div>
         </div>
 

@@ -142,6 +142,7 @@ const styles = `
 
 .profile-info {
   flex: 1;
+  min-width: 0;
 }
 
 .profile-name {
@@ -155,8 +156,9 @@ const styles = `
 
 .profile-email {
   font-size: 16px;
-  color: #aaa;
+  color: #FFFFFF;
   margin: 0 0 12px 0;
+  overflow-wrap: anywhere;
 }
 
 .profile-badges {
@@ -181,10 +183,23 @@ const styles = `
   box-shadow: 0 4px 12px rgba(29,99,255,0.18);
 }
 
+.profile-badge--verified {
+  background: linear-gradient(135deg, rgba(59,130,246,0.16) 0%, rgba(29,99,255,0.24) 100%);
+  color: #EFF6FF;
+  border-color: rgba(147,197,253,0.42);
+}
+
+.profile-badge--member {
+  background: rgba(255,255,255,0.06);
+  color: #F8FAFC;
+  border-color: rgba(255,255,255,0.14);
+}
+
 .profile-member-since {
   font-size: 14px;
-  color: #aaa;
+  color: rgba(255,206,50,0.7);
   font-weight: 500;
+  margin: 0;
 }
 
 /* ===== STATS CARDS ===== */
@@ -1633,15 +1648,18 @@ const styles = `
 }
 
 .profile-info {
-  display: grid !important;
-  gap: 10px !important;
+  display: block !important;
 }
 
 .profile-name,
 .profile-email,
 .profile-member-since {
-  margin: 0 !important;
+  margin: 0 0 8px 0 !important;
   line-height: 1.3 !important;
+}
+
+.profile-member-since {
+  margin: 0 !important;
 }
 
 .profile-badges {
@@ -1900,13 +1918,14 @@ export default function MechanicProfile() {
               <div className="profile-status-badge">Online</div>
             </div>
             <div className="profile-info">
-              <h1 className="profile-name">{user?.fullName || 'Mechanic'}</h1>
+              <h1 className="profile-name">{user?.fullName || 'Demo Mechanic'}</h1>
               <p className="profile-email">{user?.email}</p>
               <div className="profile-badges">
-                <span className="profile-badge"> Verified</span>
+                <span className="profile-badge">Mechanic</span>
+                <span className="profile-badge profile-badge--verified">Verified</span>
               </div>
               <p className="profile-member-since">
-                Member since {joinedDate?.toLocaleDateString()}
+                Member since {joinedDate?.toLocaleDateString() || 'Recently'}
               </p>
             </div>
           </div>

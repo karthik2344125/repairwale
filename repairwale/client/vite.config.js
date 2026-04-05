@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: './', // Use relative paths for assets - works with Live Server
   server: {
+    host: '0.0.0.0',
     port: 5173,
     strictPort: true,
     open: true,

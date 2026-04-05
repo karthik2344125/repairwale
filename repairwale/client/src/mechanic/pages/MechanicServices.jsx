@@ -38,7 +38,7 @@ const styles = `
 .card {
   background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border: 1px solid #0B1F3B;
-  border-radius: 12px;
+  border-radius: 24px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.4);
   margin-bottom: 24px;
@@ -66,7 +66,7 @@ const styles = `
 .service-item {
   background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
   border: 1px solid #0B1F3B;
-  border-radius: 10px;
+  border-radius: 20px;
   padding: 16px;
   transition: all 0.3s ease;
 }
@@ -140,7 +140,7 @@ const styles = `
   padding: 12px 14px;
   background: rgba(29,99,255,0.15);
   border: 1px solid #0B1F3B;
-  border-radius: 8px;
+  border-radius: 20px;
   color: #FFFFFF;
   font-size: 14px;
   transition: all 0.3s ease;
@@ -169,7 +169,7 @@ const styles = `
   background: rgba(29,99,255,0.3);
   border: 1px solid #0B1F3B;
   color: #FFFFFF;
-  border-radius: 6px;
+  border-radius: 9999px;
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -350,7 +350,7 @@ const styles = `
   right: -2px;
   bottom: -2px;
   background: linear-gradient(135deg, #0B1F3B, #0B1F3B);
-  border-radius: 12px;
+  border-radius: 24px;
   opacity: 0;
   z-index: -1;
   transition: opacity 0.3s ease;

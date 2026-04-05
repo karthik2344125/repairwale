@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../shared/context/AuthContext'
 import { getMechanic, saveMechanic } from '../../shared/services/roleData'
+import { mechanicProfileDefaults as demoMechanicDefaults } from '../data/mechanicDemoData'
 
 const styles = `
 .profile-wrapper {
@@ -152,7 +152,6 @@ const styles = `
   letter-spacing: -1px;
   text-shadow: 0 2px 8px rgba(29,99,255,0.12);
 }
-}
 
 .profile-email {
   font-size: 16px;
@@ -205,19 +204,19 @@ const styles = `
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
-  border-radius: 16px;
+  background: transparent;
+  border-radius: 0;
   padding: 24px;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  box-shadow: none;
   transition: all 0.3s ease;
-  border: 2px solid #0B1F3B;
+  border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .stat-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 16px 48px rgba(29,99,255,0.1);
-  border-color: #0B1F3B;
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(148, 163, 184, 0.28);
 }
 
 .stat-icon {
@@ -252,12 +251,12 @@ const styles = `
   display: flex;
   gap: 8px;
   margin-bottom: 32px;
-  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
+  background: transparent;
   padding: 12px;
-  border-radius: 16px;
-  border: 2px solid #0B1F3B;
+  border-radius: 0;
+  border: 0;
   overflow-x: auto;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  box-shadow: none;
 }
 
 .profile-tab {
@@ -300,18 +299,18 @@ const styles = `
 }
 
 .info-card {
-  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
-  border: 2px solid #0B1F3B;
-  border-radius: 16px;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0;
   padding: 28px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  box-shadow: none;
   transition: all 0.3s ease;
 }
 
 .info-card:hover {
-  border-color: #0B1F3B;
-  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 12px 40px rgba(29,99,255,0.1);
-  transform: translateY(-4px);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: none;
+  transform: none;
 }
 
 .card-header {
@@ -405,18 +404,18 @@ const styles = `
 .item-card {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #0B1F3B 0%, #0B1F3B 100%);
-  border: 2px solid #0B1F3B;
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0;
   padding: 16px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: none;
 }
 
 .item-card:hover {
-  border-color: #0B1F3B;
-  box-shadow: 0 0 12px rgba(29,99,255,0.18), 0 8px 24px rgba(29,99,255,0.12);
-  transform: translateY(-2px);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: none;
+  transform: none;
 }
 
 .item-header {
@@ -1008,17 +1007,795 @@ const styles = `
   backdrop-filter: blur(8px);
 }
 
+/* ===== FLAT PROFILE CLEANUP ===== */
+.profile-wrapper {
+  background: #0b1220 !important;
+}
+
+.profile-hero,
+.profile-stats-container,
+.profile-tabs,
+.info-card,
+.stat-card,
+.modal-content,
+.item-card,
+.form-input,
+.btn-save,
+.btn-cancel,
+.card-edit-btn,
+.back-btn,
+.action-icon-btn,
+.profile-avatar-large,
+.profile-status-badge,
+.profile-badge,
+.profile-tab,
+.profile-tab.active,
+.item-badge,
+.item-action-btn,
+.modal-close {
+  background: #0f172a !important;
+  background-image: none !important;
+  border-color: #233248 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  border-radius: 22px !important;
+}
+
+.profile-hero::before,
+.info-card::after,
+.stat-card::before {
+  display: none !important;
+  content: none !important;
+}
+
+.profile-tab:hover,
+.profile-tab.active,
+.item-card:hover,
+.info-card:hover,
+.stat-card:hover,
+.back-btn:hover,
+.card-edit-btn:hover,
+.btn-save:hover,
+.btn-cancel:hover,
+.item-action-btn:hover,
+.action-icon-btn:hover,
+.modal-close:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.profile-badges {
+  gap: 14px;
+}
+
+.profile-badge,
+.item-badge,
+.profile-status-badge {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  color: #cbd5e1 !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-status-badge {
+  position: static !important;
+  margin-top: 8px;
+}
+
+.profile-tabs {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 22px;
+}
+
+.profile-tab,
+.profile-tab.active,
+.profile-tab:hover {
+  border: 0 !important;
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  padding: 8px 0 !important;
+  justify-content: flex-start;
+  margin-right: 14px;
+  border-bottom: 1px solid transparent !important;
+  border-radius: 9999px !important;
+}
+
+.profile-tab.active {
+  color: #ffffff !important;
+  border-bottom-color: #64748b !important;
+}
+
+.items-list {
+  gap: 0 !important;
+}
+
+.item-card {
+  border: 0 !important;
+  border-bottom: 1px solid #233248 !important;
+  border-radius: 18px !important;
+  padding: 14px 0 !important;
+  background: transparent !important;
+}
+
+.item-card:last-child {
+  border-bottom: 0 !important;
+}
+
+.item-header {
+  margin-bottom: 6px;
+}
+
+.item-badge,
+.item-action-btn,
+.add-item-btn,
+.card-edit-btn,
+.btn-save,
+.btn-cancel,
+.modal-close,
+.back-btn,
+.action-icon-btn {
+  border-radius: 18px !important;
+}
+
+.profile-header-main {
+  align-items: flex-start;
+}
+
+.profile-stats-grid,
+.cards-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.profile-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stat-card,
+.info-card {
+  height: 100%;
+}
+
+.info-rows {
+  gap: 10px;
+}
+
+.info-row,
+.card-header,
+.modal-header {
+  border-color: #233248 !important;
+}
+
+.modal-overlay {
+  background: rgba(2, 8, 23, 0.8) !important;
+  backdrop-filter: none !important;
+}
+
+.profile-header-main,
+.profile-stats-grid,
+.cards-grid,
+.info-card,
+.stat-card,
+.profile-tabs,
+.item-card,
+.modal-content {
+  border-radius: 24px !important;
+}
+
+.profile-tabs {
+  border-radius: 9999px !important;
+  padding: 10px !important;
+}
+
+.profile-tab {
+  border-radius: 9999px !important;
+  padding: 12px 18px !important;
+}
+
+.profile-tab.active {
+  border-radius: 9999px !important;
+}
+
+.info-card,
+.stat-card,
+.item-card,
+.modal-content {
+  border-radius: 24px !important;
+}
+
+.info-card {
+  overflow: hidden;
+}
+
+.profile-section-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.profile-section-card {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: none;
+}
+
+.profile-section-card--overview {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+}
+
+.profile-section-card--services {
+  background: linear-gradient(180deg, rgba(248,250,252,0.98), rgba(255,255,255,0.96));
+}
+
+.profile-section-card--availability {
+  background: linear-gradient(180deg, rgba(247,250,252,0.98), rgba(255,255,255,0.96));
+}
+
+.profile-section-card--reviews {
+  background: linear-gradient(180deg, rgba(250,250,250,0.98), rgba(255,255,255,0.96));
+}
+
+.profile-section-card--earnings {
+  background: linear-gradient(180deg, rgba(248,250,252,0.98), rgba(255,255,255,0.96));
+}
+
+.profile-summary-line {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-detail {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.stat-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.stat-pill {
+  padding: 6px 10px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.profile-section-card.full {
+  grid-column: 1 / -1;
+}
+
+.profile-section-grid .info-card,
+.profile-section-grid .stat-card,
+.profile-section-grid .item-card {
+  height: 100%;
+}
+
+.card-header,
+.modal-header {
+  padding-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .profile-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-stats-grid,
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @keyframes profile-float {
   0%, 100% { transform: translate(0, 0); }
   25% { transform: translate(10px, 10px); }
   50% { transform: translate(0, 20px); }
   75% { transform: translate(-10px, 10px); }
 }
+
+/* ===== SMALL BOX TABS (OVERVIEW / SERVICES / AVAILABILITY) ===== */
+.profile-tabs {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.profile-tab,
+.profile-tab.active,
+.profile-tab:hover:not(.active) {
+  flex: 0 0 auto !important;
+  min-width: 120px !important;
+  justify-content: center !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #374151 !important;
+  box-shadow: none !important;
+}
+
+.profile-tab.active {
+  border-color: #9ca3af !important;
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.profile-tab:hover:not(.active) {
+  border-color: #9ca3af !important;
+  background: #f9fafb !important;
+}
+
+@media (max-width: 640px) {
+  .profile-tab,
+  .profile-tab.active,
+  .profile-tab:hover:not(.active) {
+    min-width: 100px !important;
+    padding: 9px 12px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ===== PLAIN PROFILE OVERRIDES ===== */
+.profile-wrapper {
+  background: #f8fafc !important;
+  color: #111827 !important;
+}
+
+.profile-hero,
+.profile-stats-container,
+.profile-content,
+.profile-tabs,
+.profile-section-card,
+.info-card,
+.stat-card,
+.item-card,
+.modal-content {
+  background: #ffffff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.profile-hero,
+.profile-section-card,
+.info-card,
+.stat-card,
+.item-card,
+.modal-content,
+.profile-tabs {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 16px !important;
+}
+
+.profile-hero {
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.profile-hero::before,
+.profile-hero::after,
+.info-card::before,
+.info-card::after,
+.stat-card::before,
+.stat-card::after {
+  display: none !important;
+  content: none !important;
+}
+
+.profile-name,
+.card-title,
+.modal-title,
+.stat-value,
+.info-value,
+.item-title,
+.item-details,
+.profile-email,
+.profile-member-since,
+.stat-label,
+.info-label,
+.form-label,
+.profile-section-note,
+.profile-section-name {
+  color: #111827 !important;
+  text-shadow: none !important;
+}
+
+.back-btn,
+.action-icon-btn,
+.card-edit-btn,
+.add-item-btn,
+.btn-save,
+.btn-cancel,
+.item-action-btn,
+.modal-close,
+.profile-badge,
+.profile-status-badge,
+.item-badge {
+  background: #f9fafb !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+}
+
+.profile-avatar-large {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+}
+
+.profile-badge,
+.profile-status-badge,
+.item-badge,
+.item-action-btn,
+.card-edit-btn,
+.add-item-btn,
+.btn-save,
+.btn-cancel,
+.modal-close,
+.back-btn,
+.action-icon-btn {
+  border-radius: 12px !important;
+}
+
+.profile-tabs {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  scrollbar-width: thin;
+  gap: 10px !important;
+  padding: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 12px !important;
+  margin-bottom: 24px !important;
+}
+
+.profile-tab,
+.profile-tab.active,
+.profile-tab:hover:not(.active) {
+  flex: 1 1 0 !important;
+  min-width: 140px !important;
+  min-height: 52px !important;
+  justify-content: center !important;
+  background: #ffffff !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  border-bottom: 1px solid #d1d5db !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.profile-tab.active {
+  color: #111827 !important;
+  border-color: #9ca3af !important;
+  background: #f3f4f6 !important;
+}
+
+@media (max-width: 640px) {
+  .profile-tab,
+  .profile-tab.active,
+  .profile-tab:hover:not(.active) {
+    min-width: 130px !important;
+    min-height: 48px !important;
+  }
+}
+
+.profile-section-card,
+.info-card,
+.stat-card,
+.item-card,
+.modal-content {
+  padding: 20px !important;
+}
+
+.stat-card {
+  text-align: left !important;
+}
+
+.stat-card .stat-icon,
+.stat-card .stat-value,
+.stat-card .stat-label {
+  text-align: left !important;
+}
+
+.card-header,
+.modal-header,
+.info-row,
+.profile-section-card {
+  border-color: #e5e7eb !important;
+}
+
+.info-row,
+.card-header,
+.modal-header {
+  border-bottom-color: #e5e7eb !important;
+}
+
+.profile-section-grid,
+.cards-grid,
+.profile-stats-grid {
+  gap: 16px !important;
+}
+
+.info-card:hover,
+.stat-card:hover,
+.item-card:hover,
+.profile-section-card:hover,
+.back-btn:hover,
+.action-icon-btn:hover,
+.card-edit-btn:hover,
+.add-item-btn:hover,
+.btn-save:hover,
+.btn-cancel:hover,
+.item-action-btn:hover,
+.modal-close:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ===== DISTINCT CLEAN BOXES ===== */
+.profile-stats-grid .stat-card:nth-child(1),
+.profile-section-card--overview {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-left: 4px solid #94a3b8 !important;
+}
+
+.profile-stats-grid .stat-card:nth-child(2),
+.profile-section-card--services {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
+  border-left: 4px solid #cbd5e1 !important;
+}
+
+.profile-stats-grid .stat-card:nth-child(3),
+.profile-section-card--availability {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-left: 4px solid #a5b4fc !important;
+}
+
+.profile-stats-grid .stat-card:nth-child(4),
+.profile-section-card--earnings {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-left: 4px solid #86efac !important;
+}
+
+.profile-section-card--reviews {
+  background: linear-gradient(180deg, #ffffff 0%, #fdfdfd 100%) !important;
+  border-left: 4px solid #fbbf24 !important;
+}
+
+.profile-section-card--overview .card-header,
+.profile-section-card--services .card-header,
+.profile-section-card--availability .card-header,
+.profile-section-card--reviews .card-header,
+.profile-section-card--earnings .card-header {
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.profile-section-card--overview .card-title,
+.profile-section-card--services .card-title,
+.profile-section-card--availability .card-title,
+.profile-section-card--reviews .card-title,
+.profile-section-card--earnings .card-title {
+  color: #0f172a !important;
+}
+
+.stat-card .stat-detail,
+.stat-card .stat-pill {
+  color: #475569 !important;
+}
+
+.profile-section-card--overview,
+.profile-section-card--services,
+.profile-section-card--availability,
+.profile-section-card--reviews,
+.profile-section-card--earnings {
+  background-clip: padding-box !important;
+}
+
+/* ===== FINAL ALIGNMENT + SPACING ===== */
+.profile-hero-content,
+.profile-content {
+  max-width: 1120px !important;
+}
+
+.profile-header-main {
+  align-items: center !important;
+  gap: 24px !important;
+}
+
+.profile-info {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.profile-name,
+.profile-email,
+.profile-member-since {
+  margin: 0 !important;
+  line-height: 1.3 !important;
+}
+
+.profile-badges {
+  margin: 0 !important;
+  align-items: center !important;
+}
+
+.profile-tabs {
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+}
+
+.profile-tab,
+.profile-tab.active,
+.profile-tab:hover:not(.active) {
+  text-align: center !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.profile-section-shell {
+  gap: 14px !important;
+}
+
+.profile-section-grid,
+.cards-grid {
+  gap: 18px !important;
+}
+
+.profile-section-card,
+.info-card,
+.item-card,
+.modal-content {
+  padding: 20px !important;
+}
+
+.card-header,
+.modal-header {
+  margin-bottom: 16px !important;
+  padding-bottom: 12px !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.card-title,
+.modal-title {
+  line-height: 1.3 !important;
+}
+
+.info-rows {
+  gap: 10px !important;
+}
+
+.info-row {
+  padding: 10px 0 !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.info-label {
+  letter-spacing: 0.04em !important;
+  line-height: 1.3 !important;
+}
+
+.info-value {
+  text-align: right !important;
+  line-height: 1.35 !important;
+}
+
+.items-list {
+  gap: 10px !important;
+}
+
+.item-card {
+  padding: 14px !important;
+}
+
+.item-header {
+  margin-bottom: 8px !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.item-title,
+.item-details,
+.empty-text,
+.empty-subtext {
+  line-height: 1.4 !important;
+}
+
+.form-group {
+  margin-bottom: 14px !important;
+}
+
+.form-label {
+  margin-bottom: 6px !important;
+}
+
+.form-input {
+  min-height: 42px !important;
+}
+
+.form-actions {
+  margin-top: 18px !important;
+  gap: 10px !important;
+}
+
+@media (max-width: 900px) {
+  .profile-header-main {
+    flex-direction: column !important;
+    text-align: center !important;
+  }
+
+  .profile-info {
+    justify-items: center !important;
+  }
+
+  .profile-section-grid,
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .card-header,
+  .modal-header,
+  .item-header,
+  .info-row {
+    flex-wrap: wrap !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-content,
+  .profile-stats-container,
+  .profile-hero {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .profile-tab,
+  .profile-tab.active,
+  .profile-tab:hover:not(.active) {
+    min-width: 122px !important;
+  }
+
+  .info-value {
+    text-align: left !important;
+    width: 100% !important;
+  }
+}
 `
 
 export default function MechanicProfile() {
-  const { user, updateUser, completeLogout } = useAuth()
-  const navigate = useNavigate()
+  const { user, updateUser } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
   const [mechanic, setMechanic] = useState(null)
   
@@ -1035,20 +1812,25 @@ export default function MechanicProfile() {
   const [editingService, setEditingService] = useState(null)
 
   useEffect(() => {
-    const mechData = getMechanic()
-    setMechanic(mechData)
+    const mechData = getMechanic() || {}
+    const nextData = {
+      ...mechData,
+      ...demoMechanicDefaults,
+      services: Array.isArray(mechData.services) && mechData.services.length ? mechData.services : demoMechanicDefaults.services,
+      reviews: Array.isArray(mechData.reviews) && mechData.reviews.length ? mechData.reviews : demoMechanicDefaults.reviews,
+      availability: {
+        ...demoMechanicDefaults.availability,
+        ...(mechData.availability || {})
+      }
+    }
+
+    setMechanic(nextData)
+    saveMechanic(nextData)
   }, [])
 
   const initials = (user?.fullName || 'User').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
   const joinedDate = user?.joinedDate ? new Date(user.joinedDate) : null
   const membershipDays = joinedDate ? Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / (1000 * 60 * 60 * 24))) : 0
-
-  const handleLogout = () => {
-    if(confirm('Are you sure you want to logout?')) {
-      completeLogout()
-      navigate('/')
-    }
-  }
 
   const openProfileModal = () => {
     setProfileForm({ 
@@ -1112,15 +1894,6 @@ export default function MechanicProfile() {
       {/* Hero Header */}
       <div className="profile-hero">
         <div className="profile-hero-content">
-          <div className="profile-top-nav">
-            <button className="back-btn" onClick={() => navigate('/mechanic/dashboard')}>
-              Back to Dashboard
-            </button>
-            <div className="profile-actions">
-              <button className="action-icon-btn" onClick={handleLogout} title="Logout" />
-            </div>
-          </div>
-
           <div className="profile-header-main">
             <div className="profile-avatar-wrapper">
               <div className="profile-avatar-large">{initials}</div>
@@ -1130,39 +1903,12 @@ export default function MechanicProfile() {
               <h1 className="profile-name">{user?.fullName || 'Mechanic'}</h1>
               <p className="profile-email">{user?.email}</p>
               <div className="profile-badges">
-                <span className="profile-badge"> {mechanic?.rating?.toFixed(1) || '4.5'} / 5.0</span>
                 <span className="profile-badge"> Verified</span>
               </div>
               <p className="profile-member-since">
                 Member since {joinedDate?.toLocaleDateString()}
               </p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="profile-stats-container">
-        <div className="profile-stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon"></div>
-            <div className="stat-value">{mechanic?.rating?.toFixed(1) || '4.5'}</div>
-            <div className="stat-label">Rating</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon"></div>
-            <div className="stat-value">{mechanic?.servicesCompleted || 0}</div>
-            <div className="stat-label">Services Done</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon"></div>
-            <div className="stat-value">{mechanic?.services?.length || 0}</div>
-            <div className="stat-label">Services Offered</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon"></div>
-            <div className="stat-value">{mechanic?.totalEarnings || 0}</div>
-            <div className="stat-label">Total Earnings</div>
           </div>
         </div>
       </div>
@@ -1205,56 +1951,54 @@ export default function MechanicProfile() {
 
         {/* TAB: Overview */}
         {activeTab === 'overview' && (
-          <div className="cards-grid">
-            <div className="info-card">
-              <div className="card-header">
-                <div className="card-title">
-                  Personal Information
+          <div className="profile-section-shell">
+            <div className="profile-section-grid">
+              <div className="profile-section-card profile-section-card--overview">
+                <div className="card-header">
+                  <div className="card-title">Personal Information</div>
+                  <button className="card-edit-btn" onClick={openProfileModal}>Edit</button>
                 </div>
-                <button className="card-edit-btn" onClick={openProfileModal}>Edit</button>
+                <div className="info-rows">
+                  <div className="info-row">
+                    <span className="info-label">Full Name</span>
+                    <span className="info-value">{user?.fullName}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Email</span>
+                    <span className="info-value">{user?.email}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Phone</span>
+                    <span className="info-value">{user?.phone || 'Not added'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Specialization</span>
+                    <span className="info-value highlight">{user?.specialization || 'General'}</span>
+                  </div>
+                </div>
               </div>
-              <div className="info-rows">
-                <div className="info-row">
-                  <span className="info-label">Full Name</span>
-                  <span className="info-value">{user?.fullName}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Email</span>
-                  <span className="info-value">{user?.email}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Phone</span>
-                  <span className="info-value">{user?.phone || 'Not added'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Specialization</span>
-                  <span className="info-value highlight">{user?.specialization || 'General'}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="info-card">
-              <div className="card-header">
-                <div className="card-title">
-                  Performance
+              <div className="profile-section-card profile-section-card--overview">
+                <div className="card-header">
+                  <div className="card-title">Performance</div>
                 </div>
-              </div>
-              <div className="info-rows">
-                <div className="info-row">
-                  <span className="info-label">Total Services</span>
-                  <span className="info-value highlight">{mechanic?.servicesCompleted || 0}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Average Rating</span>
-                  <span className="info-value highlight"> {mechanic?.rating?.toFixed(1) || '4.5'} / 5.0</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Account Status</span>
-                  <span className="info-value" style={{color: '#FFFFFF'}}> Active</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Verification</span>
-                  <span className="info-value" style={{color: '#FFFFFF'}}> Verified</span>
+                <div className="info-rows">
+                  <div className="info-row">
+                    <span className="info-label">Member Since</span>
+                    <span className="info-value highlight">{joinedDate?.toLocaleDateString() || 'Recently'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Days Active</span>
+                    <span className="info-value highlight">{membershipDays}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Account Status</span>
+                    <span className="info-value" style={{color: '#FFFFFF'}}> Active</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Verification</span>
+                    <span className="info-value" style={{color: '#FFFFFF'}}> Verified</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1263,98 +2007,90 @@ export default function MechanicProfile() {
 
         {/* TAB: Services */}
         {activeTab === 'services' && (
-          <div className="cards-grid">
-            <div className="info-card" style={{gridColumn: '1 / -1'}}>
-              <div className="card-header">
-                <div className="card-title">
-                  My Services
+          <div className="profile-section-shell">
+            <div className="profile-section-grid">
+              <div className="profile-section-card profile-section-card--services full">
+                <div className="card-header">
+                  <div className="card-title">My Services</div>
                 </div>
+                
+                {(!mechanic?.services || mechanic.services.length === 0) ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">🧰</div>
+                    <div className="empty-text">No services added yet</div>
+                    <div className="empty-subtext">Add your services to start accepting requests</div>
+                  </div>
+                ) : (
+                  <div className="items-list">
+                    {mechanic.services.map(service => (
+                      <div key={service.id} className="item-card">
+                        <div className="item-header">
+                          <div className="item-title">{service.name}</div>
+                          <div className="item-actions">
+                            <button className="item-action-btn" onClick={() => removeService(service.id)}>Remove</button>
+                          </div>
+                        </div>
+                        <div className="item-details">Rate: {service.rate} per service</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button className="add-item-btn" onClick={() => setShowServiceModal(true)}>
+                  + Add New Service
+                </button>
               </div>
-              
-              {(!mechanic?.services || mechanic.services.length === 0) ? (
-                <div className="empty-state">
-                  <div className="empty-icon"></div>
-                  <div className="empty-text">No services added yet</div>
-                  <div className="empty-subtext">Add your services to start accepting requests</div>
-                </div>
-              ) : (
-                <div className="items-list">
-                  {mechanic.services.map(service => (
-                    <div key={service.id} className="item-card">
-                      <div className="item-header">
-                        <div className="item-title">
-                           {service.name}
-                        </div>
-                        <div className="item-actions">
-                          <button className="item-action-btn" onClick={() => removeService(service.id)}>
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                      <div className="item-details">
-                        Rate: {service.rate} per service
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <button className="add-item-btn" onClick={() => setShowServiceModal(true)}>
-                + Add New Service
-              </button>
             </div>
           </div>
         )}
 
         {/* TAB: Availability */}
         {activeTab === 'availability' && (
-          <div className="cards-grid">
-            <div className="info-card">
-              <div className="card-header">
-                <div className="card-title">
-                  Working Hours
+          <div className="profile-section-shell">
+            <div className="profile-section-grid">
+              <div className="profile-section-card profile-section-card--availability">
+                <div className="card-header">
+                  <div className="card-title">Working Hours</div>
+                  <button className="card-edit-btn" onClick={() => {
+                    setAvailabilityForm(mechanic?.availability || { startTime: '', endTime: '', serviceArea: '' })
+                    setShowAvailabilityModal(true)
+                  }}>
+                    Edit
+                  </button>
                 </div>
-                <button className="card-edit-btn" onClick={() => {
-                  setAvailabilityForm(mechanic?.availability || { startTime: '', endTime: '', serviceArea: '' })
-                  setShowAvailabilityModal(true)
-                }}>
-                  Edit
-                </button>
+                <div className="info-rows">
+                  <div className="info-row">
+                    <span className="info-label">Start Time</span>
+                    <span className="info-value">{mechanic?.availability?.startTime || 'Not set'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">End Time</span>
+                    <span className="info-value">{mechanic?.availability?.endTime || 'Not set'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Service Area</span>
+                    <span className="info-value">{mechanic?.availability?.serviceArea || 'Not set'}</span>
+                  </div>
+                </div>
               </div>
-              <div className="info-rows">
-                <div className="info-row">
-                  <span className="info-label">Start Time</span>
-                  <span className="info-value">{mechanic?.availability?.startTime || 'Not set'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">End Time</span>
-                  <span className="info-value">{mechanic?.availability?.endTime || 'Not set'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Service Area</span>
-                  <span className="info-value">{mechanic?.availability?.serviceArea || 'Not set'}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="info-card">
-              <div className="card-header">
-                <div className="card-title">
-                  Service Coverage
+              <div className="profile-section-card profile-section-card--availability">
+                <div className="card-header">
+                  <div className="card-title">Service Coverage</div>
                 </div>
-              </div>
-              <div className="info-rows">
-                <div className="info-row">
-                  <span className="info-label">Primary Area</span>
-                  <span className="info-value highlight">{mechanic?.availability?.serviceArea || 'Not configured'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Flexibility</span>
-                  <span className="info-value">High</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Coverage Radius</span>
-                  <span className="info-value">10 km</span>
+                <div className="info-rows">
+                  <div className="info-row">
+                    <span className="info-label">Primary Area</span>
+                    <span className="info-value highlight">{mechanic?.availability?.serviceArea || 'Not configured'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Flexibility</span>
+                    <span className="info-value">High</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Coverage Radius</span>
+                    <span className="info-value">10 km</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1363,83 +2099,77 @@ export default function MechanicProfile() {
 
         {/* TAB: Reviews */}
         {activeTab === 'reviews' && (
-          <div className="cards-grid">
-            <div className="info-card" style={{gridColumn: '1 / -1'}}>
-              <div className="card-header">
-                <div className="card-title">
-                  Customer Reviews
+          <div className="profile-section-shell">
+            <div className="profile-section-grid">
+              <div className="profile-section-card profile-section-card--reviews full">
+                <div className="card-header">
+                  <div className="card-title">Customer Reviews</div>
                 </div>
-              </div>
-              
-              {(!mechanic?.reviews || mechanic.reviews.length === 0) ? (
-                <div className="empty-state">
-                  <div className="empty-icon"></div>
-                  <div className="empty-text">No reviews yet</div>
-                  <div className="empty-subtext">Your reviews will appear here as customers rate your services</div>
-                </div>
-              ) : (
-                <div className="items-list">
-                  {mechanic.reviews.map(review => (
-                    <div key={review.id} className="item-card">
-                      <div className="item-header">
-                        <div className="item-title">
-                           {review.rating} / 5.0 - {review.customerName}
+
+                {(!mechanic?.reviews || mechanic.reviews.length === 0) ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">💬</div>
+                    <div className="empty-text">No reviews yet</div>
+                    <div className="empty-subtext">Your reviews will appear here as customers rate your services</div>
+                  </div>
+                ) : (
+                  <div className="items-list">
+                    {mechanic.reviews.map(review => (
+                      <div key={review.id} className="item-card">
+                        <div className="item-header">
+                          <div className="item-title">{review.rating} / 5.0 - {review.customerName}</div>
                         </div>
+                        <div className="item-details">"{review.comment}"</div>
                       </div>
-                      <div className="item-details">
-                        "{review.comment}"
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {/* TAB: Earnings */}
         {activeTab === 'earnings' && (
-          <div className="cards-grid">
-            <div className="info-card">
-              <div className="card-header">
-                <div className="card-title">
-                  Income Summary
+          <div className="profile-section-shell">
+            <div className="profile-section-grid">
+              <div className="profile-section-card profile-section-card--earnings">
+                <div className="card-header">
+                  <div className="card-title">Income Summary</div>
+                </div>
+                <div className="info-rows">
+                  <div className="info-row">
+                    <span className="info-label">Monthly Earnings</span>
+                    <span className="info-value highlight">{mechanic?.monthlyEarnings || 0}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Services This Month</span>
+                    <span className="info-value">{mechanic?.servicesThisMonth || 0}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Pending Amount</span>
+                    <span className="info-value" style={{color: '#FFFFFF'}}>{mechanic?.pendingAmount || 0}</span>
+                  </div>
                 </div>
               </div>
-              <div className="info-rows">
-                <div className="info-row">
-                  <span className="info-label">Total Earnings</span>
-                  <span className="info-value highlight">{mechanic?.totalEarnings || 0}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">This Month</span>
-                  <span className="info-value">{mechanic?.monthlyEarnings || 0}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Pending Amount</span>
-                  <span className="info-value" style={{color: '#FFFFFF'}}>{mechanic?.pendingAmount || 0}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="info-card">
-              <div className="card-header">
-                <div className="card-title">
-                  Statistics
+              <div className="profile-section-card profile-section-card--earnings">
+                <div className="card-header">
+                  <div className="card-title">Statistics</div>
                 </div>
-              </div>
-              <div className="info-rows">
-                <div className="info-row">
-                  <span className="info-label">Services This Month</span>
-                  <span className="info-value">{mechanic?.servicesThisMonth || 0}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Average Per Service</span>
-                  <span className="info-value">{mechanic?.avgPerService || 0}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Payment Status</span>
-                  <span className="info-value" style={{color: '#FFFFFF'}}>Active</span>
+                <div className="info-rows">
+                  <div className="info-row">
+                    <span className="info-label">Services This Month</span>
+                    <span className="info-value">{mechanic?.servicesThisMonth || 0}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Average Per Service</span>
+                    <span className="info-value">{mechanic?.avgPerService || 0}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Payment Status</span>
+                    <span className="info-value" style={{color: '#FFFFFF'}}>Active</span>
+                  </div>
                 </div>
               </div>
             </div>

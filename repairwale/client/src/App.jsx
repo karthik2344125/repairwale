@@ -28,6 +28,9 @@ const CustomerProfile = lazy(() => import('./customer/pages/CustomerProfile'))
 
 // Lazy load mechanic pages
 const MechanicHome = lazy(() => import('./mechanic/pages/MechanicHome'))
+const MechanicJobPage = lazy(() => import('./mechanic/pages/MechanicJobPage'))
+const MechanicLiveOrdersPage = lazy(() => import('./mechanic/pages/MechanicLiveOrdersPage'))
+const MechanicOrdersPage = lazy(() => import('./mechanic/pages/MechanicOrdersPage'))
 const MechanicServices = lazy(() => import('./mechanic/pages/MechanicServices'))
 const MechanicProfile = lazy(() => import('./mechanic/pages/MechanicProfile'))
 
@@ -171,7 +174,11 @@ export default function App(){
                     <Route path="/customer/profile" element={<ProtectedRoute><CustomerProfile/></ProtectedRoute>} />
                     
                     {/* Mechanic Routes */}
+                    <Route path="/mechanic" element={<ProtectedRoute><Navigate to="/mechanic/dashboard" replace /></ProtectedRoute>} />
                     <Route path="/mechanic/dashboard" element={<ProtectedRoute><MechanicHome/></ProtectedRoute>} />
+                    <Route path="/mechanic/job/:requestId" element={<ProtectedRoute><MechanicJobPage/></ProtectedRoute>} />
+                    <Route path="/mechanic/orders" element={<ProtectedRoute><MechanicLiveOrdersPage/></ProtectedRoute>} />
+                    <Route path="/mechanic/order-history" element={<ProtectedRoute><MechanicOrdersPage/></ProtectedRoute>} />
                     <Route path="/mechanic/services" element={<ProtectedRoute><MechanicServices/></ProtectedRoute>} />
                     <Route path="/mechanic/profile" element={<ProtectedRoute><MechanicProfile/></ProtectedRoute>} />
                     

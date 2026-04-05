@@ -1833,6 +1833,61 @@ html body .app [class*='container'] {
   border-color: rgba(255,255,255,0.24) !important;
 }
 
+/* =========================================================
+   GLOBAL SOFT CORNERS FOR ALL PAGES
+   ========================================================= */
+
+:root {
+  --rw-soft-corner: 16px;
+  --rw-soft-corner-sm: 12px;
+}
+
+html body .app .card,
+html body .app .stat-card,
+html body .app .info-card,
+html body .app .item,
+html body .app .item-card,
+html body .app .service-item,
+html body .app .request-item,
+html body .app .review-item,
+html body .app .orders-stat-card,
+html body .app .order-card,
+html body .app .profile-section-card,
+html body .app .modal-content,
+html body .app .rw-map-sidebar,
+html body .app .rw-mech-card,
+html body .app .rw-selected-panel,
+html body .app [class*='panel'],
+html body .app [class*='section'],
+html body .app [class*='box'],
+html body .app [class*='container'] {
+  border-radius: var(--rw-soft-corner) !important;
+}
+
+html body .app button,
+html body .app .btn,
+html body .app .navlink,
+html body .app .profile-tab,
+html body .app .item-action-btn,
+html body .app .card-edit-btn,
+html body .app .add-item-btn,
+html body .app .btn-save,
+html body .app .btn-cancel,
+html body .app input,
+html body .app select,
+html body .app textarea,
+html body .app .form-input,
+html body .app .form-select {
+  border-radius: var(--rw-soft-corner-sm) !important;
+}
+
+html body .app .leaflet-container,
+html body .app .rw-map-canvas-wrap,
+html body .app .map-frame-wrap,
+html body .app .map-frame {
+  border-radius: var(--rw-soft-corner) !important;
+}
+
 html body .app [class*='card'] *,
 html body .app [class*='panel'] *,
 html body .app [class*='modal'] *,

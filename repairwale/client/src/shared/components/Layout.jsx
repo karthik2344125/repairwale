@@ -134,14 +134,15 @@ export default function Layout({ children }){
             
             {effectiveRole === 'mechanic' && (
               <>
-                <NavLink to="/mechanic/dashboard" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>Dashboard</NavLink>
-                <NavLink to="/mechanic/services" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>Services</NavLink>
-                <NavLink to="/mechanic/profile" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>Profile</NavLink>
+                <NavLink to="/mechanic/dashboard" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>📊 Dashboard</NavLink>
+                <NavLink to="/mechanic/orders" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>📦 Orders</NavLink>
+                <NavLink to="/mechanic/order-history" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>🕘 Order History</NavLink>
+                <NavLink to="/mechanic/profile" className={({isActive})=> isActive? 'navlink active' : 'navlink'}>👤 Profile</NavLink>
               </>
             )}
             
             {effectiveRole && (
-              <button onClick={handleLogout} className="navlink navlink-btn">Logout</button>
+              <button onClick={handleLogout} className="navlink navlink-btn">⎋ Logout</button>
             )}
           </nav>
 

@@ -583,7 +583,7 @@ export default function MechanicsMap({
           background: 'rgba(8,23,42,0.88)',
           backdropFilter: 'blur(10px)',
           border: '1px solid rgba(255,255,255,0.22)',
-          borderRadius: '10px',
+          borderRadius: '20px',
           cursor: 'pointer',
           boxShadow: '0 8px 20px rgba(0,0,0,0.24)',
           display: 'flex',
@@ -614,7 +614,7 @@ export default function MechanicsMap({
         .custom-popup .leaflet-popup-content-wrapper {
           background: #0B1F3B;
           backdrop-filter: blur(10px);
-          border-radius: 12px;
+          border-radius: 20px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.15);
           border: 1px solid rgba(255,255,255,0.2);
         }
@@ -628,7 +628,7 @@ export default function MechanicsMap({
           background: rgba(11,31,59,0.95);
           backdrop-filter: blur(10px);
           border: none;
-          border-radius: 8px;
+          border-radius: 16px;
           box-shadow: 0 4px 16px rgba(0,0,0,0.2);
           padding: 8px 12px;
           color: white;
@@ -689,7 +689,7 @@ export default function MechanicsMap({
         }
         .leaflet-control-zoom {
           border: 1px solid rgba(255,255,255,0.18) !important;
-          border-radius: 10px !important;
+          border-radius: 20px !important;
           overflow: hidden;
           box-shadow: 0 8px 20px rgba(0,0,0,0.24) !important;
           background: rgba(8,23,42,0.88) !important;
